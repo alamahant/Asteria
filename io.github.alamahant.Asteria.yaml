@@ -35,17 +35,7 @@ modules:
     config-opts:
       - -DFLATHUB_BUILD=ON
     sources:
-      - type: dir
-        path: .
-
-#  - name: wrapper-script
-#    buildsystem: simple
-#    build-commands:
-#      - mkdir -p /app/bin
-#      - mv /app/bin/Asteria /app/bin/Asteria.real
-#      - echo '#!/bin/sh' > /app/bin/Asteria
-#      - echo 'export PYTHONPATH=/app/lib/python3.12:/app/lib/python3.12/site-packages' >> /app/bin/Asteria
-#      - echo 'export PYTHONUSERBASE=/var/data/python' >> /app/bin/Asteria
-#      - echo 'exec /app/bin/Asteria.real "$@"' >> /app/bin/Asteria
-#      - chmod +x /app/bin/Asteria
+      - type: git
+        url: https://github.com/alamahant/Asteria.git
+        tag: v1.0.0
 

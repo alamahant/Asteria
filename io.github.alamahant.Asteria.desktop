@@ -11,3 +11,4 @@ Categories=Education;Science;Astronomy;
 #Keywords=astrology;horoscope;natal;chart;zodiac;planets;
 Keywords=astrology;horoscope;natal;chart;zodiac;planets;ai;artificial intelligence;
 StartupNotify=true
+X-Flatpak=io.github.alamahant.Asteria

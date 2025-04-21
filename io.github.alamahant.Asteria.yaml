@@ -1,0 +1,51 @@
+app-id: io.github.alamahant.Asteria
+runtime: org.kde.Platform
+runtime-version: "6.8"
+sdk: org.kde.Sdk
+command: Asteria
+
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --env=PYTHONPATH=/app/lib/python3.12:/app/lib/python3.12/site-packages
+  - --env=PYTHONUSERBASE=/var/data/python
+
+modules:
+  - name: python-flatlib
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps flatlib-0.2.3-py3-none-any.whl
+    sources:
+      - type: file
+        path: python/venv/flatlib-0.2.3-py3-none-any.whl
+
+  - name: pyswisseph
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps pyswisseph-2.10.3.2.tar.gz
+    sources:
+      - type: file
+        path: python/venv/pyswisseph-2.10.3.2.tar.gz
+
+  - name: Asteria
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DFLATHUB_BUILD=ON
+    sources:
+      - type: dir
+        path: .
+
+#  - name: wrapper-script
+#    buildsystem: simple
+#    build-commands:
+#      - mkdir -p /app/bin
+#      - mv /app/bin/Asteria /app/bin/Asteria.real
+#      - echo '#!/bin/sh' > /app/bin/Asteria
+#      - echo 'export PYTHONPATH=/app/lib/python3.12:/app/lib/python3.12/site-packages' >> /app/bin/Asteria
+#      - echo 'export PYTHONUSERBASE=/var/data/python' >> /app/bin/Asteria
+#      - echo 'exec /app/bin/Asteria.real "$@"' >> /app/bin/Asteria
+#      - chmod +x /app/bin/Asteria
+

@@ -1,0 +1,883 @@
+#include "chartcalculator.h"
+
+#include <QDir>
+#include <QProcess>
+#include <QRegularExpression>
+#include <QDebug>
+#include <QFile>
+
+ChartCalculator::ChartCalculator(QObject *parent)
+    : QObject(parent)
+{
+}
+
+void ChartCalculator::setPythonVenvPath(const QString &path)
+{
+    m_pythonVenvPath = path;
+}
+
+bool ChartCalculator::isAvailable() const
+{
+    if (m_pythonVenvPath.isEmpty()) {
+        return false;
+    }
+
+    // Check if Python interpreter exists
+    QString pythonPath = QDir(m_pythonVenvPath).filePath("bin/python");
+    if (!QFile::exists(pythonPath)) {
+        qDebug() << "Python interpreter not found at:" << pythonPath;
+        return false;
+    }
+
+    // Check if the script exists
+    QString scriptPath = QDir(m_pythonVenvPath).filePath("scripts/chart_calculator.py");
+    if (!QFile::exists(scriptPath)) {
+        qDebug() << "Script not found at:" << scriptPath;
+        return false;
+    }
+
+    return true;
+}
+
+ChartData ChartCalculator::calculateChart(const QDate &birthDate,
+                                          const QTime &birthTime,
+                                          const QString &utcOffset,
+                                          const QString &latitude,
+                                          const QString &longitude,
+                                          const QString &houseSystem,
+                                          double orbMax)
+{
+    ChartData emptyData;
+
+    if (!isAvailable()) {
+        m_lastError = "Python environment is not properly set up";
+        return emptyData;
+    }
+
+    // Set Python executable
+    QString pythonPath = QDir(m_pythonVenvPath).filePath("bin/python");
+
+    // Set script path
+    QString scriptPath = QDir(m_pythonVenvPath).filePath("scripts/chart_calculator.py");
+
+    // Build the command
+    QString dateStr = birthDate.toString("yyyy/MM/dd");
+    QString timeStr = birthTime.toString("HH:mm");
+
+    QStringList args;
+    args << scriptPath
+         << "--date" << dateStr
+         << "--time" << timeStr
+         << "--utc-offset" << utcOffset
+         << "--latitude" << latitude
+         << "--longitude" << longitude
+         << "--house-system" << houseSystem
+         << "--orb-max" << QString::number(orbMax);
+
+    // Run the command synchronously
+    QProcess process;
+    process.setProcessChannelMode(QProcess::MergedChannels); // Merge stdout and stderr
+
+    qDebug() << "Running command:" << pythonPath << args.join(" ");
+    process.start(pythonPath, args);
+
+    // Wait for the process to finish
+    if (!process.waitForFinished(10000)) { // 10 second timeout
+        m_lastError = "Process timed out: " + process.errorString();
+        return emptyData;
+    }
+
+    // Check for errors
+    if (process.exitCode() != 0) {
+        m_lastError = "Process exited with code " + QString::number(process.exitCode()) +
+                      ": " + QString::fromUtf8(process.readAllStandardOutput());
+        return emptyData;
+    }
+
+    // Read the output
+    QString output = QString::fromUtf8(process.readAllStandardOutput());
+
+    // Parse the output
+    return parseOutput(output);
+}
+
+ChartData ChartCalculator::parseOutput(const QString &output)
+{
+    ChartData data;
+
+    // Split the output into sections
+    QStringList lines = output.split("\n");
+
+    enum Section { None, Planets, Houses, Angles, Aspects };
+    Section currentSection = None;
+
+    for (const QString &line : lines) {
+        if (line.startsWith("PLANETS:")) {
+            currentSection = Planets;
+            continue;
+        } else if (line.startsWith("HOUSES:")) {
+            currentSection = Houses;
+            continue;
+        } else if (line.startsWith("ANGLES:")) {
+            currentSection = Angles;
+            continue;
+        } else if (line.startsWith("ASPECTS:")) {
+            currentSection = Aspects;
+            continue;
+        }
+
+        if (line.trimmed().isEmpty()) {
+            continue;
+        }
+
+        switch (currentSection) {
+        case Planets: {
+            // Parse line like "Sun: Aries 25.36° (House House11)"
+            QRegularExpression re("(\\w+\\s*\\w*): (\\w+) (\\d+\\.\\d+)° \\(House (\\w+\\d*)\\)");
+            QRegularExpressionMatch match = re.match(line);
+
+            if (match.hasMatch()) {
+                PlanetInfo planet;
+                planet.id = match.captured(1);
+                planet.sign = match.captured(2);
+                planet.longitude = match.captured(3).toDouble();
+                planet.house = match.captured(4);
+                data.planets.append(planet);
+            }
+            break;
+        }
+        case Houses: {
+            // Parse line like "House1: Cancer 97.93°"
+            QRegularExpression re("(\\w+\\d*): (\\w+) (\\d+\\.\\d+)°");
+            QRegularExpressionMatch match = re.match(line);
+
+            if (match.hasMatch()) {
+                HouseInfo house;
+                house.id = match.captured(1);
+                house.sign = match.captured(2);
+                house.longitude = match.captured(3).toDouble();
+                data.houses.append(house);
+            }
+            break;
+        }
+        case Angles: {
+            // Parse line like "Asc: Cancer 97.93°"
+            QRegularExpression re("(\\w+): (\\w+) (\\d+\\.\\d+)°");
+            QRegularExpressionMatch match = re.match(line);
+
+            if (match.hasMatch()) {
+                AngleInfo angle;
+                angle.id = match.captured(1);
+                angle.sign = match.captured(2);
+                angle.longitude = match.captured(3).toDouble();
+                data.angles.append(angle);
+            }
+            break;
+        }
+        case Aspects: {
+            // Parse line like "Sun TRI Moon (Orb: 0.23°)"
+            QRegularExpression re("(\\w+\\s*\\w*) (\\w+) (\\w+\\s*\\w*) \\(Orb: (\\d+\\.\\d+)°\\)");
+            QRegularExpressionMatch match = re.match(line);
+
+            if (match.hasMatch()) {
+                AspectInfo aspect;
+                aspect.planet1 = match.captured(1);
+                aspect.aspectType = match.captured(2);
+                aspect.planet2 = match.captured(3);
+                aspect.orb = match.captured(4).toDouble();
+                data.aspects.append(aspect);
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    return data;
+}
+
+QString ChartCalculator::getLastError() const
+{
+    return m_lastError;
+}
+#include "chartdatamanager.h"
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QDebug>
+
+ChartDataManager::ChartDataManager(QObject *parent)
+    : QObject(parent)
+    , m_calculator(new ChartCalculator(this))
+{
+}
+
+ChartDataManager::~ChartDataManager()
+{
+    // QObject parent-child relationship will handle deletion
+}
+
+void ChartDataManager::setPythonVenvPath(const QString &path)
+{
+    m_calculator->setPythonVenvPath(path);
+}
+
+bool ChartDataManager::isCalculatorAvailable() const
+{
+    return m_calculator->isAvailable();
+}
+
+ChartData ChartDataManager::calculateChart(const QDate &birthDate,
+                                           const QTime &birthTime,
+                                           const QString &utcOffset,
+                                           const QString &latitude,
+                                           const QString &longitude,
+                                           const QString &houseSystem,
+                                           double orbMax)
+{
+    // Clear any previous error
+    m_lastError.clear();
+
+    // Calculate the chart
+    ChartData data = m_calculator->calculateChart(birthDate, birthTime, utcOffset,
+                                                  latitude, longitude, houseSystem, orbMax);
+
+    // Check for errors
+    if (!m_calculator->getLastError().isEmpty()) {
+        m_lastError = m_calculator->getLastError();
+        qDebug() << "Chart calculation error:" << m_lastError;
+    }
+
+    return data;
+}
+
+QJsonObject ChartDataManager::calculateChartAsJson(const QDate &birthDate,
+                                                   const QTime &birthTime,
+                                                   const QString &utcOffset,
+                                                   const QString &latitude,
+                                                   const QString &longitude,
+                                                   const QString &houseSystem,
+                                                   double orbMax)
+{
+    // Calculate the chart
+    ChartData data = calculateChart(birthDate, birthTime, utcOffset,
+                                    latitude, longitude, houseSystem, orbMax);
+
+    // If there was an error, return an empty object
+    if (!m_lastError.isEmpty()) {
+        return QJsonObject{{"error", m_lastError}};
+    }
+
+    // Convert to JSON
+    return chartDataToJson(data);
+}
+
+QJsonObject ChartDataManager::chartDataToJson(const ChartData &data)
+{
+    QJsonObject json;
+
+    // Add each component to the JSON object
+    json["planets"] = planetsToJson(data.planets);
+    json["houses"] = housesToJson(data.houses);
+    json["angles"] = anglesToJson(data.angles);
+    json["aspects"] = aspectsToJson(data.aspects);
+
+    return json;
+}
+
+QJsonArray ChartDataManager::planetsToJson(const QVector<PlanetInfo> &planets)
+{
+    QJsonArray jsonArray;
+
+    for (const PlanetInfo &planet : planets) {
+        QJsonObject jsonPlanet;
+        jsonPlanet["id"] = planet.id;
+        jsonPlanet["sign"] = planet.sign;
+        jsonPlanet["longitude"] = planet.longitude;
+        jsonPlanet["house"] = planet.house;
+        jsonArray.append(jsonPlanet);
+    }
+
+    return jsonArray;
+}
+
+QJsonArray ChartDataManager::housesToJson(const QVector<HouseInfo> &houses)
+{
+    QJsonArray jsonArray;
+
+    for (const HouseInfo &house : houses) {
+        QJsonObject jsonHouse;
+        jsonHouse["id"] = house.id;
+        jsonHouse["sign"] = house.sign;
+        jsonHouse["longitude"] = house.longitude;
+        jsonArray.append(jsonHouse);
+    }
+
+    return jsonArray;
+}
+
+QJsonArray ChartDataManager::anglesToJson(const QVector<AngleInfo> &angles)
+{
+    QJsonArray jsonArray;
+
+    for (const AngleInfo &angle : angles) {
+        QJsonObject jsonAngle;
+        jsonAngle["id"] = angle.id;
+        jsonAngle["sign"] = angle.sign;
+        jsonAngle["longitude"] = angle.longitude;
+        jsonArray.append(jsonAngle);
+    }
+
+    return jsonArray;
+}
+
+QJsonArray ChartDataManager::aspectsToJson(const QVector<AspectInfo> &aspects)
+{
+    QJsonArray jsonArray;
+
+    for (const AspectInfo &aspect : aspects) {
+        QJsonObject jsonAspect;
+        jsonAspect["planet1"] = aspect.planet1;
+        jsonAspect["planet2"] = aspect.planet2;
+        jsonAspect["aspectType"] = aspect.aspectType;
+        jsonAspect["orb"] = aspect.orb;
+        jsonArray.append(jsonAspect);
+    }
+
+    return jsonArray;
+}
+
+QString ChartDataManager::getLastError() const
+{
+    return m_lastError;
+}
+#include"chartrenderer.h"
+#include <QPainter>
+#include <QWheelEvent>
+#include <QGraphicsEllipseItem>
+#include <QGraphicsLineItem>
+#include <QGraphicsTextItem>
+#include <QGraphicsSceneHoverEvent>
+#include <QToolTip>
+#include <QtMath>
+#include <QDebug>
+
+// PlanetItem implementation
+PlanetItem::PlanetItem(const QString &id, const QString &sign, double longitude,
+                       const QString &house, QGraphicsItem *parent)
+    : QGraphicsEllipseItem(0, 0, 20, 20, parent)
+    , m_id(id)
+    , m_sign(sign)
+    , m_longitude(longitude)
+    , m_house(house)
+{
+    setAcceptHoverEvents(true);
+    setBrush(QBrush(Qt::white));
+    setPen(QPen(Qt::black, 1));
+    setToolTip(QString("%1 in %2 at %3° in %4")
+                   .arg(id).arg(sign).arg(longitude).arg(house));
+}
+
+void PlanetItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QGraphicsEllipseItem::paint(painter, option, widget);
+
+    // Draw the planet symbol
+    painter->drawText(boundingRect(), Qt::AlignCenter, m_id.left(2));
+}
+
+// AspectItem implementation
+AspectItem::AspectItem(const QString &planet1, const QString &planet2,
+                       const QString &aspectType, double orb,
+                       QGraphicsItem *parent)
+    : QGraphicsLineItem(parent)
+    , m_planet1(planet1)
+    , m_planet2(planet2)
+    , m_aspectType(aspectType)
+    , m_orb(orb)
+{
+    setAcceptHoverEvents(true);
+    setToolTip(QString("%1 %2 %3 (Orb: %4°)")
+                   .arg(planet1).arg(aspectType).arg(planet2).arg(orb));
+}
+
+void AspectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QGraphicsLineItem::paint(painter, option, widget);
+}
+
+// ChartRenderer implementation
+ChartRenderer::ChartRenderer(QWidget *parent)
+    : QGraphicsView(parent)
+    , m_scene(new QGraphicsScene(this))
+    , m_outerWheel(nullptr)
+    , m_innerWheel(nullptr)
+    , m_showAspects(true)
+    , m_showHouseCusps(true)
+    , m_showPlanetSymbols(true)
+    , m_chartSize(DEFAULT_CHART_SIZE)
+    , m_wheelThickness(DEFAULT_WHEEL_THICKNESS)
+{
+    setScene(m_scene);
+    setRenderHint(QPainter::Antialiasing);
+    setDragMode(QGraphicsView::ScrollHandDrag);
+    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    setResizeAnchor(QGraphicsView::AnchorViewCenter);
+
+    // Set scene rect to be large enough for the chart
+    m_scene->setSceneRect(-m_chartSize/2, -m_chartSize/2, m_chartSize, m_chartSize);
+
+    // Center the view
+    centerOn(0, 0);
+}
+
+ChartRenderer::~ChartRenderer()
+{
+    clearChart();
+}
+
+void ChartRenderer::setChartData(const ChartData &data)
+{
+    m_chartData = data;
+    renderChart();
+}
+
+void ChartRenderer::clearChart()
+{
+    m_scene->clear();
+    m_planetItems.clear();
+    m_aspectItems.clear();
+    m_houseCuspLines.clear();
+    m_signTexts.clear();
+    m_outerWheel = nullptr;
+    m_innerWheel = nullptr;
+}
+
+void ChartRenderer::renderChart()
+{
+    clearChart();
+
+    if (m_chartData.planets.isEmpty()) {
+        qDebug() << "No chart data to render";
+        return;
+    }
+
+    drawChartWheel();
+    drawZodiacSigns();
+
+    if (m_showHouseCusps) {
+        drawHouseCusps();
+    }
+
+    drawAngles();
+    drawPlanets();
+
+    if (m_showAspects) {
+        drawAspects();
+    }
+
+    // Ensure the view is centered
+    centerOn(0, 0);
+}
+
+void ChartRenderer::setShowAspects(bool show)
+{
+    m_showAspects = show;
+    renderChart();
+}
+
+void ChartRenderer::setShowHouseCusps(bool show)
+{
+    m_showHouseCusps = show;
+    renderChart();
+}
+
+void ChartRenderer::setShowPlanetSymbols(bool show)
+{
+    m_showPlanetSymbols = show;
+    renderChart();
+}
+
+void ChartRenderer::setChartSize(int size)
+{
+    m_chartSize = size;
+    m_scene->setSceneRect(-m_chartSize/2, -m_chartSize/2, m_chartSize, m_chartSize);
+    renderChart();
+}
+
+void ChartRenderer::wheelEvent(QWheelEvent *event)
+{
+    // Zoom in/out with mouse wheel
+    double scaleFactor = 1.15;
+    if (event->angleDelta().y() < 0) {
+        scaleFactor = 1.0 / scaleFactor;
+    }
+
+    scale(scaleFactor, scaleFactor);
+}
+
+void ChartRenderer::resizeEvent(QResizeEvent *event)
+{
+    QGraphicsView::resizeEvent(event);
+
+    // Fit the chart in the view when resized
+    fitInView(m_scene->sceneRect(), Qt::KeepAspectRatio);
+}
+
+void ChartRenderer::drawChartWheel()
+{
+    double outerRadius = m_chartSize / 2.0;
+    double innerRadius = outerRadius - m_wheelThickness;
+
+    // Draw outer wheel
+    m_outerWheel = new QGraphicsEllipseItem(-outerRadius, -outerRadius,
+                                            outerRadius * 2, outerRadius * 2);
+    m_outerWheel->setPen(QPen(Qt::black, 2));
+    m_outerWheel->setBrush(Qt::transparent);
+    m_scene->addItem(m_outerWheel);
+
+    // Draw inner wheel
+    m_innerWheel = new QGraphicsEllipseItem(-innerRadius, -innerRadius,
+                                            innerRadius * 2, innerRadius * 2);
+    m_innerWheel->setPen(QPen(Qt::black, 1));
+    m_innerWheel->setBrush(Qt::transparent);
+    m_scene->addItem(m_innerWheel);
+}
+
+void ChartRenderer::drawZodiacSigns()
+{
+    double radius = m_chartSize / 2.0 - m_wheelThickness / 2.0;
+
+    // Draw zodiac signs (12 segments of 30 degrees each)
+    QStringList signs = {"Aries", "Taurus", "Gemini", "Cancer",
+                         "Leo", "Virgo", "Libra", "Scorpio",
+                         "Sagittarius", "Capricorn", "Aquarius", "Pisces"};
+
+    for (int i = 0; i < 12; i++) {
+        // Calculate the position for the sign text
+        double angle = i * 30.0;
+        QPointF textPos = longitudeToPoint(angle, radius);
+
+        // Create text item for the sign
+        QGraphicsTextItem *textItem = m_scene->addText(signSymbol(signs[i]));
+        textItem->setPos(textPos);
+        textItem->setDefaultTextColor(Qt::black);
+        textItem->setToolTip(signs[i]);
+
+        // Center the text on the position
+        QRectF textRect = textItem->boundingRect();
+        textItem->setPos(textPos.x() - textRect.width()/2,
+                         textPos.y() - textRect.height()/2);
+
+        m_signTexts.append(textItem);
+
+        // Draw dividing lines between signs
+        QPointF outerPoint = longitudeToPoint(angle, m_chartSize / 2.0);
+        QPointF innerPoint = longitudeToPoint(angle, m_chartSize / 2.0 - m_wheelThickness);
+
+        QGraphicsLineItem *line = m_scene->addLine(QLineF(innerPoint, outerPoint));
+        line->setPen(QPen(Qt::black, 1));
+    }
+}
+
+void ChartRenderer::drawHouseCusps()
+{
+    double outerRadius = m_chartSize / 2.0;
+    double innerRadius = outerRadius - m_wheelThickness;
+
+    // Draw house cusps
+    for (const HouseInfo &house : m_chartData.houses) {
+        double longitude = house.longitude;
+
+        QPointF outerPoint = longitudeToPoint(longitude, outerRadius);
+        QPointF centerPoint = QPointF(0, 0);
+
+        QGraphicsLineItem *line = m_scene->addLine(QLineF(centerPoint, outerPoint));
+        line->setPen(QPen(Qt::darkGray, 1, Qt::DashLine));
+        line->setToolTip(QString("House %1 cusp: %2° %3")
+                             .arg(house.id.mid(5)) // Extract number from "House1"
+                             .arg(longitude)
+                             .arg(house.sign));
+
+        m_houseCuspLines.append(line);
+    }
+}
+
+void ChartRenderer::drawPlanets()
+{
+    double radius = m_chartSize / 2.0 - m_wheelThickness - 20; // Position inside the wheel
+
+    // Draw planets
+    for (const PlanetInfo &planet : m_chartData.planets) {
+        double longitude = planet.longitude;
+        QPointF position = longitudeToPoint(longitude, radius);
+
+        // Create planet item
+        PlanetItem *planetItem = new PlanetItem(planet.id, planet.sign,
+                                                longitude, planet.house);
+        planetItem->setPos(position.x() - 10, position.y() - 10); // Center the 20x20 ellipse
+
+        m_scene->addItem(planetItem);
+        m_planetItems[planet.id] = planetItem;
+    }
+}
+
+
+void ChartRenderer::drawAspects()
+{
+    // Draw aspects between planets
+    for (const AspectInfo &aspect : m_chartData.aspects) {
+        if (!m_planetItems.contains(aspect.planet1) || !m_planetItems.contains(aspect.planet2)) {
+            continue; // Skip if either planet is not found
+        }
+
+        PlanetItem *planet1Item = m_planetItems[aspect.planet1];
+        PlanetItem *planet2Item = m_planetItems[aspect.planet2];
+
+        // Get center points of the planets
+        QPointF p1 = planet1Item->pos() + QPointF(10, 10); // Center of 20x20 ellipse
+        QPointF p2 = planet2Item->pos() + QPointF(10, 10);
+
+        // Create aspect line
+        AspectItem *aspectItem = new AspectItem(aspect.planet1, aspect.planet2,
+                                                aspect.aspectType, aspect.orb);
+        aspectItem->setLine(QLineF(p1, p2));
+
+        // Set line style based on aspect type
+        QPen pen(aspectColor(aspect.aspectType), 1);
+
+        // Use different line styles for different aspects
+        if (aspect.aspectType == "SQR" || aspect.aspectType == "OPP") {
+            pen.setStyle(Qt::DashLine);
+        } else if (aspect.aspectType == "TRI" || aspect.aspectType == "SEX") {
+            pen.setStyle(Qt::SolidLine);
+        } else if (aspect.aspectType == "CON") {
+            pen.setStyle(Qt::DotLine);
+        }
+
+        aspectItem->setPen(pen);
+
+        // Add to scene and store
+        m_scene->addItem(aspectItem);
+        m_aspectItems.append(aspectItem);
+    }
+}
+
+void ChartRenderer::drawAngles()
+{
+    double outerRadius = m_chartSize / 2.0;
+
+    // Draw special lines for the angles (ASC, MC, DESC, IC)
+    for (const AngleInfo &angle : m_chartData.angles) {
+        double longitude = angle.longitude;
+
+        QPointF outerPoint = longitudeToPoint(longitude, outerRadius);
+        QPointF centerPoint = QPointF(0, 0);
+
+        QGraphicsLineItem *line = m_scene->addLine(QLineF(centerPoint, outerPoint));
+
+        // Use thicker, colored lines for angles
+        QPen pen(Qt::red, 2);
+        if (angle.id == "Asc") {
+            pen.setColor(Qt::red);
+        } else if (angle.id == "MC") {
+            pen.setColor(Qt::blue);
+        } else if (angle.id == "Desc") {
+            pen.setColor(Qt::darkRed);
+        } else if (angle.id == "IC") {
+            pen.setColor(Qt::darkBlue);
+        }
+
+        line->setPen(pen);
+        line->setToolTip(QString("%1: %2° %3")
+                             .arg(angle.id)
+                             .arg(longitude)
+                             .arg(angle.sign));
+
+        // Add text label for the angle
+        QPointF textPos = longitudeToPoint(longitude, outerRadius + 15);
+        QGraphicsTextItem *textItem = m_scene->addText(angle.id);
+        textItem->setDefaultTextColor(pen.color());
+
+        // Center the text on the position
+        QRectF textRect = textItem->boundingRect();
+        textItem->setPos(textPos.x() - textRect.width()/2,
+                         textPos.y() - textRect.height()/2);
+    }
+}
+
+QPointF ChartRenderer::longitudeToPoint(double longitude, double radius)
+{
+    // Convert astrological longitude to x,y coordinates
+    // In astrology, 0° is at 3 o'clock (East) and increases counterclockwise
+    // We need to adjust by -90° to match Qt's coordinate system where 0° is at 3 o'clock
+    double angleRadians = qDegreesToRadians(longitude - 90);
+
+    // Calculate point on the circle
+    double x = radius * qCos(angleRadians);
+    double y = radius * qSin(angleRadians);
+
+    return QPointF(x, y);
+}
+
+QColor ChartRenderer::aspectColor(const QString &aspectType)
+{
+    // Return color based on aspect type
+    if (aspectType == "CON") return Qt::black;      // Conjunction
+    if (aspectType == "OPP") return Qt::red;        // Opposition
+    if (aspectType == "TRI") return Qt::blue;       // Trine
+    if (aspectType == "SQR") return Qt::red;        // Square
+    if (aspectType == "SEX") return Qt::blue;       // Sextile
+    if (aspectType == "QUI") return Qt::darkGreen;  // Quincunx
+    if (aspectType == "SSQ") return Qt::darkRed;    // Semi-square
+    if (aspectType == "SSX") return Qt::darkBlue;   // Semi-sextile
+
+    return Qt::gray; // Default for unknown aspects
+}
+
+QString ChartRenderer::planetSymbol(const QString &planetId)
+{
+    // Return Unicode symbol for planet
+    // This is a simplified version - in a real app, you'd use proper astrological symbols
+    if (planetId == "Sun") return "☉";
+    if (planetId == "Moon") return "☽";
+    if (planetId == "Mercury") return "☿";
+    if (planetId == "Venus") return "♀";
+    if (planetId == "Mars") return "♂";
+    if (planetId == "Jupiter") return "♃";
+    if (planetId == "Saturn") return "♄";
+    if (planetId == "Uranus") return "♅";
+    if (planetId == "Neptune") return "♆";
+    if (planetId == "Pluto") return "♇";
+    if (planetId == "Chiron") return "⚷";
+    if (planetId == "North Node") return "☊";
+    if (planetId == "South Node") return "☋";
+
+    // Return first two letters for other points
+    return planetId.left(2);
+}
+
+QString ChartRenderer::signSymbol(const QString &signName)
+{
+    // Return Unicode symbol for zodiac sign
+    if (signName == "Aries") return "♈";
+    if (signName == "Taurus") return "♉";
+    if (signName == "Gemini") return "♊";
+    if (signName == "Cancer") return "♋";
+    if (signName == "Leo") return "♌";
+    if (signName == "Virgo") return "♍";
+    if (signName == "Libra") return "♎";
+    if (signName == "Scorpio") return "♏";
+    if (signName == "Sagittarius") return "♐";
+    if (signName == "Capricorn") return "♑";
+    if (signName == "Aquarius") return "♒";
+    if (signName == "Pisces") return "♓";
+
+    return signName.left(3);
+}
+
+
+
+Based on your code structure, I'll identify the key methods and add debug statements to track the flow from the request to flatlib through to the JSON creation.
+
+First, in ChartCalculator::calculateChart where you execute the Python script:
+ChartData ChartCalculator::calculateChart(const QDate &birthDate,
+                                          const QTime &birthTime,
+                                          const QString &utcOffset,
+                                          const QString &latitude,
+                                          const QString &longitude,
+                                          const QString &houseSystem,
+                                          double orbMax)
+{
+    // ... existing code ...
+    
+    // Add debug for the command being executed
+    qDebug() << "Executing flatlib command:";
+    qDebug() << "  Python: " << pythonPath;
+    qDebug() << "  Script: " << scriptPath;
+    qDebug() << "  Date: " << dateStr;
+    qDebug() << "  Time: " << timeStr;
+    qDebug() << "  UTC Offset: " << utcOffset;
+    qDebug() << "  Latitude: " << latitude;
+    qDebug() << "  Longitude: " << longitude;
+    qDebug() << "  House System: " << houseSystem;
+    qDebug() << "  Orb Max: " << orbMax;
+    
+    // ... process.start and waitForFinished ...
+    
+    // Add debug for the raw output
+    QString output = QString::fromUtf8(process.readAllStandardOutput());
+    qDebug() << "Raw flatlib output:";
+    qDebug() << output;
+    
+    // Parse the output
+    return parseOutput(output);
+}
+
+Copy
+
+
+Next, in your parseOutput method (which should be in ChartCalculator class):
+ChartData ChartCalculator::parseOutput(const QString &output)
+{
+    ChartData data;
+    
+    qDebug() << "Parsing flatlib output...";
+    
+    // Add your parsing code here
+    // ...
+    
+    qDebug() << "Parsed ChartData:";
+    qDebug() << "  Planets: " << data.planets.size();
+    qDebug() << "  Houses: " << data.houses.size();
+    qDebug() << "  Aspects: " << data.aspects.size();
+    
+    return data;
+}
+
+Copy
+
+
+Then, in ChartDataManager::chartDataToJson where you convert the ChartData to JSON:
+QJsonObject ChartDataManager::chartDataToJson(const ChartData &data)
+{
+    QJsonObject json;
+    
+    qDebug() << "Converting ChartData to JSON...";
+    
+    // Add your conversion code here
+    // ...
+    
+    // Debug the final JSON
+    qDebug() << "Final JSON structure:";
+    qDebug() << QJsonDocument(json).toJson(QJsonDocument::Indented);
+    
+    return json;
+}
+
+Copy
+
+
+Finally, in MainWindow::displayChart where you use the JSON to display the chart:
+void MainWindow::displayChart(const QJsonObject &chartData)
+{
+    qDebug() << "Displaying chart from JSON:";
+    qDebug() << QJsonDocument(chartData).toJson(QJsonDocument::Indented);
+    
+    // Your display code here
+    // ...
+}
+
+Copy
+
+
+These debug statements will help you track:
+
+What exact command is being sent to flatlib
+What raw output flatlib is returning
+How that output is being parsed into your ChartData structure
+How the ChartData is being converted to JSON
+What JSON is being used to display the chart
+By examining this output, you should be able to identify where the issue is occurring in your chart generation and display pipeline.
+

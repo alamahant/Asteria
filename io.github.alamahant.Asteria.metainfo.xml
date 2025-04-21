@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.alamahant.Asteria</id>
+  <name>Asteria</name>
+  <summary>Astrological chart calculator and analyzer with AI interpretations</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <description>
+    <p>
+      Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology.
+    </p>
+    <p>
+      Features:
+    </p>
+    <ul>
+      <li>Calculate and display natal charts with precise planetary positions</li>
+      <li>Analyze aspects between planets with detailed interpretations</li>
+      <li>View planetary positions by house and sign</li>
+      <li>Examine element and modality distributions</li>
+      <li>Generate AI-powered chart interpretations for deeper insights</li>
+      <li>Clean, intuitive interface for both beginners and experienced astrologers</li>
+    </ul>
+  </description>
+  <url type="homepage">https://github.com/alamahant/Asteria</url>
+  <screenshots>
+    <!-- Add screenshots later -->
+  </screenshots>
+  <releases>
+    <release version="0.1" date="2023-11-01">
+      <description>
+        <p>Initial release</p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1" />
+  <developer_name>Alamahant</developer_name>
+  <categories>
+    <category>Education</category>
+    <category>Science</category>
+    <category>Astronomy</category>
+  </categories>
+  <launchable type="desktop-id">io.github.alamahant.Asteria.desktop</launchable>
+</component>

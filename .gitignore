@@ -1,0 +1,60 @@
+# Qt specific
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+.moc
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+Makefile*
+*build-*
+*.qm
+.qmake.stash
+*.autosave
+
+# Build directories
+build/
+debug/
+release/
+
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+_deps/
+
+# Executables and binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+
+# Debug files
+*.debug
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*~
+
+# Flatpak specific
+.flatpak-builder/
+build-dir/
+repo/
+*.flatpak
+
+# Python cache files only (keep all Python scripts)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Don't ignore UI files
+!*.ui
+

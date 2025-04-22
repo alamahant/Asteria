@@ -357,6 +357,17 @@ void MainWindow::setupInputDock() {
     m_googleCoordsEdit->setPlaceholderText("e.g:, 51.5072° N, 0.1276° W");
     m_googleCoordsEdit->setToolTip("Search for a location on Google, copy the coordinates, and paste them here");
 
+    m_googleCoordsEdit->setStyleSheet(
+        "QLineEdit {"
+        "  background-color: #fff9c4;"  // soft yellow
+        "  border: 2px solid #f9a825;"  // amber border
+        "  border-radius: 5px;"
+        "  padding: 4px;"
+        "  font-weight: bold;"
+        "}"
+        );
+
+
     // Connect the Google coordinates field to parse and fill lat/long fields when text changes
     connect(m_googleCoordsEdit, &QLineEdit::textChanged, this, [=](const QString &text) {
         // Only try to parse if the text looks like it might be complete coordinates
@@ -2060,7 +2071,7 @@ void MainWindow::drawStarBanner(QPainter &painter, const QRect &rect) {
 }
 
 
-
+/*
 void MainWindow::searchLocationCoordinates(const QString& location) {
     if (location.isEmpty()) {
         return;
@@ -2076,6 +2087,29 @@ void MainWindow::searchLocationCoordinates(const QString& location) {
     locationSearchEdit->clear();
 
 }
+*/
+
+void MainWindow::searchLocationCoordinates(const QString& location) {
+    if (location.isEmpty()) {
+        return;
+    }
+
+#ifdef FLATHUB_BUILD
+    QMessageBox::information(this, tr("Feature Unavailable"),
+                             tr("This feature is not available in the Flathub version of Asteria.\n"
+                                "Please manually search for the location coordinates."));
+#else
+    // Create the search URL
+    QString searchQuery = QString("coordinates of %1").arg(location);
+    QString encodedQuery = QUrl::toPercentEncoding(searchQuery);
+    QUrl url(QString("https://www.google.com/search?q=%1").arg(QString(encodedQuery)));
+
+    // Open the URL in the default browser
+    QDesktopServices::openUrl(url);
+    locationSearchEdit->clear();
+#endif
+}
+
 
 void MainWindow::showSymbolsDialog()
 {
@@ -2097,6 +2131,7 @@ void MainWindow::showSymbolsDialog()
     m_symbolsDialog->activateWindow();
 }
 
+/*
 void MainWindow::showHowToUseDialog()
 {
     // Create the dialog only if it doesn't exist yet
@@ -2142,6 +2177,84 @@ void MainWindow::showHowToUseDialog()
             <li>Different house systems can be selected from the dropdown menu.</li>
             <li>You can save and print charts using the File menu.</li>
         </ul>
+
+        <p>For more information about astrology and chart interpretation, consult astrological resources or books.</p>
+        )";
+
+        textBrowser->setHtml(helpText);
+        layout->addWidget(textBrowser);
+
+        // Add a close button at the bottom
+        QHBoxLayout *buttonLayout = new QHBoxLayout();
+        QPushButton *closeButton = new QPushButton("Close", m_howToUseDialog);
+        buttonLayout->addStretch();
+        buttonLayout->addWidget(closeButton);
+        layout->addLayout(buttonLayout);
+
+        // Connect the close button
+        connect(closeButton, &QPushButton::clicked, m_howToUseDialog, &QDialog::close);
+
+        // Connect the dialog's finished signal to handle cleanup
+        connect(m_howToUseDialog, &QDialog::finished, this, [this]() {
+            m_howToUseDialog->deleteLater();
+            m_howToUseDialog = nullptr;
+        });
+    }
+
+    // Show and raise the dialog to bring it to the front
+    m_howToUseDialog->show();
+    m_howToUseDialog->raise();
+    m_howToUseDialog->activateWindow();
+}
+*/
+
+void MainWindow::showHowToUseDialog()
+{
+    // Create the dialog only if it doesn't exist yet
+    if (!m_howToUseDialog) {
+        m_howToUseDialog = new QDialog(this);
+        m_howToUseDialog->setWindowTitle("How to Use Asteria");
+        m_howToUseDialog->setMinimumSize(500, 400);
+
+        // Create layout
+        QVBoxLayout *layout = new QVBoxLayout(m_howToUseDialog);
+
+        // Create a text browser for rich text display
+        QTextBrowser *textBrowser = new QTextBrowser(m_howToUseDialog);
+        textBrowser->setOpenExternalLinks(true);
+
+        // Set the help content
+        QString helpText = R"(
+        <h2>How to Use Asteria</h2>
+
+        <h3>Getting Started</h3>
+        <p>Asteria allows you to create and analyze astrological birth charts. Follow these steps to get started:</p>
+
+        <ol>
+            <li><b>Enter Birth Information:</b> Fill in the name, date, time, and location of birth in the input fields.</li>
+            <li><b>Generate Chart:</b> Click the "Calculate Chart" button to create the astrological chart.</li>
+            <li><b>View Chart:</b> The chart will appear in the main display area.</li>
+            <li><b>Analyze Aspects:</b> The aspect grid shows relationships between planets.</li>
+            <li><b>Get AI Interpretation:</b> Click "Get Birth Chart From AI" or "Get AI Prediction" to receive an interpretation of the chart or a prediction.</li>
+        </ol>
+
+        <h3>Chart Features</h3>
+        <ul>
+            <li><b>Planets:</b> The chart displays the positions of celestial bodies at the time of birth.</li>
+            <li><b>Houses:</b> The twelve houses represent different areas of life.</li>
+            <li><b>Aspects:</b> Lines connecting planets show their relationships (conjunctions, oppositions, etc.).</li>
+            <li><b>Zodiac Signs:</b> The twelve signs of the zodiac form the outer wheel of the chart.</li>
+        </ul>
+
+        <h3>Tips & Features</h3>
+        <ul>
+            <li>Hover your mouse over planets, signs, and houses on the chart to see detailed tooltips containing valuable information.</li>
+            <li>Asteria can generate AI-powered future predictions for a period of up to 30 days. Play with it! You can set the starting date anytime in the future. Asteria can give insight into how future transits may affect your chart.</li>
+            <li>You can select the language used by the AI from the dropdown menu at the bottom right corner of the UI. This feature is still experimental—feel free to explore, but English is recommended for best results.</li>
+            <li>For the most immersive and clear view of the chart, it is best to use Asteria in full screen mode.</li>
+        </ul>
+
+        <p>For accurate charts, ensure the birth time and location are as precise as possible. Use the "Astrological Symbols" reference to understand the chart’s symbols. You can also save or print charts from the File menu.</p>
 
         <p>For more information about astrology and chart interpretation, consult astrological resources or books.</p>
         )";

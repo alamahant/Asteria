@@ -98,7 +98,7 @@ endif()
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/io.github.alamahant.Asteria.desktop"
         DESTINATION "share/applications")
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/io.github.alamahant.Asteria.appdata.xml"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/io.github.alamahant.Asteria.metainfo.xml"
         DESTINATION "share/metainfo")
 
 

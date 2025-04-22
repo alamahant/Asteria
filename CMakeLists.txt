@@ -106,15 +106,15 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/io.github.alamahant.Asteria.appdata.x
 #        DESTINATION "share/icons/hicolor/64x64/apps"
 #        RENAME "io.github.alamahant.Asteria.png")
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/asteria-icon-192.png"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}icons/asteria-icon-192.png"
         DESTINATION "share/icons/hicolor/192x192/apps"
         RENAME "io.github.alamahant.Asteria.png")
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/asteria-icon-256.png"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-256.png"
         DESTINATION "share/icons/hicolor/256x256/apps"
         RENAME "io.github.alamahant.Asteria.png")
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/asteria-icon-512.png"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
         DESTINATION "share/icons/hicolor/512x512/apps"
         RENAME "io.github.alamahant.Asteria.png")
 

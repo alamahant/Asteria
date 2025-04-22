@@ -21,7 +21,6 @@ PlanetItem::PlanetItem(const QString &id, const QString &sign, double longitude,
     , m_house(house)
     ,m_isRetrograde(isRetrograde)
 {
-    qDebug() << "Created PlanetItem:" << id << "isRetrograde:" << m_isRetrograde;
 
     setAcceptHoverEvents(true);
     setBrush(QBrush(Qt::white));
@@ -181,8 +180,6 @@ void ChartRenderer::setChartData(const ChartData &data)
 {
     m_chartData = data;
     //renderChart();
-    qDebug() << "ChartRenderer received" << data.angles.size() << "angles";
-    qDebug() << "ChartRenderer now has" << m_chartData.angles.size() << "angles";
 }
 
 void ChartRenderer::clearChart()
@@ -203,7 +200,6 @@ void ChartRenderer::renderChart()
 {
     clearChart();
     if (m_chartData.planets.isEmpty()) {
-        qDebug() << "No chart data to render";
         return;
     }
 
@@ -450,14 +446,12 @@ void ChartRenderer::drawHouseCusps(){
 
 
 void ChartRenderer::drawAspects() {
-    qDebug() << "Drawing aspects with new tooltip system";
 
     // Create a map to collect aspects for each planet
     QMap<QString, QList<AspectData>> planetAspects;
 
     // First pass: collect all aspects for each planet
     for (const AspectData &aspect : m_chartData.aspects) {
-        //qDebug() << "Aspect:" << aspect.planet1 << aspect.aspectType << aspect.planet2 << "orb:" << aspect.orb;
 
         // Create reversed aspect for the second planet
         AspectData reversedAspect;
@@ -573,22 +567,11 @@ void ChartRenderer::drawAspects() {
 }
 
 void ChartRenderer::drawAngles() {
-    qDebug() << "Drawing angles with new code";
-    qDebug() << "Number of angles in m_chartData:" << m_chartData.angles.size();
 
     // Test points for each quadrant
     double testRadius = m_chartSize / 2.0;
-    qDebug() << "Test points:";
-    qDebug() << "0° point:" << longitudeToPoint(0, testRadius);
-    qDebug() << "90° point:" << longitudeToPoint(90, testRadius);
-    qDebug() << "180° point:" << longitudeToPoint(180, testRadius);
-    qDebug() << "270° point:" << longitudeToPoint(270, testRadius);
 
     // Test specific angles
-    qDebug() << "Asc point (171.24°):" << longitudeToPoint(171.24, testRadius);
-    qDebug() << "MC point (80.04°):" << longitudeToPoint(80.04, testRadius);
-    qDebug() << "Desc point (351.24°):" << longitudeToPoint(351.24, testRadius);
-    qDebug() << "IC point (260.04°):" << longitudeToPoint(260.04, testRadius);
 
     double outerRadius = m_chartSize / 2.0;
     // Calculate ring positions - house ring is outside zodiac ring

@@ -17,7 +17,6 @@ int main(int argc, char *argv[])
         qWarning() << "Failed to load Astromoony font";
     } else {
         g_astroFontFamily = QFontDatabase::applicationFontFamilies(fontId).at(0);
-        qDebug() << "Loaded astronomical font:" << g_astroFontFamily;
     }
 
     QCoreApplication::setOrganizationName("Asteria");  // Instead of "Your Organization"

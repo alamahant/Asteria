@@ -42,7 +42,6 @@ ChartData ChartDataManager::calculateChart(const QDate &birthDate,
     // Check for errors
     if (!m_calculator->getLastError().isEmpty()) {
         m_lastError = m_calculator->getLastError();
-        qDebug() << "Chart calculation error:" << m_lastError;
     }
 
     return data;
@@ -168,7 +167,6 @@ QString ChartDataManager::calculateTransits(const QDate &birthDate,
     // Check for errors
     if (!m_calculator->getLastError().isEmpty()) {
         m_lastError = m_calculator->getLastError();
-        qDebug() << "Transit calculation error:" << m_lastError;
     }
 
     return output;

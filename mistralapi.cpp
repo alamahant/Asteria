@@ -52,11 +52,9 @@ bool MistralAPI::saveApiKey(const QString &key) {
 bool MistralAPI::loadApiKey() {
     // Using default settings path since getSettingsPath() doesn't exist
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "Asteria", "Asteria");
-    //qDebug() << "Loading API key from:" << settings.fileName();
 
     settings.beginGroup("Authentication");
     m_apiKey = settings.value("MistralApiKey").toString();
-    //qDebug() << "API key loaded, empty:" << m_apiKey.isEmpty() << ", length:" << m_apiKey.length();
     settings.endGroup();
 
     return !m_apiKey.isEmpty();
@@ -120,7 +118,6 @@ void MistralAPI::interpretChart(const QJsonObject &chartData)
     m_networkManager->post(request, data);
     m_requestInProgress = true;
 
-    qDebug() << "Sending request to Mistral API";
 }
 
 

@@ -15,11 +15,9 @@ void ChartCalculator::setPythonVenvPath(const QString &path) {
 #ifdef FLATHUB_BUILD
     // In Flatpak, always use the fixed path
     m_pythonVenvPath = "/app/python/venv";
-    qDebug() << "Using Flatpak Python venv path:" << m_pythonVenvPath;
 #else
     // For non-Flatpak builds, use the provided path
     m_pythonVenvPath = path;
-    qDebug() << "Using Python venv path:" << m_pythonVenvPath;
 #endif
 }
 
@@ -30,24 +28,19 @@ ChartData ChartCalculator::parseOutput(const QString &output) {
     QStringList lines = output.split("\n");
     enum Section { None, Planets, Houses, Angles, Aspects };
     Section currentSection = None;
-    qDebug() << "Starting to parse chart data";
 
     for (const QString &line : lines) {
         if (line.startsWith("PLANETS:")) {
             currentSection = Planets;
-            qDebug() << "Entering PLANETS section";
             continue;
         } else if (line.startsWith("HOUSES:")) {
             currentSection = Houses;
-            qDebug() << "Entering HOUSES section";
             continue;
         } else if (line.startsWith("ANGLES:")) {
             currentSection = Angles;
-            qDebug() << "Entering ANGLES section";
             continue;
         } else if (line.startsWith("ASPECTS:")) {
             currentSection = Aspects;
-            qDebug() << "Entering ASPECTS section";
             continue;
         }
 
@@ -57,7 +50,6 @@ ChartData ChartCalculator::parseOutput(const QString &output) {
 
         switch (currentSection) {
         case Planets: {
-            //qDebug() << "Parsing planet line:" << line;
             // This regex captures:
             // 1. Planet name (e.g., "Venus")
             // 2. Zodiac sign (e.g., "Pisces")
@@ -74,9 +66,6 @@ ChartData ChartCalculator::parseOutput(const QString &output) {
                 QString retrogradeMarker = match.captured(4);
                 planet.house = match.captured(5);
                 planet.isRetrograde = (retrogradeMarker == "R");
-                //qDebug() << "  Retrograde marker:" << retrogradeMarker << "isRetrograde:" << planet.isRetrograde;
-                qDebug() << "  Parsed planet:" << planet.id << planet.sign << planet.longitude
-                         << planet.house << (planet.isRetrograde ? "Retrograde" : "Direct");
                 data.planets.append(planet);
             }
             break;
@@ -90,7 +79,6 @@ ChartData ChartCalculator::parseOutput(const QString &output) {
                 house.id = match.captured(1);
                 house.sign = match.captured(2);
                 house.longitude = match.captured(3).toDouble();
-                //qDebug() << "Parsed house:" << house.id << house.sign << house.longitude;
                 data.houses.append(house);
             }
             break;
@@ -104,7 +92,6 @@ ChartData ChartCalculator::parseOutput(const QString &output) {
                 angle.id = match.captured(1);
                 angle.sign = match.captured(2);
                 angle.longitude = match.captured(3).toDouble();
-                //qDebug() << "Parsed angle:" << angle.id << angle.sign << angle.longitude;
                 data.angles.append(angle);
             }
             break;
@@ -123,7 +110,6 @@ ChartData ChartCalculator::parseOutput(const QString &output) {
                 aspect.orb = match.captured(4).toDouble();
                 data.aspects.append(aspect);
             } else {
-                qDebug() << "Failed to parse aspect line:" << line;
             }
             break;
         }
@@ -136,8 +122,6 @@ ChartData ChartCalculator::parseOutput(const QString &output) {
         if (planet.id == "North Node") hasNorthNode = true;
         if (planet.id == "South Node") hasSouthNode = true;
     }
-    qDebug() << "North Node included:" << hasNorthNode;
-    qDebug() << "South Node included:" << hasSouthNode;
 
     return data;
 }
@@ -205,7 +189,6 @@ QString ChartCalculator::calculateTransits(const QDate &birthDate,
 #ifdef FLATHUB_BUILD
     process.start("python3", args);
 #else
-    qDebug() << "Running transit command:" << pythonPath << args.join(" ");
     process.start(pythonPath, args);
 #endif
 
@@ -274,7 +257,6 @@ ChartData ChartCalculator::calculateChart(const QDate &birthDate,
          << "--house-system" << houseSystem
          << "--orb-max" << QString::number(orbMax);
 
-    qDebug() << "CHARTCALCULATOR USED THESE ARGS " << args;
 
     // Run the command synchronously
     QProcess process;
@@ -283,7 +265,6 @@ ChartData ChartCalculator::calculateChart(const QDate &birthDate,
 #ifdef FLATHUB_BUILD
     process.start("python3", args);
 #else
-    qDebug() << "Running command:" << pythonPath << args.join(" ");
     process.start(pythonPath, args);
 #endif
 
@@ -304,7 +285,6 @@ ChartData ChartCalculator::calculateChart(const QDate &birthDate,
     QString output = QString::fromUtf8(process.readAllStandardOutput());
 
     // Parse the output
-    qDebug() << "OUTPUT FROM CHART_CALCULATOR" << output;
     return parseOutput(output);
 }
 
@@ -316,7 +296,6 @@ bool ChartCalculator::isAvailable() const
     // In Flatpak, check if the scripts exist in the filesystem
     QString scriptPath = "/app/python/venv/scripts/chart_calculator.py";
     if (!QFile::exists(scriptPath)) {
-        qDebug() << "Script not found at:" << scriptPath;
         return false;
     }
     return true;
@@ -327,13 +306,11 @@ bool ChartCalculator::isAvailable() const
     // Check if Python interpreter exists
     QString pythonPath = QDir(m_pythonVenvPath).filePath("bin/python");
     if (!QFile::exists(pythonPath)) {
-        qDebug() << "Python interpreter not found at:" << pythonPath;
         return false;
     }
     // Check if the script exists
     QString scriptPath = QDir(m_pythonVenvPath).filePath("scripts/chart_calculator-local.py");
     if (!QFile::exists(scriptPath)) {
-        qDebug() << "Script not found at:" << scriptPath;
         return false;
     }
     return true;

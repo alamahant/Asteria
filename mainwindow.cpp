@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     // Set window title and size
     setWindowTitle("Asteria - Astrological Chart Analysis");
-    setWindowIcon(QIcon(":/icons/android-chrome-512x512.png"));
+    setWindowIcon(QIcon(":/icons/asteria-icon-512.png"));
     // Setup UI components
     setupUi();
 
@@ -51,7 +51,6 @@ MainWindow::MainWindow(QWidget *parent)
     QString venvPath = QDir::currentPath() + "/python/venv";
 #endif
     m_chartDataManager.setPythonVenvPath(venvPath);
-    qDebug() << "Setting Python venv path to:" << venvPath;
     // Check if calculator is available
     if (!m_chartDataManager.isCalculatorAvailable()) {
         //QMessageBox::warning(this, "Warning",
@@ -771,7 +770,6 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
     QTableWidget *aspectsTable = m_chartDetailsWidget->findChild<QTabWidget*>()->findChild<QTableWidget*>("Aspects");
 
     if (!planetsTable || !housesTable || !aspectsTable) {
-        qDebug() << "Could not find chart details tables";
         return;
     }
 
@@ -1308,7 +1306,6 @@ ChartData MainWindow::convertJsonToChartData(const QJsonObject &jsonData)
                 planet.isRetrograde = false;
             }
 
-            qDebug() << "Planet" << planet.id << "isRetrograde:" << planet.isRetrograde;
             chartData.planets.append(planet);
         }
     }
@@ -1335,7 +1332,6 @@ ChartData MainWindow::convertJsonToChartData(const QJsonObject &jsonData)
             angle.id = angleObj["id"].toString();
             angle.longitude = angleObj["longitude"].toDouble();
             angle.sign = angleObj.contains("sign") ? angleObj["sign"].toString() : "";
-            qDebug() << "Parsed angle:" << angle.id << "Longitude:" << angle.longitude << "Sign:" << angle.sign;
 
             chartData.angles.append(angle);
         }
@@ -1623,7 +1619,6 @@ void MainWindow::exportAsPdf() {
         QMessageBox::critical(this, "Error", "Failed to save debug image. Check rendering.");
         return;
     }
-    qDebug() << "Debug image saved to:" << debugImagePath;
     
     // PDF setup
     QPdfWriter pdfWriter(filePath);
@@ -1644,7 +1639,6 @@ void MainWindow::exportAsPdf() {
     const qreal x = (pageRect.width() - scaledPixmap.width()) / 2;
     const qreal y = (pageRect.height() - scaledPixmap.height()) / 2;
     pdfPainter.drawPixmap(QPointF(x, y), scaledPixmap);
-    qDebug() << "PDF successfully saved to:" << filePath;
     
     // ------- PAGE 2: PLANETS -------
     pdfWriter.newPage();
@@ -1946,10 +1940,8 @@ void MainWindow::printPdfFromPath(const QString& filePath) {
     Q_UNUSED(filePath);
 #else
     if (filePath.isEmpty()){
-        qDebug()<<"FILEPATH OF PDF IS :"<<filePath;
         return;
     }
-    qDebug()<<"FILEPATH OF PDF IS :"<<filePath;
     QPdfDocument pdf;
     pdf.load(filePath);
     if (pdf.status() != QPdfDocument::Status::Ready)

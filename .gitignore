@@ -58,3 +58,8 @@ __pycache__/
 # Don't ignore UI files
 !*.ui
 
+# Custom additions
+*.bak
+/venv/
+/wheels/
+.flatpak

@@ -101,10 +101,6 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/io.github.alamahant.Asteria.desktop"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/io.github.alamahant.Asteria.appdata.xml"
         DESTINATION "share/metainfo")
 
-# Install icons
-#install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/asteria-icon-64.png"
-#        DESTINATION "share/icons/hicolor/64x64/apps"
-#        RENAME "io.github.alamahant.Asteria.png")
 
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}icons/asteria-icon-192.png"
         DESTINATION "share/icons/hicolor/192x192/apps"
@@ -118,17 +114,38 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
         DESTINATION "share/icons/hicolor/512x512/apps"
         RENAME "io.github.alamahant.Asteria.png")
 
-      # Add this near the end of your CMakeLists.txt file
-      if(FLATHUB_BUILD)
-          # Define the path for Python scripts in Flatpak
-          add_definitions(-DFLATHUB_DEFAULT_PYTHON_PATH="/app/python/venv")
+#      if(FLATHUB_BUILD)
+#          # Define the path for Python scripts in Flatpak
+#          add_definitions(-DFLATHUB_DEFAULT_PYTHON_PATH="/app/python/venv")
+#
+#          # Install Python scripts to the appropriate location
+#          install(DIRECTORY ${CMAKE_SOURCE_DIR}/python/venv/scripts/
+#                  DESTINATION python/venv/scripts
+#                  FILES_MATCHING PATTERN "*.py"
+#                  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+#                              GROUP_READ GROUP_EXECUTE
+#                              WORLD_READ WORLD_EXECUTE)
+#      endif()
 
-          # Install Python scripts to the appropriate location
-          install(DIRECTORY ${CMAKE_SOURCE_DIR}/python/venv/scripts/
-                  DESTINATION python/venv/scripts
-                  FILES_MATCHING PATTERN "*.py"
-                  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                              GROUP_READ GROUP_EXECUTE
-                              WORLD_READ WORLD_EXECUTE)
-      endif()
 
+if(FLATHUB_BUILD)
+    # Define the path for Python scripts in Flatpak
+    add_definitions(-DFLATHUB_DEFAULT_PYTHON_PATH="/app/python/venv")
+
+    # Install Python scripts
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/python/venv/scripts/
+        DESTINATION python/venv/scripts
+        FILES_MATCHING PATTERN "*.py"
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                    GROUP_READ GROUP_EXECUTE
+                    WORLD_READ WORLD_EXECUTE)
+
+    # Install the Python packages
+    install(FILES
+        ${CMAKE_SOURCE_DIR}/python/venv/flatlib-0.2.3-py3-none-any.whl
+        ${CMAKE_SOURCE_DIR}/python/venv/pyswisseph-2.10.3.2.tar.gz
+        DESTINATION python/venv
+        PERMISSIONS OWNER_READ OWNER_WRITE
+                    GROUP_READ
+                    WORLD_READ)
+endif()

@@ -20,6 +20,7 @@ modules:
       - type: file
         url: https://github.com/alamahant/Asteria/raw/v1.0.0/python/venv/flatlib-0.2.3-py3-none-any.whl
         dest-filename: flatlib-0.2.3-py3-none-any.whl
+        sha256: c846d83c965db7588581bb65ac9a6668b9a190afcad5027269f7e9c75f467bcd
 
   - name: pyswisseph
     buildsystem: simple
@@ -29,6 +30,7 @@ modules:
       - type: file
         url: https://github.com/alamahant/Asteria/raw/v1.0.0/python/venv/pyswisseph-2.10.3.2.tar.gz
         dest-filename: pyswisseph-2.10.3.2.tar.gz
+        sha256: c54c305e83dbd5d2b71e58d8a69d8ee41de24c4d3328ce09e2af860a3537624d
 
   - name: Asteria
     buildsystem: cmake-ninja
@@ -38,3 +40,4 @@ modules:
       - type: git
         url: https://github.com/alamahant/Asteria.git
         tag: v1.0.0
+

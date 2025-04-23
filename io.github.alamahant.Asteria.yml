@@ -10,7 +10,26 @@ finish-args:
   - --socket=wayland
   - --device=dri
 
+
 modules:
+  - name: python-flatlib
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps flatlib-0.2.3-py3-none-any.whl
+    sources:
+      - type: file
+        url: https://github.com/alamahant/Asteria/raw/v1.0.0/python/venv/flatlib-0.2.3-py3-none-any.whl
+        dest-filename: flatlib-0.2.3-py3-none-any.whl
+
+  - name: pyswisseph
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps pyswisseph-2.10.3.2.tar.gz
+    sources:
+      - type: file
+        url: https://github.com/alamahant/Asteria/raw/v1.0.0/python/venv/pyswisseph-2.10.3.2.tar.gz
+        dest-filename: pyswisseph-2.10.3.2.tar.gz
+
   - name: Asteria
     buildsystem: cmake-ninja
     config-opts:
@@ -19,11 +38,3 @@ modules:
       - type: git
         url: https://github.com/alamahant/Asteria.git
         tag: v1.0.0
-        
-  - name: python-packages
-    buildsystem: simple
-    build-commands:
-      - pip3 install --prefix=/app --no-deps /app/python/venv/flatlib-0.2.3-py3-none-any.whl
-      - pip3 install --prefix=/app --no-deps /app/python/venv/pyswisseph-2.10.3.2.tar.gz
-    sources: []
-

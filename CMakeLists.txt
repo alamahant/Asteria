@@ -113,19 +113,10 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-256.png"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
         DESTINATION "share/icons/hicolor/512x512/apps"
         RENAME "io.github.alamahant.Asteria.png")
+install(FILES "${CMAKE_SOURCE_DIR}/screenshots/Screenshot_main.png"
+        DESTINATION "share/app-info/screenshots/io.github.alamahant.Asteria")
 
-#      if(FLATHUB_BUILD)
-#          # Define the path for Python scripts in Flatpak
-#          add_definitions(-DFLATHUB_DEFAULT_PYTHON_PATH="/app/python/venv")
-#
-#          # Install Python scripts to the appropriate location
-#          install(DIRECTORY ${CMAKE_SOURCE_DIR}/python/venv/scripts/
-#                  DESTINATION python/venv/scripts
-#                  FILES_MATCHING PATTERN "*.py"
-#                  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-#                              GROUP_READ GROUP_EXECUTE
-#                              WORLD_READ WORLD_EXECUTE)
-#      endif()
+
 
 
 if(FLATHUB_BUILD)

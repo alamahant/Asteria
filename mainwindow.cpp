@@ -334,7 +334,7 @@ void MainWindow::setupInputDock() {
 
     // Latitude input with regex validation
     m_latitudeEdit = new QLineEdit(birthGroup);
-    m_latitudeEdit->setPlaceholderText("e.g., 40N42 (0-90 degrees)");
+    m_latitudeEdit->setPlaceholderText("e.g: 40N42 (0-90 degrees)");
     m_latitudeEdit->setToolTip("e.g: 40N42 (0-90 degrees). Please prefer the 'From Google' field");
 
     // Create a validator for latitude format: degrees(0-90) + N/S + minutes(0-59)
@@ -344,7 +344,7 @@ void MainWindow::setupInputDock() {
 
     // Longitude input with regex validation
     m_longitudeEdit = new QLineEdit(birthGroup);
-    m_longitudeEdit->setPlaceholderText("e.g., 074W00 (0-180 degrees)");
+    m_longitudeEdit->setPlaceholderText("e.g: 074W00 (0-180 degrees)");
     m_longitudeEdit->setToolTip("e.g:, 074W00 (0-180 degrees). Please prefer the 'From Google' field");
 
     // Create a validator for longitude format: degrees(0-180) + E/W + minutes(0-59)
@@ -354,7 +354,7 @@ void MainWindow::setupInputDock() {
 
     // Google coordinates input
     m_googleCoordsEdit = new QLineEdit(birthGroup);
-    m_googleCoordsEdit->setPlaceholderText("e.g:, 51.5072° N, 0.1276° W");
+    m_googleCoordsEdit->setPlaceholderText("e.g: 51.5072° N, 0.1276° W");
     m_googleCoordsEdit->setToolTip("Search for a location on Google, copy the coordinates, and paste them here");
 
     m_googleCoordsEdit->setStyleSheet(
@@ -490,6 +490,8 @@ void MainWindow::setupInputDock() {
     // From date input
     m_predictiveFromEdit = new QLineEdit(predictiveGroup);
     m_predictiveFromEdit->setPlaceholderText("DD/MM/YYYY");
+    m_predictiveFromEdit->setToolTip("To set new date, highlight and delete the existing date and set desired with proper format");
+
     m_predictiveFromEdit->setValidator(dateValidator); // Reuse the same validator
     // Set current date as default
     m_predictiveFromEdit->setText(currentDate.toString("dd/MM/yyyy"));
@@ -497,6 +499,8 @@ void MainWindow::setupInputDock() {
     // To date input
     m_predictiveToEdit = new QLineEdit(predictiveGroup);
     m_predictiveToEdit->setPlaceholderText("DD/MM/YYYY");
+    m_predictiveToEdit->setToolTip("To set new date, highlight and delete the existing date and set desired with proper format");
+
     m_predictiveToEdit->setValidator(dateValidator); // Reuse the same validator
     // Set default to current date + 30 days
     QDate defaultFutureDate = currentDate.addDays(1); // Just a default starting point
@@ -543,7 +547,7 @@ void MainWindow::setupInterpretationDock() {
     // Interpretation text area
     m_interpretationtextEdit = new QTextEdit(interpretationWidget);
     m_interpretationtextEdit->setReadOnly(true);
-    m_interpretationtextEdit->setPlaceholderText("AI interpretation will appear here after you click the 'Get AI Interpretation' button.");
+    m_interpretationtextEdit->setPlaceholderText("AI interpretation will appear here after you click the 'Get Birth Chart From AI' button.");
 
     // Add Language Button
     QHBoxLayout* languageLayout = new QHBoxLayout();

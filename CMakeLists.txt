@@ -113,8 +113,6 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-256.png"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
         DESTINATION "share/icons/hicolor/512x512/apps"
         RENAME "io.github.alamahant.Asteria.png")
-install(FILES "${CMAKE_SOURCE_DIR}/screenshots/Screenshot_main.png"
-        DESTINATION "share/app-info/screenshots/io.github.alamahant.Asteria")
 
 
 

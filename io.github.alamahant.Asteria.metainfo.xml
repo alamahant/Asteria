@@ -30,7 +30,7 @@
   <screenshots>
     <screenshot type="default">
       <caption>Main chart view</caption>
-      <image>https://raw.githubusercontent.com/alamahant/Asteria/main/screenshots/Screenshot_main.png</image>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/master/screenshots/Screenshot_main.png</image>
     </screenshot>
   </screenshots>
   
@@ -61,4 +61,3 @@
   
   <launchable type="desktop-id">io.github.alamahant.Asteria.desktop</launchable>
 </component>
-

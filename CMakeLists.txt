@@ -102,7 +102,7 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/io.github.alamahant.Asteria.metainfo.
         DESTINATION "share/metainfo")
 
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}icons/asteria-icon-192.png"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-192.png"
         DESTINATION "share/icons/hicolor/192x192/apps"
         RENAME "io.github.alamahant.Asteria.png")
 

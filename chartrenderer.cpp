@@ -581,7 +581,7 @@ void ChartRenderer::drawAngles() {
 
     // Position labels in the house ring, closer to the middle of the ring
     //double labelRadius = houseRingOuterRadius - (DEFAULT_WHEEL_THICKNESS * 0.5);
-    double labelRadius = houseRingOuterRadius - (DEFAULT_WHEEL_THICKNESS * 0.5) + 65;
+    double labelRadius = houseRingOuterRadius - (DEFAULT_WHEEL_THICKNESS * 0.5) + 70;
 
 
     // Store angle points to draw axes later

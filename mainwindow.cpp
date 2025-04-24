@@ -820,7 +820,13 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
         for (int i = 0; i < planets.size(); ++i) {
             QJsonObject planet = planets[i].toObject();
 
-            QTableWidgetItem *nameItem = new QTableWidgetItem(planet["id"].toString());
+
+            QString planetName = planet["id"].toString();
+            if (planet["isRetrograde"].toBool() && planetName != "North Node" && planetName != "South Node") {
+                planetName += "   ℞"; // Using the official retrograde symbol (℞)
+            }
+            QTableWidgetItem *nameItem = new QTableWidgetItem(planetName);
+            //QTableWidgetItem *nameItem = new QTableWidgetItem(planet["id"].toString());
             QTableWidgetItem *signItem = new QTableWidgetItem(planet["sign"].toString());
             QTableWidgetItem *degreeItem = new QTableWidgetItem(QString::number(planet["longitude"].toDouble(), 'f', 2) + "°");
             QTableWidgetItem *houseItem = new QTableWidgetItem(planet["house"].toString());
@@ -1511,7 +1517,7 @@ void MainWindow::populateInfoOverlay() {
                 if (angleId.toLower() == "asc") {
                     QString ascSign = angle["sign"].toString();
                     double ascDegree = angle["longitude"].toDouble();
-                    m_ascendantLabel->setText(QString("Ascendant: %1 %2°").arg(ascSign).arg(ascDegree, 0, 'f', 1));
+                    m_ascendantLabel->setText(QString("Asc: %1 %2°").arg(ascSign).arg(ascDegree, 0, 'f', 1));
                     break;
                 }
             }

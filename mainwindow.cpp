@@ -177,13 +177,23 @@ void MainWindow::setupCentralWidget() {
     infoLayout->setContentsMargins(5, 5, 5, 5);
     infoLayout->setSpacing(4);
     */
-
+    /*
     chartInfoOverlay = new QWidget(m_chartView);
     chartInfoOverlay->setGeometry(10, 10, 250, 160); // Adjusted position and height
     chartInfoOverlay->setStyleSheet("background-color: rgba(235, 225, 200, 0);"); // Completely transparent background
     QVBoxLayout *infoLayout = new QVBoxLayout(chartInfoOverlay);
     infoLayout->setContentsMargins(5, 2, 5, 2); // Minimal margins all around
     infoLayout->setSpacing(4); // Return to original spacing
+    */
+
+    chartInfoOverlay = new QWidget(m_chartView);
+    chartInfoOverlay->setGeometry(10, 10, 250, 160); // Adjusted position and height
+    chartInfoOverlay->setStyleSheet("background-color: rgba(235, 225, 200, 0);"); // Completely transparent background
+    QVBoxLayout *infoLayout = new QVBoxLayout(chartInfoOverlay);
+    infoLayout->setContentsMargins(0, 2, 0, 2); // Set both left and right margins to 0
+    infoLayout->setSpacing(4); // Keep original spacing
+
+
 
     // Create labels for chart information
     m_nameLabel = new QLabel("Name",chartInfoOverlay);
@@ -523,7 +533,7 @@ void MainWindow::setupInputDock() {
     getPredictionButton = new QPushButton("Get AI Prediction", inputWidget);
     getPredictionButton->setEnabled(false);
     getPredictionButton->setIcon(QIcon::fromTheme("view-refresh"));
-
+    getPredictionButton->setStatusTip("The AI prediction will be appended at the end of any existing text. Scroll down and be patient!");
 
     // Add widgets to main layout
     inputLayout->addWidget(birthGroup);

@@ -130,11 +130,11 @@ if(FLATHUB_BUILD)
                     WORLD_READ WORLD_EXECUTE)
 
     # Install the Python packages
-    install(FILES
-        ${CMAKE_SOURCE_DIR}/python/venv/flatlib-0.2.3-py3-none-any.whl
-        ${CMAKE_SOURCE_DIR}/python/venv/pyswisseph-2.10.3.2.tar.gz
-        DESTINATION python/venv
-        PERMISSIONS OWNER_READ OWNER_WRITE
-                    GROUP_READ
-                    WORLD_READ)
+#    install(FILES
+#        ${CMAKE_SOURCE_DIR}/python/venv/flatlib-0.2.3-py3-none-any.whl
+#        ${CMAKE_SOURCE_DIR}/python/venv/pyswisseph-2.10.3.2.tar.gz
+#        DESTINATION python/venv
+#        PERMISSIONS OWNER_READ OWNER_WRITE
+#                    GROUP_READ
+#                    WORLD_READ)
 endif()

@@ -165,6 +165,7 @@ void MainWindow::setupCentralWidget() {
     m_chartView->setScene(m_chartRenderer->scene());
 
     // Create chart info overlay widget
+    /*
     chartInfoOverlay = new QWidget(m_chartView);
     //chartInfoOverlay->setGeometry(10, 10, 250, 100); // Position at top-left with some padding
     chartInfoOverlay->setGeometry(10, 10, 250, 130); // Increased from 100 to 130
@@ -175,6 +176,14 @@ void MainWindow::setupCentralWidget() {
     QVBoxLayout *infoLayout = new QVBoxLayout(chartInfoOverlay);
     infoLayout->setContentsMargins(5, 5, 5, 5);
     infoLayout->setSpacing(4);
+    */
+
+    chartInfoOverlay = new QWidget(m_chartView);
+    chartInfoOverlay->setGeometry(10, 10, 250, 160); // Adjusted position and height
+    chartInfoOverlay->setStyleSheet("background-color: rgba(235, 225, 200, 0);"); // Completely transparent background
+    QVBoxLayout *infoLayout = new QVBoxLayout(chartInfoOverlay);
+    infoLayout->setContentsMargins(5, 2, 5, 2); // Minimal margins all around
+    infoLayout->setSpacing(4); // Return to original spacing
 
     // Create labels for chart information
     m_nameLabel = new QLabel("Name",chartInfoOverlay);
@@ -2212,8 +2221,7 @@ void MainWindow::showHowToUseDialog()
 }
 */
 
-void MainWindow::showHowToUseDialog()
-{
+void MainWindow::showHowToUseDialog() {
     // Create the dialog only if it doesn't exist yet
     if (!m_howToUseDialog) {
         m_howToUseDialog = new QDialog(this);
@@ -2230,10 +2238,8 @@ void MainWindow::showHowToUseDialog()
         // Set the help content
         QString helpText = R"(
         <h2>How to Use Asteria</h2>
-
         <h3>Getting Started</h3>
         <p>Asteria allows you to create and analyze astrological birth charts. Follow these steps to get started:</p>
-
         <ol>
             <li><b>Enter Birth Information:</b> Fill in the name, date, time, and location of birth in the input fields.</li>
             <li><b>Generate Chart:</b> Click the "Calculate Chart" button to create the astrological chart.</li>
@@ -2241,7 +2247,6 @@ void MainWindow::showHowToUseDialog()
             <li><b>Analyze Aspects:</b> The aspect grid shows relationships between planets.</li>
             <li><b>Get AI Interpretation:</b> Click "Get Birth Chart From AI" or "Get AI Prediction" to receive an interpretation of the chart or a prediction.</li>
         </ol>
-
         <h3>Chart Features</h3>
         <ul>
             <li><b>Planets:</b> The chart displays the positions of celestial bodies at the time of birth.</li>
@@ -2249,17 +2254,15 @@ void MainWindow::showHowToUseDialog()
             <li><b>Aspects:</b> Lines connecting planets show their relationships (conjunctions, oppositions, etc.).</li>
             <li><b>Zodiac Signs:</b> The twelve signs of the zodiac form the outer wheel of the chart.</li>
         </ul>
-
         <h3>Tips & Features</h3>
         <ul>
             <li>Hover your mouse over planets, signs, and houses on the chart to see detailed tooltips containing valuable information.</li>
+            <li>You can also hover at the edges of the different panels of the app (such as the Planets-Aspectarian-Elements panel, the AI interpretation panel etc. Just hover you mouse and find out). When you see the mouse cursor change to a resize cursor, you can click and drag to resize these panels for better viewing and a more comfortable layout.</li>
             <li>Asteria can generate AI-powered future predictions for a period of up to 30 days. Play with it! You can set the starting date anytime in the future. Asteria can give insight into how future transits may affect your chart.</li>
             <li>You can select the language used by the AI from the dropdown menu at the bottom right corner of the UI. This feature is still experimental—feel free to explore, but English is recommended for best results.</li>
             <li>For the most immersive and clear view of the chart, it is best to use Asteria in full screen mode.</li>
         </ul>
-
-        <p>For accurate charts, ensure the birth time and location are as precise as possible. Use the "Astrological Symbols" reference to understand the chart’s symbols. You can also save or print charts from the File menu.</p>
-
+        <p>For accurate charts, ensure the birth time and location are as precise as possible. Use the "Astrological Symbols" reference to understand the chart's symbols. You can also save or print charts from the File menu.</p>
         <p>For more information about astrology and chart interpretation, consult astrological resources or books.</p>
         )";
 
@@ -2288,4 +2291,3 @@ void MainWindow::showHowToUseDialog()
     m_howToUseDialog->raise();
     m_howToUseDialog->activateWindow();
 }
-

@@ -1096,6 +1096,7 @@ void MainWindow::saveChart() {
 
 void MainWindow::loadChart() {
     // Get app name for directory
+    /*
     QString appName = QApplication::applicationName();
 
     // Set default directory to the app directory in user's home
@@ -1105,6 +1106,30 @@ void MainWindow::loadChart() {
     QString filePath = QFileDialog::getOpenFileName(this, "Load Chart",
                                                     appDir,
                                                     "Astrological Chart (*.astr)");
+    */
+
+    QString appName = QApplication::applicationName();
+    QString appDir;
+
+#ifdef FLATHUB_BUILD
+        // In Flatpak, use the app-specific data directory
+    appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
+#else
+        // For local builds, use a directory in home
+    appDir = QDir::homePath() + "/" + appName;
+#endif
+
+    // Create directory if it doesn't exist
+    QDir dir;
+    if (!dir.exists(appDir))
+        dir.mkpath(appDir);
+
+    // Open file dialog starting in the app directory
+    QString filePath = QFileDialog::getOpenFileName(this, "Load Chart",
+                                                    appDir,
+                                                    "Astrological Chart (*.astr)");
+
+
 
     if (filePath.isEmpty()) {
         return;

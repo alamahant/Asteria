@@ -771,7 +771,7 @@ void MainWindow::calculateChart()
         // Clear previous interpretation
         m_currentInterpretation.clear();
         m_interpretationtextEdit->clear();
-        m_interpretationtextEdit->setPlaceholderText("Click 'Get AI Interpretation' to analyze this chart.");
+        m_interpretationtextEdit->setPlaceholderText("Click 'Get Birth Chart From AI' to analyze this chart.");
         statusBar()->showMessage("Chart calculated successfully", 3000);
     } else {
         handleError("Chart calculation error: " + m_chartDataManager.getLastError());

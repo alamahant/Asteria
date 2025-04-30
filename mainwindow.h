@@ -42,6 +42,7 @@
 #include "aspectarianwidget.h"
 #include "elementmodalitywidget.h"
 #include "symbolsdialog.h"
+#include"osmmapdialog.h"
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -167,5 +168,13 @@ private:
 
 signals:
     void pdfExported(const QString& filePath);
+
+private slots:
+    void onOpenMapClicked();
+
+private:
+    // Existing members...
+    QPushButton *m_selectLocationButton;
+
 };
 #endif // MAINWINDOW_H

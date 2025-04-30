@@ -2,3 +2,8 @@ Astromoony Font
 https://github.com/RobertWinslow/Astromoony-Font
 Created by Robert Winslow
 Released to the public domain
+
+OpenStreetMap
+© OpenStreetMap contributors
+Data is available under the Open Database License (ODbL)
+https://www.openstreetmap.org/copyright

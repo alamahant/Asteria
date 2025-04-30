@@ -80,7 +80,8 @@ void PlanetListWidget::updateData(const ChartData &chartData)
 
             // Planet symbol and name
             QString planetSymbol = getSymbolForPlanet(planet.id);
-            QTableWidgetItem *planetItem = new QTableWidgetItem(planetSymbol + " " + planet.id);
+            //QTableWidgetItem *planetItem = new QTableWidgetItem(planetSymbol + " " + planet.id);
+            QTableWidgetItem *planetItem = new QTableWidgetItem(planetSymbol + " " + planet.id + (planet.isRetrograde && planet.id != "North Node" && planet.id != "South Node" ? " ℞ " : ""));
             if (useCustomFont) {
                 planetItem->setFont(symbolFont);
             }

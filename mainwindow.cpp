@@ -177,6 +177,7 @@ void MainWindow::setupCentralWidget() {
     infoLayout->setContentsMargins(5, 5, 5, 5);
     infoLayout->setSpacing(4);
     */
+
     /*
     chartInfoOverlay = new QWidget(m_chartView);
     chartInfoOverlay->setGeometry(10, 10, 250, 160); // Adjusted position and height
@@ -186,13 +187,14 @@ void MainWindow::setupCentralWidget() {
     infoLayout->setSpacing(4); // Return to original spacing
     */
 
+
+    // Create chart info overlay widget
     chartInfoOverlay = new QWidget(m_chartView);
     chartInfoOverlay->setGeometry(10, 10, 250, 160); // Adjusted position and height
     chartInfoOverlay->setStyleSheet("background-color: rgba(235, 225, 200, 0);"); // Completely transparent background
     QVBoxLayout *infoLayout = new QVBoxLayout(chartInfoOverlay);
     infoLayout->setContentsMargins(0, 2, 0, 2); // Set both left and right margins to 0
     infoLayout->setSpacing(4); // Keep original spacing
-
 
 
     // Create labels for chart information
@@ -353,6 +355,7 @@ void MainWindow::setupInputDock() {
 
     // Latitude input with regex validation
     m_latitudeEdit = new QLineEdit(birthGroup);
+    m_latitudeEdit->setReadOnly(true);
     m_latitudeEdit->setPlaceholderText("e.g: 40N42 (0-90 degrees)");
     m_latitudeEdit->setToolTip("e.g: 40N42 (0-90 degrees). Please prefer the 'From Google' field");
 
@@ -363,6 +366,7 @@ void MainWindow::setupInputDock() {
 
     // Longitude input with regex validation
     m_longitudeEdit = new QLineEdit(birthGroup);
+    m_longitudeEdit->setReadOnly(true);
     m_longitudeEdit->setPlaceholderText("e.g: 074W00 (0-180 degrees)");
     m_longitudeEdit->setToolTip("e.g:, 074W00 (0-180 degrees). Please prefer the 'From Google' field");
 
@@ -495,6 +499,16 @@ void MainWindow::setupInputDock() {
     birthLayout->addRow("Longitude:", m_longitudeEdit);
     birthLayout->addRow("Paste from Google:", m_googleCoordsEdit);
     birthLayout->addRow("Search Google",locationSearchEdit);
+
+
+
+    // Location selection with OSM map
+    m_selectLocationButton = new QPushButton("Select on Map", birthGroup);
+    connect(m_selectLocationButton, &QPushButton::clicked, this, &MainWindow::onOpenMapClicked);
+    birthLayout->addRow(m_selectLocationButton);
+    //////////////////////////////////////
+
+
     birthLayout->addRow("UTC Offset:", m_utcOffsetCombo);
     birthLayout->addRow("House System:", m_houseSystemCombo);
 
@@ -534,6 +548,7 @@ void MainWindow::setupInputDock() {
     getPredictionButton->setEnabled(false);
     getPredictionButton->setIcon(QIcon::fromTheme("view-refresh"));
     getPredictionButton->setStatusTip("The AI prediction will be appended at the end of any existing text. Scroll down and be patient!");
+
 
     // Add widgets to main layout
     inputLayout->addWidget(birthGroup);
@@ -820,13 +835,12 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
         for (int i = 0; i < planets.size(); ++i) {
             QJsonObject planet = planets[i].toObject();
 
-
             QString planetName = planet["id"].toString();
             if (planet["isRetrograde"].toBool() && planetName != "North Node" && planetName != "South Node") {
                 planetName += "   ℞"; // Using the official retrograde symbol (℞)
             }
+
             QTableWidgetItem *nameItem = new QTableWidgetItem(planetName);
-            //QTableWidgetItem *nameItem = new QTableWidgetItem(planet["id"].toString());
             QTableWidgetItem *signItem = new QTableWidgetItem(planet["sign"].toString());
             QTableWidgetItem *degreeItem = new QTableWidgetItem(QString::number(planet["longitude"].toDouble(), 'f', 2) + "°");
             QTableWidgetItem *houseItem = new QTableWidgetItem(planet["house"].toString());
@@ -857,6 +871,7 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
     }
 
     // Fill aspects table
+    /*
     if (chartData.contains("aspects") && chartData["aspects"].isArray()) {
         QJsonArray aspects = chartData["aspects"].toArray();
         aspectsTable->setRowCount(aspects.size());
@@ -867,6 +882,58 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
             QTableWidgetItem *planet1Item = new QTableWidgetItem(aspect["planet1"].toString());
             QTableWidgetItem *aspectTypeItem = new QTableWidgetItem(aspect["aspectType"].toString());
             QTableWidgetItem *planet2Item = new QTableWidgetItem(aspect["planet2"].toString());
+            QTableWidgetItem *orbItem = new QTableWidgetItem(QString::number(aspect["orb"].toDouble(), 'f', 2) + "°");
+
+            aspectsTable->setItem(i, 0, planet1Item);
+            aspectsTable->setItem(i, 1, aspectTypeItem);
+            aspectsTable->setItem(i, 2, planet2Item);
+            aspectsTable->setItem(i, 3, orbItem);
+        }
+    }
+    */
+
+    if (chartData.contains("aspects") && chartData["aspects"].isArray()) {
+        QJsonArray aspects = chartData["aspects"].toArray();
+        QJsonArray planets = chartData["planets"].toArray();
+        aspectsTable->setRowCount(aspects.size());
+
+        for (int i = 0; i < aspects.size(); ++i) {
+            QJsonObject aspect = aspects[i].toObject();
+
+            // Get planet names from the aspect
+            QString planet1Name = aspect["planet1"].toString();
+            QString planet2Name = aspect["planet2"].toString();
+
+            // Check if planets are retrograde by looking them up in the planets array
+            bool planet1Retrograde = false;
+            bool planet2Retrograde = false;
+
+            // Find retrograde status for both planets
+            for (int j = 0; j < planets.size(); ++j) {
+                QJsonObject planet = planets[j].toObject();
+                if (planet["id"].toString() == planet1Name) {
+                    planet1Retrograde = planet["isRetrograde"].toBool();
+                }
+                if (planet["id"].toString() == planet2Name) {
+                    planet2Retrograde = planet["isRetrograde"].toBool();
+                }
+            }
+
+            // Create display text with retrograde symbol if needed
+            QString planet1Display = planet1Name;
+            if (planet1Retrograde && planet1Name != "North Node" && planet1Name != "South Node") {
+                planet1Display += " ℞";
+            }
+
+            QString planet2Display = planet2Name;
+            if (planet2Retrograde && planet2Name != "North Node" && planet2Name != "South Node") {
+                planet2Display += " ℞";
+            }
+
+            // Create table items
+            QTableWidgetItem *planet1Item = new QTableWidgetItem(planet1Display);
+            QTableWidgetItem *aspectTypeItem = new QTableWidgetItem(aspect["aspectType"].toString());
+            QTableWidgetItem *planet2Item = new QTableWidgetItem(planet2Display);
             QTableWidgetItem *orbItem = new QTableWidgetItem(QString::number(aspect["orb"].toDouble(), 'f', 2) + "°");
 
             aspectsTable->setItem(i, 0, planet1Item);
@@ -2118,6 +2185,7 @@ void MainWindow::searchLocationCoordinates(const QString& location) {
 }
 */
 
+
 void MainWindow::searchLocationCoordinates(const QString& location) {
     if (location.isEmpty()) {
         return;
@@ -2138,6 +2206,8 @@ void MainWindow::searchLocationCoordinates(const QString& location) {
     locationSearchEdit->clear();
 #endif
 }
+
+
 
 
 void MainWindow::showSymbolsDialog()
@@ -2307,3 +2377,26 @@ void MainWindow::showHowToUseDialog() {
     m_howToUseDialog->raise();
     m_howToUseDialog->activateWindow();
 }
+
+
+void MainWindow::onOpenMapClicked()
+{
+    OSMMapDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted) {
+        QGeoCoordinate coords = dialog.selectedCoordinates();
+
+        // Determine direction
+        QString latDir = (coords.latitude() >= 0) ? "N" : "S";
+        QString longDir = (coords.longitude() >= 0) ? "E" : "W";
+
+        // Update only the Google coordinates field
+        m_googleCoordsEdit->setText(QString("%1° %2, %3° %4")
+                                        .arg(qAbs(coords.latitude()), 0, 'f', 4)
+                                        .arg(latDir)
+                                        .arg(qAbs(coords.longitude()), 0, 'f', 4)
+                                        .arg(longDir));
+
+        // The lat/long edits will be automatically updated by your existing onTextChanged handler
+    }
+}
+

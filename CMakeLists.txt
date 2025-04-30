@@ -15,11 +15,11 @@ option(FLATHUB_BUILD "Build for Flathub" OFF)
 if(FLATHUB_BUILD)
     # Define FLATHUB_BUILD for conditional compilation
     add_definitions(-DFLATHUB_BUILD)
-    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Qt6Network Qt6PrintSupport Qt6Svg)
-    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network PrintSupport Svg)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Qt6Network Qt6PrintSupport Qt6Svg Qt6QuickWidgets Qt6Positioning Qt6Location Qt6Network)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network PrintSupport Svg QuickWidgets Positioning Location Network)
 else()
-    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Qt6Network Qt6PrintSupport Qt6Svg Qt6Pdf)
-    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network PrintSupport Svg Pdf)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Qt6Network Qt6PrintSupport Qt6Svg Qt6Pdf Qt6QuickWidgets Qt6Positioning Qt6Location Qt6Network)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network PrintSupport Svg Pdf QuickWidgets Positioning Location Network)
 endif()
 
 file(COPY ${CMAKE_SOURCE_DIR}/python/venv DESTINATION ${CMAKE_BINARY_DIR}/python)
@@ -44,6 +44,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         planetlistwidget.h planetlistwidget.cpp
         resources.qrc
         symbolsdialog.h symbolsdialog.cpp
+        osmmapdialog.h osmmapdialog.cpp
+        map.qml
+
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Asteria APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -65,9 +68,9 @@ endif()
 
 # Link libraries based on build type
 if(FLATHUB_BUILD)
-    target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg)
+    target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)
 else()
-    target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg Qt6::Pdf)
+    target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg Qt6::Pdf Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)
 endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -130,11 +133,5 @@ if(FLATHUB_BUILD)
                     WORLD_READ WORLD_EXECUTE)
 
     # Install the Python packages
-#    install(FILES
-#        ${CMAKE_SOURCE_DIR}/python/venv/flatlib-0.2.3-py3-none-any.whl
-#        ${CMAKE_SOURCE_DIR}/python/venv/pyswisseph-2.10.3.2.tar.gz
-#        DESTINATION python/venv
-#        PERMISSIONS OWNER_READ OWNER_WRITE
-#                    GROUP_READ
-#                    WORLD_READ)
+
 endif()

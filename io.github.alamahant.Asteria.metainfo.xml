@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>io.github.alamahant.Asteria</id>
   <name>Asteria</name>
-  <summary>Astrological chart calculator and analyzer with AI interpretations</summary>
+  <summary>AI Reads your Birthchart</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   
@@ -32,9 +32,55 @@
       <caption>Main chart view</caption>
       <image>https://raw.githubusercontent.com/alamahant/Asteria/master/screenshots/Screenshot_main.png</image>
     </screenshot>
+    <screenshot>
+      <caption>Planetary Aspects Analysis</caption>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/077cfd0f4ae689b656fd0f70a0423dc7dd87c299/screenshots/aspects.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Chart with Information Widgets</caption>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/077cfd0f4ae689b656fd0f70a0423dc7dd87c299/screenshots/chartandwidgets.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Chart with Prediction Analysis</caption>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/077cfd0f4ae689b656fd0f70a0423dc7dd87c299/screenshots/chartwithprediction.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Chart Highlighting Retrograde Planets</caption>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/077cfd0f4ae689b656fd0f70a0423dc7dd87c299/screenshots/chartwithretrogradepalnets.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Complete Astrological Chart</caption>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/077cfd0f4ae689b656fd0f70a0423dc7dd87c299/screenshots/full-chart.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Houses Analysis View</caption>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/077cfd0f4ae689b656fd0f70a0423dc7dd87c299/screenshots/houses.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Location Selection with OpenStreetMap</caption>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/077cfd0f4ae689b656fd0f70a0423dc7dd87c299/screenshots/openstreetmap.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Planetary Positions Overview</caption>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/077cfd0f4ae689b656fd0f70a0423dc7dd87c299/screenshots/planets.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Astrological Reference Dialog</caption>
+      <image>https://raw.githubusercontent.com/alamahant/Asteria/077cfd0f4ae689b656fd0f70a0423dc7dd87c299/screenshots/reference-dialog.png</image>
+    </screenshot>
   </screenshots>
   
   <releases>
+    <release version="1.1.0" date="2025-04-30">
+      <description>
+        <p>New features and improvements:</p>
+        <ul>
+          <li>Added OpenStreetMap dialog to assist users in easily searching and setting their birth location</li>
+          <li>Expanded retrograde planet depiction beyond the chart itself to include planet widgets, planet view, and aspects view</li>
+          <li>Made minor UI improvements for better usability</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.0" date="2025-04-22">
       <description>
         <p>First stable release with the following features:</p>

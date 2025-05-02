@@ -16,15 +16,13 @@
 #include <QTextStream>
 #include <QDebug>
 #include<QMessageBox>
-//#include <QPrinter>
-//#include <QPrintDialog>
+#include <QPrinter>
+#include <QPrintDialog>
 
 #ifdef FLATHUB_BUILD
 // QPdfWriter is not available in Flathub
 #else
 #include <QPdfWriter>
-#include <QPrinter>
-#include <QPrintDialog>
 #endif
 
 #include <QTextDocument>

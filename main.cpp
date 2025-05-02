@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
         g_astroFontFamily = QFontDatabase::applicationFontFamilies(fontId).at(0);
     }
 
-    QCoreApplication::setOrganizationName("Asteria");  // Instead of "Your Organization"
+    QCoreApplication::setOrganizationName("");  // Instead of "Your Organization"
     QCoreApplication::setApplicationName("Asteria");
     MainWindow w;
     w.show();

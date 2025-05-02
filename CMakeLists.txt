@@ -15,10 +15,9 @@ option(FLATHUB_BUILD "Build for Flathub" OFF)
 if(FLATHUB_BUILD)
     # Define FLATHUB_BUILD for conditional compilation
     add_definitions(-DFLATHUB_BUILD)
-    #find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Qt6Network Qt6PrintSupport Qt6Svg Qt6QuickWidgets Qt6Positioning Qt6Location Qt6Network)
-    #find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network PrintSupport Svg QuickWidgets Positioning Location Network)
-    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Qt6Network Qt6Svg Qt6QuickWidgets Qt6Positioning Qt6Location Qt6Network)
-    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network Svg QuickWidgets Positioning Location Network)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Qt6Network Qt6PrintSupport Qt6Svg Qt6QuickWidgets Qt6Positioning Qt6Location Qt6Network)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network PrintSupport Svg QuickWidgets Positioning Location Network)
+
 else()
     find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Qt6Network Qt6PrintSupport Qt6Svg Qt6Pdf Qt6QuickWidgets Qt6Positioning Qt6Location Qt6Network)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network PrintSupport Svg Pdf QuickWidgets Positioning Location Network)
@@ -70,8 +69,7 @@ endif()
 
 # Link libraries based on build type
 if(FLATHUB_BUILD)
-  #target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)
-  target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::Svg Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)
+  target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)
 
 else()
     target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg Qt6::Pdf Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)

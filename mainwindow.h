@@ -19,7 +19,7 @@
 #include <QGroupBox>
 #include <QMessageBox>
 #include<QtSvg/QSvgGenerator>
-#include<QtPrintSupport/QtPrintSupport>
+//#include<QtPrintSupport/QtPrintSupport>
 #include <QGraphicsView>
 #include <QTemporaryFile>
 #include <QImageReader>
@@ -29,6 +29,8 @@
 // QtPdf is not available in Flathub
 #else
 #include <QtPdf/QPdfDocument>
+#include<QtPrintSupport/QtPrintSupport>
+
 #endif
 
 #include <QDesktopServices>

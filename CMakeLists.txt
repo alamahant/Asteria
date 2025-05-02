@@ -70,7 +70,9 @@ endif()
 
 # Link libraries based on build type
 if(FLATHUB_BUILD)
-    target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)
+  #target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)
+  target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::Svg Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)
+
 else()
     target_link_libraries(Asteria PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Network Qt6::PrintSupport Qt6::Svg Qt6::Pdf Qt6::QuickWidgets Qt6::Location Qt6::Positioning Qt6::Network)
 endif()

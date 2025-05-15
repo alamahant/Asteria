@@ -55,7 +55,10 @@ void PlanetListWidget::updateData(const ChartData &chartData)
     QStringList orderedPlanets = {
         "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
         "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
-        "Pars Fortuna", "Syzygy"
+        "Part of Fortune", "Syzygy",
+        // Additional bodies
+        "Lilith", "Ceres", "Pallas", "Juno", "Vesta",
+        "Vertex", "East Point", "Part of Spirit"
     };
 
     // Create a map for quick lookup
@@ -178,6 +181,15 @@ QString PlanetListWidget::getSymbolForPlanet(const QString &planetId)
     if (planetId == "South Node") return "☋";
     if (planetId == "Pars Fortuna") return "⊗";
     if (planetId == "Syzygy") return "☍";
+    // Additional bodies
+    if (planetId == "Lilith") return "⚸";
+    if (planetId == "Ceres") return "⚳";
+    if (planetId == "Pallas") return "⚴";
+    if (planetId == "Juno") return "⚵";
+    if (planetId == "Vesta") return "⚶";
+    if (planetId == "Vertex") return "⊗";
+    if (planetId == "East Point") return "⊙";
+    if (planetId == "Part of Spirit") return "⊖";
 
     return "";
 }

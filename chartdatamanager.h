@@ -17,8 +17,7 @@ public:
     explicit ChartDataManager(QObject *parent = nullptr);
     ~ChartDataManager();
 
-    // Set the path to the Python virtual environment
-    void setPythonVenvPath(const QString &path);
+
 
     // Check if the calculator is available
     bool isCalculatorAvailable() const;

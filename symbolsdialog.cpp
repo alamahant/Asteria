@@ -107,6 +107,7 @@ void SymbolsDialog::populatePlanetTable()
     };
 
     PlanetInfo planets[] = {
+        // Main planets
         {"Sun", "☉"},
         {"Moon", "☽"},
         {"Mercury", "☿"},
@@ -120,9 +121,19 @@ void SymbolsDialog::populatePlanetTable()
         {"Chiron", "⚷"},
         {"North Node", "☊"},
         {"South Node", "☋"},
-        {"Pars Fortuna", "⊗"},
-        {"Syzygy", "☍"}
+        {"Pars Fortuna", "⊕"},
+        {"Syzygy", "☍"},
+        // Additional bodies
+        {"Lilith", "⚸"},
+        {"Ceres", "⚳"},
+        {"Pallas", "⚴"},
+        {"Juno", "⚵"},
+        {"Vesta", "⚶"},
+        {"Vertex", "⊗"},
+        {"East Point", "⊙"},
+        {"Part of Spirit", "⊖"}
     };
+
 
     int rowCount = sizeof(planets) / sizeof(planets[0]);
     m_planetTable->setRowCount(rowCount);

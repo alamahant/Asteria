@@ -343,6 +343,15 @@ QString ElementModalityWidget::getPlanetGlyph(const QString &planetId) {
     if (planetId == "South Node") return "☋";
     if (planetId == "Pars Fortuna") return "⊗";
     if (planetId == "Syzygy") return "☍";
+    // Additional bodies
+    if (planetId == "Lilith") return "⚸";
+    if (planetId == "Ceres") return "⚳";
+    if (planetId == "Pallas") return "⚴";
+    if (planetId == "Juno") return "⚵";
+    if (planetId == "Vesta") return "⚶";
+    if (planetId == "Vertex") return "⊗";
+    if (planetId == "East Point") return "⊙";
+    if (planetId == "Part of Spirit") return "⊖";
     // Return first letter for any other planet
     return planetId.left(1);
 }

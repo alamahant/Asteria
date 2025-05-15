@@ -8,6 +8,7 @@
 #include <QToolTip>
 #include <QtMath>
 #include <QDebug>
+#include "Globals.h"
 
 extern QString g_astroFontFamily;
 
@@ -103,8 +104,9 @@ void PlanetItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
 
 QString PlanetItem::getPlanetSymbol(const QString &planetId) const
 {
-    // Map planet IDs to Unicode symbols
+
     static QMap<QString, QString> symbols = {
+        // Main planets
         {"Sun", "☉"},
         {"Moon", "☽"},
         {"Mercury", "☿"},
@@ -118,8 +120,17 @@ QString PlanetItem::getPlanetSymbol(const QString &planetId) const
         {"Chiron", "⚷"},
         {"North Node", "☊"},
         {"South Node", "☋"},
-        {"Pars Fortuna", "⊗"}, // or "⊕" (Part of Fortune symbol)
-        {"Syzygy", "☍"}        // Using opposition symbol for Syzygy
+        {"Pars Fortuna", "⊕"}, // Part of Fortune symbol (circle with plus)
+        {"Syzygy", "☍"},        // Using opposition symbol for Syzygy
+        // Additional bodies
+        {"Lilith", "⚸"},       // Black Moon Lilith symbol
+        {"Ceres", "⚳"},        // Ceres symbol
+        {"Pallas", "⚴"},       // Pallas symbol
+        {"Juno", "⚵"},         // Juno symbol
+        {"Vesta", "⚶"},        // Vesta symbol
+        {"Vertex", "⊗"},       // Using a cross in circle for Vertex
+        {"East Point", "⊙"},   // Using a dot in circle for East Point
+        {"Part of Spirit", "⊖"} // Part of Spirit (circle with minus)
     };
 
     return symbols.value(planetId, planetId);
@@ -546,12 +557,16 @@ void ChartRenderer::drawAspects() {
 
         // Use solid lines for major aspects, dotted lines for minor aspects
         if (isMajorAspect(aspect.aspectType)) {
-            pen.setStyle(Qt::SolidLine);
+            //pen.setStyle(Qt::SolidLine);
+            pen.setStyle(AspectSettings::instance().getMajorAspectStyle());
             // Make major aspects slightly thicker
-            pen.setWidth(2);
+            //pen.setWidthF(1.5); // Use setWidthF() for fractional widths
+            pen.setWidthF(AspectSettings::instance().getMajorAspectWidth());
         } else {
-            pen.setStyle(Qt::SolidLine);
-            pen.setWidth(1);
+            //pen.setStyle(Qt::SolidLine);
+            pen.setStyle(AspectSettings::instance().getMinorAspectStyle());
+            //pen.setWidthF(1.0);
+            pen.setWidthF(AspectSettings::instance().getMinorAspectWidth());
         }
 
         aspectLine->setPen(pen);
@@ -732,8 +747,8 @@ QColor ChartRenderer::aspectColor(const QString &aspectType) {
     if (aspectType == "QUI") return QColor(138, 43, 226);        // Quincunx - Blue Violet
     if (aspectType == "SSQ") return QColor(255, 165, 0);         // Semi-square - Orange
     if (aspectType == "SSX") return QColor(0, 128, 0);           // Semi-sextile - Classic Green
-    if (aspectType == "SSP") return QColor(124, 252, 0);         // Semiparallel (custom) - Lawn Green
-    if (aspectType == "PAR") return QColor(218, 112, 214);       // Parallel (custom) - Orchid
+    //if (aspectType == "SSP") return QColor(124, 252, 0);         // Semiparallel (custom) - Lawn Green
+    //if (aspectType == "PAR") return QColor(218, 112, 214);       // Parallel (custom) - Orchid
 
     return QColor(105, 105, 105); // Default - Dim Gray
 }
@@ -915,11 +930,23 @@ QString ChartRenderer::getPlanetSymbol(const QString &planetId) {
         {"Chiron", "⚷"},
         {"North Node", "☊"},
         {"South Node", "☋"},
-        {"Pars Fortuna", "⊗"}, // or "⊕" (Part of Fortune symbol)
-        {"Syzygy", "☍"},       // Using opposition symbol for Syzygy
-        {"pa", "⊗"},           // Abbreviated Pars Fortuna
-        {"sy", "☍"}            // Abbreviated Syzygy
+        {"Pars Fortuna", "⊕"}, // Part of Fortune symbol (circle with plus)
+        {"Syzygy", "☍"},        // Using opposition symbol for Syzygy
+        {"pa", "⊕"},            // Abbreviated Pars Fortuna (changed to match Part of Fortune)
+        {"sy", "☍"},            // Abbreviated Syzygy
+
+        // Additional bodies
+        {"Lilith", "⚸"},        // Black Moon Lilith symbol
+        {"Ceres", "⚳"},         // Ceres symbol
+        {"Pallas", "⚴"},        // Pallas symbol
+        {"Juno", "⚵"},          // Juno symbol
+        {"Vesta", "⚶"},         // Vesta symbol
+        {"Vertex", "⊗"},        // Using a cross in circle for Vertex
+        {"East Point", "⊙"},    // Using a dot in circle for East Point
+        {"Part of Spirit", "⊖"}  // Part of Spirit (circle with minus)
     };
+
+
 
     return symbols.value(planetId, planetId);
 }

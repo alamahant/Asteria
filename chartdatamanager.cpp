@@ -2,6 +2,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDebug>
+#include"Globals.h"
 
 ChartDataManager::ChartDataManager(QObject *parent)
     : QObject(parent)
@@ -14,10 +15,7 @@ ChartDataManager::~ChartDataManager()
     // QObject parent-child relationship will handle deletion
 }
 
-void ChartDataManager::setPythonVenvPath(const QString &path)
-{
-    m_calculator->setPythonVenvPath(path);
-}
+
 
 bool ChartDataManager::isCalculatorAvailable() const
 {
@@ -35,6 +33,7 @@ ChartData ChartDataManager::calculateChart(const QDate &birthDate,
     // Clear any previous error
     m_lastError.clear();
 
+    orbMax = getOrbMax();
     // Calculate the chart
     ChartData data = m_calculator->calculateChart(birthDate, birthTime, utcOffset,
                                                   latitude, longitude, houseSystem, orbMax);
@@ -56,6 +55,8 @@ QJsonObject ChartDataManager::calculateChartAsJson(const QDate &birthDate,
                                                    double orbMax)
 {
     // Calculate the chart
+    orbMax = getOrbMax();
+
     ChartData data = calculateChart(birthDate, birthTime, utcOffset,
                                     latitude, longitude, houseSystem, orbMax);
 
@@ -171,7 +172,7 @@ QString ChartDataManager::calculateTransits(const QDate &birthDate,
 
     return output;
 }
-
+/*
 QJsonObject ChartDataManager::calculateTransitsAsJson(const QDate &birthDate,
                                                       const QTime &birthTime,
                                                       const QString &utcOffset,
@@ -201,3 +202,39 @@ QJsonObject ChartDataManager::calculateTransitsAsJson(const QDate &birthDate,
 
     return json;
 }
+*/
+
+QJsonObject ChartDataManager::calculateTransitsAsJson(const QDate &birthDate,
+                                                      const QTime &birthTime,
+                                                      const QString &utcOffset,
+                                                      const QString &latitude,
+                                                      const QString &longitude,
+                                                      const QDate &transitStartDate,
+                                                      int numberOfDays) {
+    // Calculate the transits
+    QString output = calculateTransits(birthDate, birthTime, utcOffset,
+                                       latitude, longitude,
+                                       transitStartDate, numberOfDays);
+
+    // Debug the raw output
+
+    // If there was an error, return an empty object
+    if (!m_lastError.isEmpty()) {
+        return QJsonObject{{"error", m_lastError}};
+    }
+
+    // Create a simple JSON object with the raw output
+    QJsonObject json;
+    json["birthDate"] = birthDate.toString("yyyy-MM-dd");
+    json["birthTime"] = birthTime.toString("HH:mm");
+    json["latitude"] = latitude;
+    json["longitude"] = longitude;
+    json["transitStartDate"] = transitStartDate.toString("yyyy-MM-dd");
+    json["numberOfDays"] = QString::number(numberOfDays);
+    json["rawTransitData"] = output;
+
+    // Debug the JSON object
+
+    return json;
+}
+

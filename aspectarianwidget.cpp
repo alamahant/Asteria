@@ -57,10 +57,21 @@ void AspectarianWidget::updateData(const ChartData &chartData)
     }
 
     // Sort planets in traditional order
+    /*
     QStringList orderedPlanets = {
         "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
         "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
         "Pars Fortuna", "Syzygy"
+    };
+    */
+
+    QStringList orderedPlanets = {
+        "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
+        "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
+        "Part of Fortune", "Syzygy",
+        // Additional bodies
+        "Lilith", "Ceres", "Pallas", "Juno", "Vesta",
+        "Vertex", "East Point", "Part of Spirit"
     };
 
     // Filter and sort planets
@@ -96,9 +107,12 @@ void AspectarianWidget::updateData(const ChartData &chartData)
     // Set fixed font size for headers instead of incrementing
     QFont headerFont = m_table->font();
     headerFont.setPointSize(12); // Use a fixed size instead of incrementing
+    //headerFont.setBold(true);    // Make the font bold
 
     if (!g_astroFontFamily.isEmpty()) {
         headerFont = QFont(g_astroFontFamily, 12);
+        //headerFont.setBold(true); // Make sure to set bold after creating the new font
+
     }
 
 
@@ -160,7 +174,7 @@ void AspectarianWidget::updateData(const ChartData &chartData)
     }
 }
 
-
+/*
 QString AspectarianWidget::planetSymbol(const QString &planetName)
 {
     if (planetName == "Sun") return "☉";
@@ -181,6 +195,41 @@ QString AspectarianWidget::planetSymbol(const QString &planetName)
     // Return first letter for any other planet
     return planetName.left(1);
 }
+*/
+
+QString AspectarianWidget::planetSymbol(const QString &planetName) {
+    if (planetName == "Sun") return "☉";
+    if (planetName == "Moon") return "☽";
+    if (planetName == "Mercury") return "☿";
+    if (planetName == "Venus") return "♀";
+    if (planetName == "Mars") return "♂";
+    if (planetName == "Jupiter") return "♃";
+    if (planetName == "Saturn") return "♄";
+    if (planetName == "Uranus") return "♅";
+    if (planetName == "Neptune") return "♆";
+    if (planetName == "Pluto") return "♇";
+    if (planetName == "Chiron") return "⚷";
+    if (planetName == "North Node") return "☊";
+    if (planetName == "South Node") return "☋";
+    if (planetName == "Pars Fortuna" || planetName == "Part of Fortune") return "⊕";
+    if (planetName == "Syzygy") return "☍";
+
+    // Additional bodies
+    if (planetName == "Lilith") return "⚸";
+    if (planetName == "Ceres") return "⚳";
+    if (planetName == "Pallas") return "⚴";
+    if (planetName == "Juno") return "⚵";
+    if (planetName == "Vesta") return "⚶";
+    if (planetName == "Vertex") return "⊗";
+    if (planetName == "East Point") return "⊙";
+    if (planetName == "Part of Spirit") return "⊖";
+
+    // Return first letter for any other planet
+    return planetName.left(1);
+}
+
+
+
 
 QColor AspectarianWidget::aspectColor(const QString &aspectType)
 {
@@ -192,7 +241,8 @@ QColor AspectarianWidget::aspectColor(const QString &aspectType)
     if (aspectType == "QUI") return QColor(0, 255, 0, 50);         // Bright Green (Quincunx)
     if (aspectType == "SSQ") return QColor(255, 140, 0, 50);       // Dark Orange (Semi-square)
     if (aspectType == "SSX") return QColor(186, 85, 211, 50);      // Medium Orchid (Semi-sextile)
-
+    //if (aspectType == "SSP") return QColor(124, 252, 0);         // Semiparallel (custom) - Lawn Green
+    //if (aspectType == "PAR") return QColor(218, 112, 214);       // Parallel (custom) - Orchid
     return QColor(128, 128, 128, 50);  // Default gray
 }
 

@@ -71,6 +71,21 @@
   </screenshots>
   
   <releases>
+    <release version="2.0.0" date="2025-05-15">
+      <description>
+        <p>Major improvements and new features:</p>
+        <ul>
+          <li>Completely rebuilt the calculation engine: removed Python dependency and now using direct Swiss Ephemeris integration through native Qt/C++ code</li>
+          <li>Added an orb slider to set how many aspects are calculated and displayed</li>
+          <li>Added additional celestial bodies (Lilith, Ceres, Pallas, Juno, Vesta, Vertex, East Point, Part of Spirit)</li>
+          <li>Added a checkbox to toggle displaying additional bodies in the chart</li>
+          <li>Added Aspect Display Settings Dialog for customizing aspect appearance</li>
+          <li>Added relationship charts functionality with Composite and Davison charts</li>
+          <li>Preloaded OpenStreetMap QML at application startup for improved performance</li>
+          <li>Updated license to AGPL-3 to conform with Swiss Ephemeris requirements</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.1.0" date="2025-04-30">
       <description>
         <p>New features and improvements:</p>
@@ -107,3 +122,4 @@
   
   <launchable type="desktop-id">io.github.alamahant.Asteria.desktop</launchable>
 </component>
+

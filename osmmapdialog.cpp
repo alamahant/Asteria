@@ -35,51 +35,6 @@ QGeoCoordinate OSMMapDialog::selectedCoordinates() const
     return m_selectedCoordinates;
 }
 
-/*
-void OSMMapDialog::setupUi()
-{
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-
-    // Search controls
-    QHBoxLayout *searchLayout = new QHBoxLayout();
-    QLabel *searchLabel = new QLabel(tr("Search location:"), this);
-    m_searchEdit = new QLineEdit(this);
-    m_searchButton = new QPushButton(tr("Search"), this);
-
-    searchLayout->addWidget(searchLabel);
-    searchLayout->addWidget(m_searchEdit, 1);
-    searchLayout->addWidget(m_searchButton);
-
-    mainLayout->addLayout(searchLayout);
-
-    // Map widget
-    m_mapWidget = new QQuickWidget(this);
-    m_mapWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
-    mainLayout->addWidget(m_mapWidget, 1);
-
-    // Coordinates display
-    m_coordinatesLabel = new QLabel(tr("Click on the map to select a location"), this);
-    mainLayout->addWidget(m_coordinatesLabel);
-
-    // Buttons
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
-    m_selectButton = new QPushButton(tr("Select"), this);
-    m_cancelButton = new QPushButton(tr("Cancel"), this);
-
-    m_selectButton->setEnabled(false);
-
-    buttonLayout->addStretch(1);
-    buttonLayout->addWidget(m_selectButton);
-    buttonLayout->addWidget(m_cancelButton);
-
-    mainLayout->addLayout(buttonLayout);
-
-    // Connections
-    connect(m_selectButton, &QPushButton::clicked, this, &QDialog::accept);
-    connect(m_cancelButton, &QPushButton::clicked, this, &QDialog::reject);
-    connect(m_searchButton, &QPushButton::clicked, this, &OSMMapDialog::onSearchClicked);
-}
-*/
 
 void OSMMapDialog::setupUi()
 {
@@ -199,24 +154,7 @@ void OSMMapDialog::onMapClicked(double latitude, double longitude)
                                     .arg(longitude, 0, 'f', 6));
 }
 
-/*
-void OSMMapDialog::onSearchClicked()
-{
-    QString searchText = m_searchEdit->text().trimmed();
-    if (searchText.isEmpty()) {
-        return;
-    }
 
-    // QQuickItem inherits from QObject, so this cast is valid
-    QObject* rootObject = qobject_cast<QObject*>(m_mapWidget->rootObject());
-    if (rootObject) {
-        QMetaObject::invokeMethod(rootObject,
-                                  "searchLocation",
-                                  Qt::DirectConnection,
-                                  Q_ARG(QVariant, searchText));
-    }
-}
-*/
 
 // Implement the search button click handler
 void OSMMapDialog::onSearchClicked()

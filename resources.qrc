@@ -1,10 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>resources/AstromoonySans.ttf</file>
-        <file>python/venv/scripts/chart_calculator.py</file>
-        <file>python/venv/scripts/chart_calculator-local.py</file>
-        <file>python/venv/scripts/transit_calculator.py</file>
-        <file>python/venv/scripts/transit_calculator-local.py</file>
         <file>icons/asteria-icon-512.png</file>
         <file>map.qml</file>
     </qresource>

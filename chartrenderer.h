@@ -86,6 +86,7 @@ public:
     void setShowPlanetSymbols(bool show);
     void setChartSize(int size);
     void drawHouseRing();
+    void drawAngles();
 
 protected:
     // Override for zoom functionality
@@ -99,7 +100,6 @@ private:
     void drawHouseCusps();
     void drawPlanets();
     void drawAspects();
-    void drawAngles();
 
     // Helper for planet rendering
     void drawPlanet(const PlanetData &planet, double radius);

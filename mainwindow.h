@@ -19,16 +19,22 @@
 #include <QGroupBox>
 #include <QMessageBox>
 #include<QtSvg/QSvgGenerator>
-#include<QtPrintSupport/QtPrintSupport>
+//#include<QtPrintSupport/QtPrintSupport>
 #include <QGraphicsView>
 #include <QTemporaryFile>
 #include <QImageReader>
-
+#include <QTimer>
+#include <QSplitter>
+#include <QStatusBar>
+#include <QMenuBar>
+#include <QMenu>
+#include <QTextBrowser>
 
 #ifdef FLATHUB_BUILD
 // QtPdf is not available in Flathub
 #else
 #include <QtPdf/QPdfDocument>
+#include<QtPrintSupport/QtPrintSupport>
 #endif
 
 #include <QDesktopServices>
@@ -43,6 +49,7 @@
 #include "elementmodalitywidget.h"
 #include "symbolsdialog.h"
 #include"osmmapdialog.h"
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -156,16 +163,20 @@ private:
     QLabel *m_ascendantLabel;
     QLabel *m_housesystemLabel;
     void drawStarBanner(QPainter &painter, const QRect &rect);
+#ifndef FLATHUB_BUILD
     void drawPage0(QPainter &painter, QPdfWriter &writer);
+#endif
+    //void drawPage0(QPainter &painter, QPdfWriter &writer);
+
     QString getFilepath(const QString& format);
     QComboBox* languageComboBox;
     void searchLocationCoordinates(const QString& location);
     QLineEdit* locationSearchEdit;
     SymbolsDialog *m_symbolsDialog;
     void showSymbolsDialog();
-    QDialog *m_howToUseDialog;
+    QDialog *m_howToUseDialog = nullptr;
     void showHowToUseDialog();
-
+    QDialog *m_relationshipChartsDialog = nullptr;
 signals:
     void pdfExported(const QString& filePath);
 
@@ -175,6 +186,24 @@ private slots:
 private:
     // Existing members...
     QPushButton *m_selectLocationButton;
+    QString getOrbDescription(double orb);
+    void preloadMapResources();
+
+//testing additional bodies checkbox
+private:
+    QCheckBox *m_additionalBodiesCB;
+    QJsonObject loadChartForRelationships(const QString &filePath);
+    //QPushButton* m_clearAllButton;
+    QJsonObject m_currentRelationshipInfo;
+
+
+private slots:
+    void showAspectSettings();
+    // Relationship chart slots
+    void createCompositeChart();
+    void createDavisonChart();
+    void createSynastryChart();
+    void showRelationshipChartsDialog();
 
 };
 #endif // MAINWINDOW_H

@@ -4,6 +4,20 @@
 #include<QSettings>
 #include <QFontDatabase>
 #include <QString>
+// At the top of your main.cpp file, after includes
+namespace {
+double g_orbMax = 8.0; // Default orb value
+}
+
+// Add a getter/setter function
+double getOrbMax() {
+    return g_orbMax;
+}
+
+void setOrbMax(double value) {
+    g_orbMax = value;
+}
+
 QString g_astroFontFamily;
 
 

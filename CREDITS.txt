@@ -1,14 +1,17 @@
-Astromoony Font
-https://github.com/RobertWinslow/Astromoony-Font
-Created by Robert Winslow
-Released to the public domain
+# Credits
 
-OpenStreetMap
-© OpenStreetMap contributors
-Data is available under the Open Database License (ODbL)
-https://www.openstreetmap.org/copyright
+## Astromoony Font
+- Created by Robert Winslow
+- Released to the public domain
+- https://github.com/RobertWinslow/Astromoony-Font
 
-Swiss Ephemeris
-Copyright (C) 1997-2021 Astrodienst AG, Switzerland
-Licensed under the GNU Affero General Public License v3.0
-https://www.astro.com/swisseph/
+## OpenStreetMap
+- © OpenStreetMap contributors
+- Data is available under the Open Database License (ODbL)
+- https://www.openstreetmap.org/copyright
+
+## Swiss Ephemeris
+- Copyright (C) 1997-2021 Astrodienst AG, Switzerland
+- Licensed under the GNU Affero General Public License v3.0
+- https://www.astro.com/swisseph/
+- https://github.com/aloistr/swisseph

@@ -11,12 +11,18 @@ Asteria is a comprehensive astrological chart application that combines traditio
 - **Element & Modality Balance**: Analyze the distribution of elements and modalities in your chart
 - **AI-Powered Interpretations**: Receive personalized chart readings using advanced AI technology
 - **Modern UI**: Clean, user-friendly interface suitable for both beginners and experienced astrologers
+- **Extended Time Range**: Calculate charts from 3000 BC to 3000 AD with high precision
+- **Relationship Charts**: Compare natal charts with synastry and composite analysis
 
 ## Installation
 
 ### Flatpak
 
 Asteria is available as a Flatpak on Flathub.
+
+```bash
+flatpak install flathub io.github.alamahant.Asteria
+```
 
 ### From Source
 
@@ -43,7 +49,7 @@ Coming soon
 Asteria is built with:
 - Qt for the user interface
 - C++ for core functionality
-- Swiss Ephemeris for astrological calculations
+- Swiss Ephemeris for astrological calculations (supporting dates from 3000 BC to 3000 AD)
 - AI integration for chart interpretations
 
 ## Contributing
@@ -57,25 +63,29 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-**Important License Change**: This project has been updated from GPL-3.0 to the GNU Affero General Public License v3.0 (AGPL-3.0) to comply with the licensing requirements of Swiss Ephemeris. See the LICENSE file for details.
+**Important License Update (May 16, 2024)**: This project is now licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) to comply with the licensing requirements of Swiss Ephemeris. The Flatpak distribution on Flathub has been updated to reflect this license change.
 
-*Note: The Flathub distribution's metainfo.xml will be updated to reflect this license change in the upcoming release.*
+See the LICENSE file for details.
 
-##Third-Party Libraries and Credits
+## Third-Party Libraries and Credits
 
-Swiss Ephemeris: This project uses Swiss Ephemeris, which is licensed under the GNU Affero General Public License v3.0. Copyright (C) 1997-2021 Astrodienst AG, Switzerland. For more information, see: https://www.astro.com/swisseph/
+- **[Swiss Ephemeris](https://www.astro.com/swisseph/)**: This project uses Swiss Ephemeris, which is licensed under the GNU Affero General Public License v3.0. Copyright (C) 1997-2021 Astrodienst AG, Switzerland. The ephemeris data covers a comprehensive time span from 3000 BC to 3000 AD.
 
-OpenStreetMap: Map data © OpenStreetMap contributors, available under the Open Database License (ODbL). For more information, see: https://www.openstreetmap.org/copyright
+- **[OpenStreetMap](https://www.openstreetmap.org/)**: Map data © OpenStreetMap contributors, available under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/).
 
-Astromoony Font by Robert Winslow, released to the public domain.
+- **[Qt Framework](https://www.qt.io/)**: Used for the application's user interface and cross-platform compatibility.
 
-Built with Qt and modern C++
+- **[Astromoony Font](https://www.dafont.com/astromoony.font)** by Robert Winslow, released to the public domain.
+
+- **[Mistral AI](https://mistral.ai/)**: Integration for chart interpretations.
 
 ## Contact
 
-Project Link: https://github.com/alamahant/Asteria
+Project Link: [https://github.com/alamahant/Asteria](https://github.com/alamahant/Asteria)
 
 > "The cosmos is within us. We are made of star-stuff." - Carl Sagan
+
+
 
 
 

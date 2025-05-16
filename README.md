@@ -40,16 +40,13 @@ To build from source:
 - Explore different aspects of your chart using the tabbed interface
 - Request AI interpretations for deeper insights into your astrological profile
 
-## Screenshots
-
-Coming soon
 
 ## Technical Details
 
 Asteria is built with:
 - Qt for the user interface
 - C++ for core functionality
-- Swiss Ephemeris for astrological calculations (supporting dates from 3000 BC to 3000 AD)
+- Swiss Ephemeris for astrological calculations
 - AI integration for chart interpretations
 
 ## Contributing
@@ -67,23 +64,38 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 See the LICENSE file for details.
 
-## Third-Party Libraries and Credits
+## Credits
 
-- **[Swiss Ephemeris](https://www.astro.com/swisseph/)**: This project uses Swiss Ephemeris, which is licensed under the GNU Affero General Public License v3.0. Copyright (C) 1997-2021 Astrodienst AG, Switzerland. The ephemeris data covers a comprehensive time span from 3000 BC to 3000 AD.
+### Swiss Ephemeris
+- Copyright (C) 1997-2021 Astrodienst AG, Switzerland
+- Licensed under the GNU Affero General Public License v3.0
+- https://www.astro.com/swisseph/
+- https://github.com/aloistr/swisseph
 
-- **[OpenStreetMap](https://www.openstreetmap.org/)**: Map data © OpenStreetMap contributors, available under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/).
+### OpenStreetMap
+- © OpenStreetMap contributors
+- Data is available under the Open Database License (ODbL)
+- https://www.openstreetmap.org/copyright
 
-- **[Qt Framework](https://www.qt.io/)**: Used for the application's user interface and cross-platform compatibility.
+### Astromoony Font
+- Created by Robert Winslow
+- Released to the public domain
+- https://github.com/RobertWinslow/Astromoony-Font
 
-- **[Astromoony Font](https://www.dafont.com/astromoony.font)** by Robert Winslow, released to the public domain.
+### Qt Framework
+- Used for the application's user interface and cross-platform compatibility
+- https://www.qt.io/
 
-- **[Mistral AI](https://mistral.ai/)**: Integration for chart interpretations.
+### Mistral AI
+- Integration for chart interpretations
+- https://mistral.ai/
 
 ## Contact
 
 Project Link: [https://github.com/alamahant/Asteria](https://github.com/alamahant/Asteria)
 
 > "The cosmos is within us. We are made of star-stuff." - Carl Sagan
+
 
 
 

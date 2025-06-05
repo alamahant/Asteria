@@ -142,7 +142,7 @@ private:
     //static const int DEFAULT_WHEEL_THICKNESS = 10;
     bool isMajorAspect(const QString &aspectType);
     void updateSettings(bool showAspects, bool showHouseCusps, bool showPlanetSymbols, int chartSize);
-
+    double getAscendantLongitude() const;
 };
 
 #endif // CHARTRENDERER_H

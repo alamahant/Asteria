@@ -90,8 +90,13 @@ void PlanetListWidget::updateData(const ChartData &chartData)
             }
 
             // Sign symbol and name
-            QString signSymbol = getSymbolForSign(planet.sign);
-            QTableWidgetItem *signItem = new QTableWidgetItem(signSymbol + " " + planet.sign);
+            //QString signSymbol = getSymbolForSign(planet.sign);
+            //QTableWidgetItem *signItem = new QTableWidgetItem(signSymbol + " " + planet.sign);
+
+            QString signName = planet.sign.split(' ').first();
+            QString signSymbol = getSymbolForSign(signName);
+            QTableWidgetItem *signItem = new QTableWidgetItem(signSymbol + " " + signName);
+
             if (useCustomFont) {
                 signItem->setFont(symbolFont);
             }
@@ -132,7 +137,9 @@ void PlanetListWidget::updateData(const ChartData &chartData)
             QTableWidgetItem *planetItem = new QTableWidgetItem(planet.id);
 
             // Sign
-            QTableWidgetItem *signItem = new QTableWidgetItem(planet.sign);
+            //QTableWidgetItem *signItem = new QTableWidgetItem(planet.sign);
+            QString signName = planet.sign.split(' ').first();
+            QTableWidgetItem *signItem = new QTableWidgetItem(signName);
             signItem->setBackground(getColorForSign(planet.sign));
 
             // Degree

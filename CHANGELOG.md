@@ -1,7 +1,11 @@
 # Changelog
 
-## Version 2.0.0 (2025-05-15)
+## Version 2.0.1 (2025-06-05)
+### Improvements
+- Changed degree display format from 0-360° decimal system to traditional in-sign degrees with minutes for improved astrological readability (e.g., 285.5° → 15°30' Capricorn)
+- Only House display shows both formats for reference
 
+## Version 2.0.0 (2025-05-15)
 ### Major Improvements
 - Completely rebuilt the calculation engine: removed Python dependency, virtual environment, flatlib, and all related scripts
 - Now using direct Swiss Ephemeris integration through native Qt/C++ code for significantly improved performance and reduced complexity
@@ -28,7 +32,6 @@
 - Updated license to AGPL-3 to conform with Swiss Ephemeris requirements (see credits.txt for full attribution)
 
 ## Version 1.1.0 (2025-04-30)
-
 ### New Features
 - Added [OpenStreetMap](https://www.openstreetmap.org/) dialog to assist users in easily searching and setting their birth location
 - Expanded retrograde planet depiction beyond the planets drawn red on the chart itself and the tooltips, to also include the planet widgets, planet view, and aspects view
@@ -39,10 +42,11 @@
 - Edited application summary to conform with Flathub quality guidelines
 
 ## Version 1.0.0 (2025-04-22)
-
 ### Initial Release
 - Natal chart calculation and display
 - Aspect analysis
 - AI-powered interpretations
 - Transit calculations
+
+
 

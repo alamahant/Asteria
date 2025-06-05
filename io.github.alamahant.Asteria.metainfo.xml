@@ -87,6 +87,16 @@
   </screenshots>
   
   <releases>
+    <release version="2.0.1" date="2025-06-05">
+      <description>
+        <p>Improvements:</p>
+        <ul>
+          <li>Changed degree display format from 0-360° decimal system to traditional in-sign degrees with minutes for improved astrological readability (e.g., 285.5° → 15°30' Capricorn)</li>
+          <li>House display now shows both formats for reference</li>
+        </ul>
+        <p>For complete changelog and version history, please see Changelog under Help Menu in the application.</p>
+      </description>
+    </release>
     <release version="2.0.0" date="2025-05-15">
       <description>
         <p>Major improvements and new features:</p>
@@ -128,7 +138,6 @@
   <content_rating type="oars-1.1" />
   
   <developer_name>Alamahant</developer_name>
-  
   <categories>
     <category>Education</category>
     <category>Science</category>
@@ -138,6 +147,8 @@
   
   <launchable type="desktop-id">io.github.alamahant.Asteria.desktop</launchable>
 </component>
+
+
 
 
 

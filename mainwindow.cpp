@@ -232,7 +232,7 @@ void MainWindow::setupCentralWidget() {
     // Houses table
     QTableWidget *housesTable = new QTableWidget(0, 3, detailsTabs);
     housesTable->setObjectName("Houses");
-    housesTable->setHorizontalHeaderLabels({"House", "Sign", "Degree"});
+    housesTable->setHorizontalHeaderLabels({"House", "Sign", "Raw Degrees in Dec"});
     housesTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     // Aspects table
@@ -852,6 +852,9 @@ void MainWindow::setupMenus()
 
     QAction *relationshipChartsAction = helpMenu->addAction(tr("About &Relationship Charts"));
     connect(relationshipChartsAction, &QAction::triggered, this, &MainWindow::showRelationshipChartsDialog);
+
+    QAction *changelogAction = helpMenu->addAction(tr("Changelog"));
+    connect(changelogAction, &QAction::triggered, this, &MainWindow::showChangelog);
 }
 
 void MainWindow::setupConnections()
@@ -1027,10 +1030,18 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
                 planetName += "   ℞"; // Using the official retrograde symbol (℞)
             }
 
+            // Split the sign string to get just the sign name and degrees
+            QString fullSign = planet["sign"].toString();
+            QString signName = fullSign.split(' ').first();
+            QStringList parts = fullSign.split(' ');
+            QString degreesPart = parts.size() > 1 ? parts.mid(1).join(' ') : "";
+
             QTableWidgetItem *nameItem = new QTableWidgetItem(planetName);
-            QTableWidgetItem *signItem = new QTableWidgetItem(planet["sign"].toString());
-            QTableWidgetItem *degreeItem = new QTableWidgetItem(QString::number(planet["longitude"].toDouble(), 'f', 2) + "°");
+            QTableWidgetItem *signItem = new QTableWidgetItem(signName);
+            QTableWidgetItem *degreeItem = new QTableWidgetItem(degreesPart);
             QTableWidgetItem *houseItem = new QTableWidgetItem(planet["house"].toString());
+
+
 
             planetsTable->setItem(i, 0, nameItem);
             planetsTable->setItem(i, 1, signItem);
@@ -1054,6 +1065,8 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
             housesTable->setItem(i, 0, nameItem);
             housesTable->setItem(i, 1, signItem);
             housesTable->setItem(i, 2, degreeItem);
+
+
         }
     }
 
@@ -1825,7 +1838,9 @@ void MainWindow::populateInfoOverlay() {
                 if (planetId.toLower() == "sun") {
                     QString sunSign = planet["sign"].toString();
                     double sunDegree = planet["longitude"].toDouble();
-                    m_sunSignLabel->setText(QString("Sun: %1 %2°").arg(sunSign).arg(sunDegree, 0, 'f', 1));
+                    //m_sunSignLabel->setText(QString("Sun: %1 %2°").arg(sunSign).arg(sunDegree, 0, 'f', 1));
+                    m_sunSignLabel->setText(QString("Sun: %1").arg(sunSign));
+
                     break;
                 }
             }
@@ -1842,7 +1857,9 @@ void MainWindow::populateInfoOverlay() {
                 if (angleId.toLower() == "asc") {
                     QString ascSign = angle["sign"].toString();
                     double ascDegree = angle["longitude"].toDouble();
-                    m_ascendantLabel->setText(QString("Asc: %1 %2°").arg(ascSign).arg(ascDegree, 0, 'f', 1));
+                    //m_ascendantLabel->setText(QString("Asc: %1 %2°").arg(ascSign).arg(ascDegree, 0, 'f', 1));
+                    m_ascendantLabel->setText(QString("Asc: %1").arg(ascSign));
+
                     break;
                 }
             }
@@ -3414,4 +3431,119 @@ QJsonObject MainWindow::loadChartForRelationships(const QString &filePath) {
 
     return chartData;
 }
+
+void MainWindow::showChangelog(){
+    // Create the dialog only if it doesn't exist yet
+    if (!m_showChangelogDialog) {
+        m_showChangelogDialog = new QDialog(this);
+        m_showChangelogDialog->setWindowTitle("Changelog");
+        m_showChangelogDialog->setMinimumSize(600, 500);
+
+        // Create layout
+        QVBoxLayout *layout = new QVBoxLayout(m_showChangelogDialog);
+
+        // Create a text browser for rich text display
+        QTextBrowser *textBrowser = new QTextBrowser(m_showChangelogDialog);
+        textBrowser->setOpenExternalLinks(true);
+
+        // Set the changelog content
+        QString changelogText = R"(
+        <h1>Changelog</h1>
+
+        <h2>Version 2.0.1 (2025-06-06)</h2>
+        <h3>Improvements</h3>
+        <ul>
+            <li>Changed degree display format from 0-360° decimal system to traditional in-sign degrees with minutes for improved astrological readability (e.g., 285.5° → 15°30' Capricorn)</li>
+            <li>House display now shows both formats for reference</li>
+        </ul>
+
+        <p><b style="color: #d35400;">Important Note:</b> Charts calculated and saved with the old degree format will not display correctly with this update. To fix this, please reload your saved charts, press the "Calculate Chart" button again, and save them with the new format.</p>
+
+        <h2>Version 2.0.0 (2025-05-15)</h2>
+        <h3>Major Improvements</h3>
+        <ul>
+            <li>Completely rebuilt the calculation engine: removed Python dependency, virtual environment, flatlib, and all related scripts</li>
+            <li>Now using direct Swiss Ephemeris integration through native Qt/C++ code for significantly improved performance and reduced complexity</li>
+        </ul>
+
+        <h3>New Features</h3>
+        <ul>
+            <li>Added an orb slider to set how many aspects are calculated and displayed</li>
+            <li>Added additional celestial bodies to be calculated and displayed:
+                <ul>
+                    <li>Black Moon Lilith</li>
+                    <li>Ceres</li>
+                    <li>Pallas</li>
+                    <li>Juno</li>
+                    <li>Vesta</li>
+                    <li>Vertex</li>
+                    <li>East Point</li>
+                    <li>Part of Spirit</li>
+                </ul>
+            </li>
+            <li>Added a checkbox to toggle displaying additional bodies in the chart</li>
+            <li>Added Aspect Display Settings Dialog where users can customize the thickness and style of major and minor aspects</li>
+            <li>Added relationship charts functionality with Composite and Davison charts (synastry to be implemented in a future release)</li>
+        </ul>
+
+        <h3>Performance Improvements</h3>
+        <ul>
+            <li>Preloaded OpenStreetMap QML at application startup to eliminate pause when opening the map dialog</li>
+        </ul>
+
+        <h3>Changes</h3>
+        <ul>
+            <li>Updated license to AGPL-3 to conform with Swiss Ephemeris requirements (see credits.txt for full attribution)</li>
+        </ul>
+
+        <h2>Version 1.1.0 (2025-04-30)</h2>
+        <h3>New Features</h3>
+        <ul>
+            <li>Added <a href="https://www.openstreetmap.org/">OpenStreetMap</a> dialog to assist users in easily searching and setting their birth location</li>
+            <li>Expanded retrograde planet depiction beyond the planets drawn red on the chart itself and the tooltips, to also include the planet widgets, planet view, and aspects view</li>
+        </ul>
+
+        <h3>Improvements</h3>
+        <ul>
+            <li>Made minor UI improvements for better usability</li>
+            <li>Added multiple screenshots to better showcase the application's features</li>
+            <li>Edited application summary to conform with Flathub quality guidelines</li>
+        </ul>
+
+        <h2>Version 1.0.0 (2025-04-22)</h2>
+        <h3>Initial Release</h3>
+        <ul>
+            <li>Natal chart calculation and display</li>
+            <li>Aspect analysis</li>
+            <li>AI-powered interpretations</li>
+            <li>Transit calculations</li>
+        </ul>
+        )";
+
+        textBrowser->setHtml(changelogText);
+        layout->addWidget(textBrowser);
+
+        // Add a close button at the bottom
+        QHBoxLayout *buttonLayout = new QHBoxLayout();
+        QPushButton *closeButton = new QPushButton("Close", m_showChangelogDialog);
+        buttonLayout->addStretch();
+        buttonLayout->addWidget(closeButton);
+        layout->addLayout(buttonLayout);
+
+        // Connect the close button
+        connect(closeButton, &QPushButton::clicked, m_showChangelogDialog, &QDialog::close);
+
+        // Connect the dialog's finished signal to handle cleanup
+        connect(m_showChangelogDialog, &QDialog::finished, this, [this]() {
+            m_showChangelogDialog->deleteLater();
+            m_showChangelogDialog = nullptr;
+        });
+    }
+
+    // Show and raise the dialog to bring it to the front
+    m_showChangelogDialog->show();
+    m_showChangelogDialog->raise();
+    m_showChangelogDialog->activateWindow();
+}
+
 

@@ -177,6 +177,7 @@ private:
     QDialog *m_howToUseDialog = nullptr;
     void showHowToUseDialog();
     QDialog *m_relationshipChartsDialog = nullptr;
+    QDialog* m_showChangelogDialog = nullptr;
 signals:
     void pdfExported(const QString& filePath);
 
@@ -204,6 +205,7 @@ private slots:
     void createDavisonChart();
     void createSynastryChart();
     void showRelationshipChartsDialog();
+    void showChangelog();
 
 };
 #endif // MAINWINDOW_H

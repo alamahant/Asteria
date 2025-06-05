@@ -47,44 +47,6 @@ ChartCalculator::~ChartCalculator()
     }
 }
 
-/*
-bool ChartCalculator::initialize()
-{
-    // Possible locations for ephemeris files
-    QStringList searchPaths = {
-        // Build directory
-        QCoreApplication::applicationDirPath() + "/ephemeris",
-        // AppImage structure
-        QCoreApplication::applicationDirPath() + "/../share/Asteria/ephemeris",
-        // Flatpak structure
-        "/app/share/Asteria/ephemeris",
-        // Standard locations
-        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/ephemeris",
-    };
-
-    // Find first valid path
-    for (const QString& path : searchPaths) {
-        if (path.isEmpty()) continue;
-
-        QDir dir(path);
-        if (dir.exists() && (dir.exists("sepl_18.se1") || dir.exists("sepl_20.se1"))) {
-            m_ephemerisPath = path;
-
-            // Set ephemeris path for Swiss Ephemeris
-            QByteArray pathBytes = m_ephemerisPath.toLocal8Bit();
-            swe_set_ephe_path(pathBytes.constData());
-
-            m_isInitialized = true;
-            return true;
-        }
-    }
-
-    qWarning() << "Ephemeris files not found in any standard location!";
-    m_lastError = "Ephemeris files not found. Please check installation.";
-    return false;
-}
-
-*/
 
 
 bool ChartCalculator::initialize()
@@ -222,6 +184,27 @@ double ChartCalculator::dateTimeToJulianDay(const QDateTime &dateTime, const QSt
 
 
 
+/*
+QString ChartCalculator::getZodiacSign(double longitude) const {
+    // Normalize longitude to 0-360
+    longitude = fmod(longitude, 360.0);
+    if (longitude < 0) longitude += 360.0;
+
+    // Calculate sign index (0-11)
+    int signIndex = static_cast<int>(longitude / 30.0);
+    double degreeInSign = longitude - (signIndex * 30.0);
+
+    // Return sign name
+    static const QString signs[] = {
+        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+    };
+
+    //return signs[signIndex];
+    return QString("%1 %2°").arg(signs[signIndex]).arg(degreeInSign, 0, 'f', 1);
+
+}
+*/
 
 QString ChartCalculator::getZodiacSign(double longitude) const {
     // Normalize longitude to 0-360
@@ -230,6 +213,11 @@ QString ChartCalculator::getZodiacSign(double longitude) const {
 
     // Calculate sign index (0-11)
     int signIndex = static_cast<int>(longitude / 30.0);
+    double degreeInSign = longitude - (signIndex * 30.0);
+
+    // Calculate degrees and minutes within the sign
+    int degree = static_cast<int>(degreeInSign);
+    int minute = static_cast<int>((degreeInSign - degree) * 60);
 
     // Return sign name
     static const QString signs[] = {
@@ -237,8 +225,10 @@ QString ChartCalculator::getZodiacSign(double longitude) const {
         "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
     };
 
-    return signs[signIndex];
+    return QString("%1 %2° %3'").arg(signs[signIndex]).arg(degree).arg(minute);
 }
+
+
 
 QString ChartCalculator::findHouse(double longitude, const QVector<HouseData> &houses) const {
     // Normalize longitude to 0-360

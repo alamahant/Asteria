@@ -43,6 +43,8 @@ void AspectarianWidget::setupUi() {
 
     // Set the size policy to expand in both directions
     m_table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+
 }
 
 void AspectarianWidget::updateData(const ChartData &chartData)

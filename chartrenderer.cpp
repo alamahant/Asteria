@@ -52,10 +52,18 @@ void PlanetItem::updateTooltip() {
     bool isNode = (m_id == "North Node" || m_id == "South Node");
 
     // Create tooltip, excluding retrograde symbol for nodes
+    /*
     QString tooltip = QString("%1 in %2 at %3°%4 in %5")
                           .arg(m_id)
                           .arg(m_sign)
                           .arg(m_longitude, 0, 'f', 2)
+                          .arg((m_isRetrograde && !isNode) ? " ℞" : "")
+                          .arg(m_house);
+    */
+
+    QString tooltip = QString("%1 in %2%3 in %4")
+                          .arg(m_id)
+                          .arg(m_sign)  // Already contains "Libra 23.4°"
                           .arg((m_isRetrograde && !isNode) ? " ℞" : "")
                           .arg(m_house);
 
@@ -351,7 +359,14 @@ void ChartRenderer::drawZodiacSigns()
 
     // In astrology, 0° is at the 9 o'clock position (East) and increases counterclockwise
     // In Qt, 0° is at the 3 o'clock position and increases counterclockwise
+
+    //double ascendantLongitude = getAscendantLongitude(); // Get from chart data
+    //qDebug() << "Ascendant longitude:" << ascendantLongitude;
+
+
     double startAngle = 90.0; // Start at the top (12 o'clock)
+    // Should be dynamic based on Ascendant:
+    //double startAngle = 90.0 - ascendantLongitude;
 
     for (int i = 0; i < 12; i++) {
         // Calculate the angle for this sign (30 degrees per sign)
@@ -635,11 +650,22 @@ void ChartRenderer::drawAngles() {
         line->setPen(pen);
 
         // Create detailed tooltip
+        /*
         QString tooltipText = QString("%1 (%2): %3° %4")
+
                                   .arg(angle.id)
                                   .arg(displayNames[angle.id])
                                   .arg(longitude, 0, 'f', 2)
                                   .arg(angle.sign);
+
+        */
+
+        QString tooltipText = QString("%1 (%2): %3")
+                                  .arg(angle.id)
+                                  .arg(displayNames[angle.id])
+                                  .arg(angle.sign);  // Just show "Asc (AC): Libra 28°36'"
+
+
 
         line->setToolTip(tooltipText);
         line->setAcceptHoverEvents(true);
@@ -1123,4 +1149,13 @@ void ChartRenderer::drawHouseRing() {
     }
 }
 
+
+double ChartRenderer::getAscendantLongitude() const {
+    for (const AngleData &angle : m_chartData.angles) {
+        if (angle.id == "Asc") {
+            return angle.longitude;
+        }
+    }
+    return 0.0; // Fallback if not found
+}
 

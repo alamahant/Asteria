@@ -29,6 +29,7 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QTextBrowser>
+#include <QDialog>
 
 #ifdef FLATHUB_BUILD
 // QtPdf is not available in Flathub
@@ -49,6 +50,21 @@
 #include "elementmodalitywidget.h"
 #include "symbolsdialog.h"
 #include"osmmapdialog.h"
+#include<QItemSelection>
+#include "transitsearchdialog.h"
+#include<QJsonArray>
+#include<QJsonDocument>
+#include<QJsonObject>
+#include<QProgressDialog>
+
+
+struct ParsedDate {
+    int year;   // Astronomical year (negative for BCE, 0 for 1 BCE, etc.)
+    int month;
+    int day;
+    bool valid;
+};
+
 
 class MainWindow : public QMainWindow
 {
@@ -129,6 +145,8 @@ private:
     QString m_currentInterpretation;
     bool m_chartCalculated;
     QDate getBirthDate() const;
+    //ParsedDate getBirthDate() const;
+
 protected:
     void resizeEvent(QResizeEvent *event) override;
 private slots:
@@ -206,6 +224,77 @@ private slots:
     void createSynastryChart();
     void showRelationshipChartsDialog();
     void showChangelog();
+    // transit charts
+    //void showTransitChart();
+    void CalculateTransits();
+    void CalculateEclipses();
+
+private:
+    QPushButton* getTransitsButton;
+    QDialog* m_transitDialog;
+
+    // Search Dialog
+private slots:
+    void applyTransitFilter(const QString &datePattern,
+                            const QString &transitPattern,
+                            const QString &aspectPattern,
+                            const QString &natalPattern,
+                            const QString &maxOrbPattern,
+
+                             const QString &excludePattern);
+    void openTransitFilter();
+    void calculateSolarReturn();
+    void calculateLunarReturn();
+    void calculateSaturnReturn();
+    void calculateJupiterReturn();
+    // Venus return
+    void calculateVenusReturn();
+    // Mars Return
+    void calculateMarsReturn();
+    // Mercury Return
+    void calculateMercuryReturn();
+    void calculateUranusReturn();
+    void calculateNeptuneReturn();
+    void calculatePlutoReturn();
+private:
+    void doLunarReturnCalculation(const QDate& birthDate, const QTime& birthTime, const QDate& targetDate);
+    void doSolarReturnCalculation(const QDate& birthDate, const QTime& birthTime, int year);
+    void doSaturnReturnCalculation(const QDate& birthDate, const QTime& birthTime, int returnNumber);
+    void doJupiterReturnCalculation(const QDate& birthDate, const QTime& birthTime, int returnNumber);
+    void doVenusReturnCalculation(const QDate& birthDate, const QTime& birthTime, int returnNumber);
+    void doMarsReturnCalculation(const QDate& birthDate, const QTime& birthTime, int returnNumber);
+    void doMercuryReturnCalculation(const QDate& birthDate, const QTime& birthTime, int returnNumber);
+    void doUranusReturnCalculation(const QDate& birthDate, const QTime& birthTime, int returnNumber);
+    void doNeptuneReturnCalculation(const QDate& birthDate, const QTime& birthTime, int returnNumber);
+    void doPlutoReturnCalculation(const QDate& birthDate, const QTime& birthTime, int returnNumber);
+    // Secondary Progression Chart
+    void calculateSecondaryProgression();
+    void doSecondaryProgressionCalculation(int progressionYear);
+
+    int m_savedScrollPosition;
+    QItemSelection m_savedSelection;
+    TransitSearchDialog *m_transitSearchDialog = nullptr;
+
+private slots:
+    void exportChartData();
+    void showNewFeaturesDialog();
+
+private:
+    bool solarEclipses = true;
+    bool lunarEclipses = true;
+    void displayRawEclipseData(const QJsonArray &eclipseData);
+
+private:
+    QDate julianToGregorian(int year, int month, int day) const;
+
+
+    QDate checkAndConvertJulian(const QDate& date, bool useJulian) const;
+
+
+    bool validateDateFormat(const QString& dateText, QWidget* parentWidget);
+    QAction *useJulianForPre1582Action = nullptr;
+    static const QRegularExpression dateRegex;
+    QDialog* m_showNewFeaturesDialog = nullptr;
 
 };
 #endif // MAINWINDOW_H

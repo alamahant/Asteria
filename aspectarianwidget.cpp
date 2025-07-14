@@ -243,11 +243,31 @@ QColor AspectarianWidget::aspectColor(const QString &aspectType)
     if (aspectType == "QUI") return QColor(0, 255, 0, 50);         // Bright Green (Quincunx)
     if (aspectType == "SSQ") return QColor(255, 140, 0, 50);       // Dark Orange (Semi-square)
     if (aspectType == "SSX") return QColor(186, 85, 211, 50);      // Medium Orchid (Semi-sextile)
+    if (aspectType == "SQQ") return QColor(255, 105, 180, 50); // Hot Pink (Sesquiquadrate)
+
+
     //if (aspectType == "SSP") return QColor(124, 252, 0);         // Semiparallel (custom) - Lawn Green
     //if (aspectType == "PAR") return QColor(218, 112, 214);       // Parallel (custom) - Orchid
     return QColor(128, 128, 128, 50);  // Default gray
 }
 
+
+/*
+QColor AspectarianWidget::aspectColor(const QString &aspectType) {
+    if (aspectType == "CON") return QColor(220, 220, 220);      // Conjunction - Light Gray
+    if (aspectType == "OPP") return QColor(220, 38, 38);        // Opposition - Soft Red
+    if (aspectType == "SQR") return QColor(255, 179, 71);       // Square - Soft Orange
+    if (aspectType == "TRI") return QColor(100, 149, 237);      // Trine - Cornflower Blue (soft blue)
+    if (aspectType == "SEX") return QColor(72, 187, 205);       // Sextile - Medium Turquoise (soft blue)
+    if (aspectType == "QUI") return QColor(255, 140, 105);      // Quincunx - Light Coral (soft orange-pink)
+    if (aspectType == "SSQ") return QColor(186, 104, 200);      // Semi-square - Soft Purple
+    if (aspectType == "SSX") return QColor(67, 160, 71);        // Semi-sextile - Soft Green
+    if (aspectType == "SQQ") return QColor(255, 105, 180);      // Sesquiquadrate - Hot Pink
+    //if (aspectType == "SSP") return QColor(255, 255, 255);    // Semiparallel - White (if needed)
+    //if (aspectType == "PAR") return QColor(0, 0, 0);          // Parallel - Black (if needed)
+    return QColor(220, 220, 220);                               // Default - Light Gray
+}
+*/
 
 QString AspectarianWidget::aspectSymbol(const QString &aspectType)
 {
@@ -259,6 +279,9 @@ QString AspectarianWidget::aspectSymbol(const QString &aspectType)
     if (aspectType == "QUI") return "⦻";  // Quincunx — unique circle-cross
     if (aspectType == "SSQ") return "∟";  // Semi-square — right angle, sharper than ∠
     if (aspectType == "SSX") return "⧫";  // Semi-sextile — diamond
+    if (aspectType == "SQQ") return "⋔"; // Sesquiquadrate — pitchfork
+
+
     return aspectType;  // Fallback to raw code
 }
 

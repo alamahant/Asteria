@@ -6,6 +6,11 @@
 #include <QColor>
 #include <QSettings>
 
+namespace GlobalFlags {
+extern bool additionalBodiesEnabled;
+extern QString lastGeneratedChartType;
+}
+
 // Global orb setting functions
 double getOrbMax();
 void setOrbMax(double value);

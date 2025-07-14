@@ -275,7 +275,8 @@ QVector<AspectData> ChartCalculator::calculateAspects(const QVector<PlanetData> 
         {"SEX", 60.0, orbMax},     // Sextile
         {"QUI", 150.0, orbMax * 0.75},  // Quintile
         {"SSQ", 45.0, orbMax * 0.75},  // Semi-square
-        {"SSX", 30.0, orbMax * 0.75}   // Semi-sextile
+        {"SQQ", 135.0, orbMax * 0.75}, // Sesquiquadrate
+        {"SSX", 30.0, orbMax * 0.75}  // Semi-sextile
         //{"SSP", 0.0, orbMax * 0.5},     // Semiparallel (custom) - typically for declination
         //{"PAR", 0.0, orbMax * 0.5}      // Parallel (custom) - typically for declination
     };
@@ -305,7 +306,6 @@ QVector<AspectData> ChartCalculator::calculateAspects(const QVector<PlanetData> 
             }
         }
     }
-
     return aspects;
 }
 
@@ -450,9 +450,6 @@ QVector<AngleData> ChartCalculator::calculateAngles(double jd, double lat, doubl
     return angles;
 }
 
-
-
-
 QVector<PlanetData> ChartCalculator::calculatePlanetPositions(double jd, const QVector<HouseData> &houses) const {
     QVector<PlanetData> planets;
     // Define the planets to calculate
@@ -522,7 +519,10 @@ ChartData ChartCalculator::calculateSolarReturn(const QDate &birthDate,
                                                 const QString &utcOffset,
                                                 const QString &latitude,
                                                 const QString &longitude,
-                                                int year) {
+                                                const QString &houseSystem,
+
+                                                int year)
+{
     ChartData data;
 
     if (!m_isInitialized) {
@@ -578,9 +578,23 @@ ChartData ChartCalculator::calculateSolarReturn(const QDate &birthDate,
 
     // Calculate planet positions
     data.planets = calculatePlanetPositions(srJd, houses);
+    ////////// Add Syzygy and Pars Fortuna and other methods
+    addSyzygyAndParsFortuna(data.planets, srJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, srJd, houses);
+    ///////////
 
     // Calculate aspects
-    data.aspects = calculateAspects(data.planets, 8.0);
+    double orbMax = getOrbMax();
+
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+
+    // Convert Julian Day to QDateTime (implement julianDayToDateTime if needed)
+    QDateTime returnDateTime = julianDayToDateTime(srJd, utcOffset);
+
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = srJd;
 
     return data;
 }
@@ -590,6 +604,7 @@ ChartData ChartCalculator::calculateSaturnReturn(const QDate &birthDate,
                                                  const QString &utcOffset,
                                                  const QString &latitude,
                                                  const QString &longitude,
+                                                 const QString &houseSystem,
                                                  int returnNumber) {
     ChartData data;
 
@@ -639,9 +654,19 @@ ChartData ChartCalculator::calculateSaturnReturn(const QDate &birthDate,
 
     // Calculate planet positions
     data.planets = calculatePlanetPositions(srJd, houses);
-
+    ////////// Add Syzygy and Pars Fortuna and other methods
+    addSyzygyAndParsFortuna(data.planets, srJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, srJd, houses);
+    ///////////
     // Calculate aspects
-    data.aspects = calculateAspects(data.planets, 8.0);
+    double orbMax = getOrbMax();
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+    // Convert Julian Day to QDateTime (implement julianDayToDateTime if needed)
+    QDateTime returnDateTime = julianDayToDateTime(srJd, utcOffset);
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = srJd;
 
     return data;
 }
@@ -730,8 +755,6 @@ double ChartCalculator::findPlanetaryEvent(int planet, double startJd, double ta
     return (lowerJd + upperJd) / 2;
 }
 
-
-
 QString ChartCalculator::calculateTransits(const QDate &birthDate,
                                            const QTime &birthTime,
                                            const QString &utcOffset,
@@ -744,42 +767,41 @@ QString ChartCalculator::calculateTransits(const QDate &birthDate,
         return QString();
     }
 
-    // Convert birth data to Julian day
+
+    // Use the complete natal planet list from birthChart
     QDateTime birthDateTime(birthDate, birthTime);
     double birthJd = dateTimeToJulianDay(birthDateTime, utcOffset);
-
-    // Calculate natal positions
     double lat = latitude.toDouble();
     double lon = longitude.toDouble();
 
-    // Calculate natal house cusps
     QVector<HouseData> natalHouses = calculateHouseCusps(birthJd, lat, lon, houseSystem);
-
-    // Calculate natal angles
     QVector<AngleData> natalAngles = calculateAngles(birthJd, lat, lon, houseSystem);
-
-    // Calculate natal planet positions
     QVector<PlanetData> natalPlanets = calculatePlanetPositions(birthJd, natalHouses);
+    if (GlobalFlags::additionalBodiesEnabled) {
+        addSyzygyAndParsFortuna(natalPlanets, birthJd, natalHouses, natalAngles);
+        calculateAdditionalBodies(natalPlanets, birthJd, natalHouses);
+    }
+    //addSyzygyAndParsFortuna(natalPlanets, birthJd, natalHouses, natalAngles);
+    //calculateAdditionalBodies(natalPlanets, birthJd, natalHouses);
 
-    // Add Syzygy and Pars Fortuna to natal planets
-    addSyzygyAndParsFortuna(natalPlanets, birthJd, natalHouses, natalAngles);
-
-    // Convert transit start date to Julian day
     QDateTime transitStartDateTime(transitStartDate, QTime(0, 0));
     double transitStartJd = dateTimeToJulianDay(transitStartDateTime, "+0:00");
 
-    // Define planets to check for transits (exclude certain objects)
-    QStringList excludedTransitingObjects = {
-        "Pars Fortuna", "North Node", "South Node", "Chiron", "Syzygy"
-    };
+    QStringList includedTargetObjects;
+    QStringList excludedTransitingObjects;
 
-    // Define target objects for natal chart
-    QStringList includedTargetObjects = {
-        "Sun", "Moon", "Mercury", "Venus", "Mars",
-        "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"
-    };
+    if (GlobalFlags::additionalBodiesEnabled) {
+        includedTargetObjects = {"Sun", "Moon", "Mercury", "Venus", "Mars",
+                                 "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto",
+                                 "Lilith", "Ceres", "Pallas", "Juno", "Vesta", "Vertex", "East Point", "Chiron",
+                                 "Pars Fortuna", "North Node", "South Node"};
+        excludedTransitingObjects = {""};
+    } else {
+        includedTargetObjects = {"Sun", "Moon", "Mercury", "Venus", "Mars",
+                                 "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"};
+        excludedTransitingObjects = {"Chiron", "North Node", "South Node"};
+    }
 
-    // Define aspects to check with their codes
     struct AspectType {
         QString code;
         double angle;
@@ -795,60 +817,48 @@ QString ChartCalculator::calculateTransits(const QDate &birthDate,
         {"SEX", 60.0, orbMax},
         {"QUI", 150.0, orbMax * 0.75},
         {"SSQ", 45.0, orbMax * 0.75},
+        {"SQQ", 135.0, orbMax * 0.75},
+
+
         {"SSX", 30.0, orbMax * 0.75}
     };
-
     int numAspectTypes = sizeof(aspectTypes) / sizeof(aspectTypes[0]);
 
-    // Build transit report
     QString report;
     report += "---TRANSITS---\n";
 
-    // Check each day
     for (int day = 0; day < numberOfDays; day++) {
         double transitJd = transitStartJd + day;
         QDateTime transitDateTime = julianDayToDateTime(transitJd);
-
-        // Format date as YYYY/MM/DD to match target format
         QString dateStr = transitDateTime.toString("yyyy/MM/dd");
 
-        // Calculate transit house cusps
         QVector<HouseData> transitHouses = calculateHouseCusps(transitJd, lat, lon, houseSystem);
-
-        // Calculate transit angles
         QVector<AngleData> transitAngles = calculateAngles(transitJd, lat, lon, houseSystem);
-
-        // Calculate transit planet positions
         QVector<PlanetData> transitPlanets = calculatePlanetPositions(transitJd, transitHouses);
+        //addSyzygyAndParsFortuna(transitPlanets, transitJd, transitHouses, transitAngles);
+        //calculateAdditionalBodies(transitPlanets, transitJd, transitHouses);
 
-        // Add Syzygy and Pars Fortuna to transit planets
-        addSyzygyAndParsFortuna(transitPlanets, transitJd, transitHouses, transitAngles);
+        if (GlobalFlags::additionalBodiesEnabled) {
+            addSyzygyAndParsFortuna(transitPlanets, transitJd, transitHouses, transitAngles);
+            calculateAdditionalBodies(transitPlanets, transitJd, transitHouses);
+        }
 
-        // Store aspects for this day
+
         QStringList dayAspects;
-
-        // Check aspects between transit and natal planets
         for (const PlanetData &transitPlanet : transitPlanets) {
-            // Skip excluded transiting objects
             if (excludedTransitingObjects.contains(transitPlanet.id)) {
                 continue;
             }
-
             for (const PlanetData &natalPlanet : natalPlanets) {
-                // Only include target objects from natal chart
                 if (!includedTargetObjects.contains(natalPlanet.id)) {
                     continue;
                 }
-
-                // Calculate the smallest angle between the two planets
                 double diff = fabs(transitPlanet.longitude - natalPlanet.longitude);
                 if (diff > 180.0) diff = 360.0 - diff;
 
-                // Check each aspect type
                 for (int j = 0; j < numAspectTypes; j++) {
                     double orb = fabs(diff - aspectTypes[j].angle);
                     if (orb <= aspectTypes[j].orb) {
-                        // Format aspect string to match the expected format for parsing
                         QString transitPlanetName = transitPlanet.id;
                         if (transitPlanet.isRetrograde) {
                             transitPlanetName += " (R)";
@@ -858,21 +868,20 @@ QString ChartCalculator::calculateTransits(const QDate &birthDate,
                                                 .arg(transitPlanetName)
                                                 .arg(aspectTypes[j].code)
                                                 .arg(natalPlanet.id)
-                                                .arg(orb, 0, 'f', 2);
 
+                                                .arg(orb, 0, 'f', 2);
                         dayAspects.append(aspectStr);
-                        break;  // Only report the closest aspect
+
+
+                        break;
                     }
                 }
             }
         }
-
-        // Format output for parsing
         report += dateStr + ": " + dayAspects.join(", ") + "\n";
     }
     return report;
 }
-
 
 QDateTime ChartCalculator::julianDayToDateTime(double jd, const QString &utcOffset) const {
     int year, month, day, hour, minute, second;
@@ -915,27 +924,20 @@ QVector<EclipseData> ChartCalculator::findEclipses(const QDate &startDate,
                                                    bool solarEclipses,
                                                    bool lunarEclipses) {
     QVector<EclipseData> eclipses;
-
     if (!m_isInitialized) {
         m_lastError = "Swiss Ephemeris not initialized";
         return eclipses;
     }
 
-    // Convert dates to Julian days
-    QDateTime startDateTime(startDate, QTime(0, 0));
-    QDateTime endDateTime(endDate, QTime(23, 59, 59));
-    double startJd = dateTimeToJulianDay(startDateTime, "+0:00");
-    double endJd = dateTimeToJulianDay(endDateTime, "+0:00");
-
+    double startJd = dateTimeToJulianDay(QDateTime(startDate, QTime(0, 0)), "+0:00");
+    double endJd = dateTimeToJulianDay(QDateTime(endDate, QTime(23, 59, 59)), "+0:00");
     char serr[256] = {0};
 
-    // Process solar eclipses
+    // SOLAR ECLIPSES - CORRECTED
     if (solarEclipses) {
         double tjd = startJd;
         while (tjd < endJd) {
-            double tret[10] = {0}; // Array to receive eclipse times
-
-            // Find next global solar eclipse
+            double tret[10] = {0};
             int32 iflgret = swe_sol_eclipse_when_glob(tjd, SEFLG_SWIEPH, 0, tret, 0, serr);
 
             if (iflgret < 0) {
@@ -943,141 +945,85 @@ QVector<EclipseData> ChartCalculator::findEclipses(const QDate &startDate,
                 break;
             }
 
-            // tret[0] contains the time of maximum eclipse
             tjd = tret[0];
-
-            // If we found an eclipse within our range
             if (tjd <= endJd) {
                 EclipseData eclipse;
                 eclipse.date = julianDayToDateTime(tjd).date();
                 eclipse.time = julianDayToDateTime(tjd).time();
                 eclipse.julianDay = tjd;
 
-                // Determine eclipse type
-                if (iflgret & SE_ECL_TOTAL) {
-                    eclipse.type = "Total Solar Eclipse";
-                } else if (iflgret & SE_ECL_ANNULAR) {
-                    eclipse.type = "Annular Solar Eclipse";
-                } else if (iflgret & SE_ECL_PARTIAL) {
-                    eclipse.type = "Partial Solar Eclipse";
-                } else if (iflgret & SE_ECL_ANNULAR_TOTAL) {
-                    eclipse.type = "Hybrid Solar Eclipse";
-                } else {
-                    eclipse.type = "Solar Eclipse";
+                // Eclipse type
+                if (iflgret & SE_ECL_TOTAL) eclipse.type = "Total Solar Eclipse";
+                else if (iflgret & SE_ECL_ANNULAR) eclipse.type = "Annular Solar Eclipse";
+                else if (iflgret & SE_ECL_PARTIAL) eclipse.type = "Partial Solar Eclipse";
+                else if (iflgret & SE_ECL_ANNULAR_TOTAL) eclipse.type = "Hybrid Solar Eclipse";
+                else eclipse.type = "Solar Eclipse";
+
+                // CORRECTED: Get eclipse location
+                double geopos[3] = {0, 0, 0}; // Will be filled by the function
+                double attr[20] = {0};
+                if (swe_sol_eclipse_where(tjd, SEFLG_SWIEPH, geopos, attr, serr) >= 0) {
+                    eclipse.longitude = geopos[0];
+                    eclipse.latitude = geopos[1];
+                    eclipse.magnitude = attr[0];
                 }
 
-                // Get eclipse details
-                double attr[20] = {0};
-                // Corrected function call with 5 arguments
-                swe_sol_eclipse_where(tjd, SEFLG_SWIEPH, attr, 0, serr);
-
-                // Eclipse magnitude
-                eclipse.magnitude = attr[0];
-
-                // Geographic coordinates of maximum eclipse
-                eclipse.latitude = attr[2];
-                eclipse.longitude = attr[3];
-
                 eclipses.append(eclipse);
-
-                // Move to the next day to find the next eclipse
-                tjd += 10; // Add 10 days to avoid finding the same eclipse
+                tjd += 10; // Next search
             } else {
-                break; // Eclipse is beyond our end date
+                break;
             }
         }
     }
 
-    // Process lunar eclipses
+    // LUNAR ECLIPSES - COMPLETELY REWRITTEN
     if (lunarEclipses) {
         double tjd = startJd;
         while (tjd < endJd) {
-            // For lunar eclipses, we'll use a different approach
-            // We'll find the next full moon and check if it's an eclipse
-
-            // First, find the next full moon
             double tret[10] = {0};
-            double fullMoonJd = tjd;
+            // USE PROPER LUNAR ECLIPSE FUNCTION
+            int32 iflgret = swe_lun_eclipse_when(tjd, SEFLG_SWIEPH, 0, tret, 0, serr);
 
-            // Calculate sun and moon positions to find opposition (full moon)
-            bool foundFullMoon = false;
-            for (int i = 0; i < 30 && fullMoonJd < endJd; i++) {
-                fullMoonJd = tjd + i;
-
-                double sunPos[6], moonPos[6];
-                if (swe_calc_ut(fullMoonJd, SE_SUN, SEFLG_SWIEPH, sunPos, serr) < 0 ||
-                    swe_calc_ut(fullMoonJd, SE_MOON, SEFLG_SWIEPH, moonPos, serr) < 0) {
-                    m_lastError = QString("Error calculating positions: %1").arg(serr);
-                    break;
-                }
-
-                // Calculate angle between sun and moon
-                double angle = fabs(moonPos[0] - sunPos[0]);
-                if (angle > 180) angle = 360 - angle;
-
-                // If close to 180 degrees (opposition), we found a full moon
-                if (fabs(angle - 180) < 1.0) {
-                    foundFullMoon = true;
-                    break;
-                }
-            }
-
-            if (!foundFullMoon) {
-                // If we couldn't find a full moon, move forward and try again
-                tjd += 10;
-                continue;
-            }
-
-            // Now check if this full moon is a lunar eclipse
-            // We'll use the node position to determine this
-            double nodePos[6];
-            if (swe_calc_ut(fullMoonJd, SE_TRUE_NODE, SEFLG_SWIEPH, nodePos, serr) < 0) {
-                m_lastError = QString("Error calculating node position: %1").arg(serr);
+            if (iflgret < 0) {
+                m_lastError = QString("Error finding lunar eclipse: %1").arg(serr);
                 break;
             }
 
-            double moonPos[6];
-            if (swe_calc_ut(fullMoonJd, SE_MOON, SEFLG_SWIEPH, moonPos, serr) < 0) {
-                m_lastError = QString("Error calculating moon position: %1").arg(serr);
-                break;
-            }
-
-            double moonNodeAngle = fabs(moonPos[0] - nodePos[0]);
-            if (moonNodeAngle > 180) moonNodeAngle = 360 - moonNodeAngle;
-
-            // If moon is close to a node, it's likely an eclipse
-            if (moonNodeAngle < 12 || fabs(moonNodeAngle - 180) < 12) {
+            tjd = tret[0];
+            if (tjd <= endJd) {
                 EclipseData eclipse;
-                eclipse.date = julianDayToDateTime(fullMoonJd).date();
-                eclipse.time = julianDayToDateTime(fullMoonJd).time();
-                eclipse.julianDay = fullMoonJd;
+                eclipse.date = julianDayToDateTime(tjd).date();
+                eclipse.time = julianDayToDateTime(tjd).time();
+                eclipse.julianDay = tjd;
 
-                // Determine eclipse type based on proximity to node
-                double proximity = std::min(moonNodeAngle, fabs(moonNodeAngle - 180));
-                if (proximity < 4) {
+                // Eclipse type based on Swiss Ephemeris flags
+                if (iflgret & SE_ECL_TOTAL) {
                     eclipse.type = "Total Lunar Eclipse";
                     eclipse.magnitude = 1.0;
-                } else if (proximity < 8) {
+                } else if (iflgret & SE_ECL_PARTIAL) {
                     eclipse.type = "Partial Lunar Eclipse";
-                    eclipse.magnitude = 0.5;
-                } else {
+                    eclipse.magnitude = 0.7;
+                } else if (iflgret & SE_ECL_PENUMBRAL) {
                     eclipse.type = "Penumbral Lunar Eclipse";
-                    eclipse.magnitude = 0.2;
+                    eclipse.magnitude = 0.3;
+                } else {
+                    eclipse.type = "Lunar Eclipse";
+                    eclipse.magnitude = 0.5;
                 }
 
-                // Lunar eclipses are visible from approximately half the Earth
+                // Lunar eclipses are visible from entire night side of Earth
                 eclipse.latitude = 0;
                 eclipse.longitude = 0;
 
                 eclipses.append(eclipse);
+                tjd += 10;
+            } else {
+                break;
             }
-
-            // Move to a few days after the full moon
-            tjd = fullMoonJd + 10;
         }
     }
 
-    // Sort eclipses by date
+    // Sort by date
     std::sort(eclipses.begin(), eclipses.end(), [](const EclipseData &a, const EclipseData &b) {
         return a.julianDay < b.julianDay;
     });
@@ -1222,7 +1168,7 @@ void ChartCalculator::addSyzygyAndParsFortuna(QVector<PlanetData> &planets, doub
         }
     } else {
         // Fallback if we couldn't find a syzygy
-        qWarning() << "Could not find a valid Syzygy, using fallback";
+        //qWarning() << "Could not find a valid Syzygy, using fallback";
         double xx[6];
         if (swe_calc_ut(jd, SE_SUN, flags, xx, serr) >= 0) {
             syzygy.longitude = xx[0];
@@ -1359,4 +1305,603 @@ void ChartCalculator::calculateAdditionalBodies(QVector<PlanetData> &planets, do
 }
 
 
+ChartData ChartCalculator::calculateLunarReturn(
+    const QDate &birthDate,
+    const QTime &birthTime,
+    const QString &utcOffset,
+    const QString &latitude,
+    const QString &longitude,
+    const QString &houseSystem,
+    const QDate &targetDate // The date for which to find the lunar return
+    )
+{
+    ChartData data;
 
+    if (!m_isInitialized) {
+        m_lastError = "Swiss Ephemeris not initialized";
+        return data;
+    }
+
+    // Convert birth data to Julian day
+    QDateTime birthDateTime(birthDate, birthTime);
+    double birthJd = dateTimeToJulianDay(birthDateTime, utcOffset);
+
+    // Get Moon's position at birth
+    double xx[6];
+    char serr[256];
+    int flag = SEFLG_SWIEPH;
+    int ret = swe_calc_ut(birthJd, SE_MOON, flag, xx, serr);
+    if (ret < 0) {
+        m_lastError = QString("Error calculating Moon position: %1").arg(serr);
+        return data;
+    }
+    double moonLongitude = xx[0];
+
+    // Estimate lunar return time (around targetDate)
+    QDate approxDate = targetDate;
+    QTime approxTime = birthTime; // Use birth time as a starting guess
+    QDateTime approxDateTime(approxDate, approxTime);
+    double approxJd = dateTimeToJulianDay(approxDateTime, utcOffset);
+
+    // Find exact lunar return (when Moon returns to the same longitude)
+    double lrJd = findPlanetaryEvent(SE_MOON, approxJd, moonLongitude);
+    if (lrJd <= 0) {
+        m_lastError = "Could not find lunar return";
+        return data;
+    }
+
+    // Calculate chart for the lunar return time
+    double lat = latitude.toDouble();
+    double lon = longitude.toDouble();
+
+    // Calculate house cusps
+    QVector<HouseData> houses = calculateHouseCusps(lrJd, lat, lon, houseSystem);
+    data.houses = houses;
+
+    // Calculate angles
+    data.angles = calculateAngles(lrJd, lat, lon, houseSystem);
+
+    // Calculate planet positions
+    data.planets = calculatePlanetPositions(lrJd, houses);
+
+    // Add Syzygy, Pars Fortuna, and other methods
+    addSyzygyAndParsFortuna(data.planets, lrJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, lrJd, houses);
+
+    // Calculate aspects
+    double orbMax = getOrbMax();
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+    // Convert Julian Day to QDateTime (implement julianDayToDateTime if needed)
+    QDateTime returnDateTime = julianDayToDateTime(lrJd, utcOffset);
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = lrJd;
+
+    return data;
+}
+
+
+bool ChartCalculator::calculateSunriseSunset(
+    const QDate &date,
+    double latitude,
+    double longitude,
+    QDateTime &sunrise,
+    QDateTime &sunset,
+    QString &errorMsg
+    ) {
+    // Convert date to Julian Day at 0h UT
+    QDateTime dt(date, QTime(0, 0), QTimeZone::utc());
+    double jd_ut = swe_julday(dt.date().year(), dt.date().month(), dt.date().day(), 0.0, SE_GREG_CAL);
+
+    double geopos[3] = { longitude, latitude, 0.0 }; // longitude, latitude, altitude (meters)
+    double tret_rise = 0.0, tret_set = 0.0;
+    char serr[256] = {0};
+
+    // Calculate sunrise
+    int ret_rise = swe_rise_trans(
+        jd_ut,
+        SE_SUN,
+        NULL,
+        SEFLG_SWIEPH,
+        SE_CALC_RISE,
+        geopos,
+        0,      // atpress (0 = default)
+        0,      // attemp (0 = default)
+        &tret_rise,
+        serr
+        );
+    if (ret_rise < 0) {
+        errorMsg = QString("Sunrise calculation error: %1").arg(serr);
+        return false;
+    }
+
+    // Calculate sunset
+    int ret_set = swe_rise_trans(
+        jd_ut,
+        SE_SUN,
+        NULL,
+        SEFLG_SWIEPH,
+        SE_CALC_SET,
+        geopos,
+        0,      // atpress (0 = default)
+        0,      // attemp (0 = default)
+        &tret_set,
+        serr
+        );
+    if (ret_set < 0) {
+        errorMsg = QString("Sunset calculation error: %1").arg(serr);
+        return false;
+    }
+
+    sunrise = julianDayToDateTime(tret_rise);
+    sunset = julianDayToDateTime(tret_set);
+    errorMsg.clear();
+    return true;
+}
+
+
+ChartData ChartCalculator::calculateJupiterReturn(
+    const QDate &birthDate,
+    const QTime &birthTime,
+    const QString &utcOffset,
+    const QString &latitude,
+    const QString &longitude,
+    const QString &houseSystem,
+    int returnNumber)
+{
+    ChartData data;
+
+    if (!m_isInitialized) {
+        m_lastError = "Swiss Ephemeris not initialized";
+        return data;
+    }
+
+    // Convert birth data to Julian day
+    QDateTime birthDateTime(birthDate, birthTime);
+    double birthJd = dateTimeToJulianDay(birthDateTime, utcOffset);
+
+    // Get Jupiter's position at birth
+    double xx[6];
+    char serr[256];
+    int flag = SEFLG_SWIEPH;
+    int ret = swe_calc_ut(birthJd, SE_JUPITER, flag, xx, serr);
+
+    if (ret < 0) {
+        m_lastError = QString("Error calculating Jupiter position: %1").arg(serr);
+        return data;
+    }
+
+    double jupiterLongitude = xx[0];
+
+    // Estimate Jupiter return time
+    // Jupiter takes about 11.86 years for one orbit
+    double approxJd = birthJd + (returnNumber * 11.86 * 365.25);
+
+    // Find exact Jupiter return (when Jupiter returns to the same longitude)
+    double jrJd = findPlanetaryEvent(SE_JUPITER, approxJd, jupiterLongitude);
+
+    if (jrJd <= 0) {
+        m_lastError = "Could not find Jupiter return";
+        return data;
+    }
+
+    // Calculate chart for the Jupiter return time
+    double lat = latitude.toDouble();
+    double lon = longitude.toDouble();
+
+    // Calculate house cusps
+    QVector<HouseData> houses = calculateHouseCusps(jrJd, lat, lon, houseSystem);
+    data.houses = houses;
+
+    // Calculate angles
+    data.angles = calculateAngles(jrJd, lat, lon, houseSystem);
+
+    // Calculate planet positions
+    data.planets = calculatePlanetPositions(jrJd, houses);
+
+    // Add Syzygy, Pars Fortuna, and other methods
+    addSyzygyAndParsFortuna(data.planets, jrJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, jrJd, houses);
+
+    // Calculate aspects
+    double orbMax = getOrbMax();
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+    // Convert Julian Day to QDateTime
+    QDateTime returnDateTime = julianDayToDateTime(jrJd, utcOffset);
+
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = jrJd;
+
+    return data;
+}
+
+// more planet returns
+
+ChartData ChartCalculator::calculateVenusReturn(
+    const QDate &birthDate,
+    const QTime &birthTime,
+    const QString &utcOffset,
+    const QString &latitude,
+    const QString &longitude,
+    const QString &houseSystem,
+    int returnNumber)
+{
+    ChartData data;
+
+    if (!m_isInitialized) {
+        m_lastError = "Swiss Ephemeris not initialized";
+        return data;
+    }
+
+    // Convert birth data to Julian day
+    QDateTime birthDateTime(birthDate, birthTime);
+    double birthJd = dateTimeToJulianDay(birthDateTime, utcOffset);
+
+    // Get Venus's position at birth
+    double xx[6];
+    char serr[256];
+    int flag = SEFLG_SWIEPH;
+    int ret = swe_calc_ut(birthJd, SE_VENUS, flag, xx, serr);
+
+    if (ret < 0) {
+        m_lastError = QString("Error calculating Venus position: %1").arg(serr);
+        return data;
+    }
+
+    double venusLongitude = xx[0];
+
+    // Estimate Venus return time
+    // Venus takes about 0.615 years for one orbit
+    double approxJd = birthJd + (returnNumber * 0.61519726 * 365.25);
+
+    // Find exact Venus return (when Venus returns to the same longitude)
+    double vrJd = findPlanetaryEvent(SE_VENUS, approxJd, venusLongitude);
+
+    if (vrJd <= 0) {
+        m_lastError = "Could not find Venus return";
+        return data;
+    }
+
+    // Calculate chart for the Venus return time
+    double lat = latitude.toDouble();
+    double lon = longitude.toDouble();
+
+    // Calculate house cusps
+    QVector<HouseData> houses = calculateHouseCusps(vrJd, lat, lon, houseSystem);
+    data.houses = houses;
+
+    // Calculate angles
+    data.angles = calculateAngles(vrJd, lat, lon, houseSystem);
+
+    // Calculate planet positions
+    data.planets = calculatePlanetPositions(vrJd, houses);
+
+    // Add Syzygy, Pars Fortuna, and other methods
+    addSyzygyAndParsFortuna(data.planets, vrJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, vrJd, houses);
+
+    // Calculate aspects
+    double orbMax = getOrbMax();
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+    // Convert Julian Day to QDateTime
+    QDateTime returnDateTime = julianDayToDateTime(vrJd, utcOffset);
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = vrJd;
+
+    return data;
+}
+
+ChartData ChartCalculator::calculateMarsReturn(
+    const QDate &birthDate,
+    const QTime &birthTime,
+    const QString &utcOffset,
+    const QString &latitude,
+    const QString &longitude,
+    const QString &houseSystem,
+    int returnNumber)
+{
+    ChartData data;
+
+    if (!m_isInitialized) {
+        m_lastError = "Swiss Ephemeris not initialized";
+        return data;
+    }
+
+    // Convert birth data to Julian day
+    QDateTime birthDateTime(birthDate, birthTime);
+    double birthJd = dateTimeToJulianDay(birthDateTime, utcOffset);
+
+    // Get Mars's position at birth
+    double xx[6];
+    char serr[256];
+    int flag = SEFLG_SWIEPH;
+    int ret = swe_calc_ut(birthJd, SE_MARS, flag, xx, serr);
+
+    if (ret < 0) {
+        m_lastError = QString("Error calculating Mars position: %1").arg(serr);
+        return data;
+    }
+
+    double marsLongitude = xx[0];
+
+    // Estimate Mars return time
+    // Mars takes about 1.88 years for one orbit
+    double approxJd = birthJd + (returnNumber * 1.8808476 * 365.25);
+
+    // Find exact Mars return (when Mars returns to the same longitude)
+    double mrJd = findPlanetaryEvent(SE_MARS, approxJd, marsLongitude);
+
+    if (mrJd <= 0) {
+        m_lastError = "Could not find Mars return";
+        return data;
+    }
+
+    // Calculate chart for the Mars return time
+    double lat = latitude.toDouble();
+    double lon = longitude.toDouble();
+
+    // Calculate house cusps
+    QVector<HouseData> houses = calculateHouseCusps(mrJd, lat, lon, houseSystem);
+    data.houses = houses;
+
+    // Calculate angles
+    data.angles = calculateAngles(mrJd, lat, lon, houseSystem);
+
+    // Calculate planet positions
+    data.planets = calculatePlanetPositions(mrJd, houses);
+
+    // Add Syzygy, Pars Fortuna, and other methods
+    addSyzygyAndParsFortuna(data.planets, mrJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, mrJd, houses);
+
+    // Calculate aspects
+    double orbMax = getOrbMax();
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+    // Convert Julian Day to QDateTime
+    QDateTime returnDateTime = julianDayToDateTime(mrJd, utcOffset);
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = mrJd;
+
+    return data;
+}
+
+ChartData ChartCalculator::calculateMercuryReturn(
+    const QDate &birthDate,
+    const QTime &birthTime,
+    const QString &utcOffset,
+    const QString &latitude,
+    const QString &longitude,
+    const QString &houseSystem,
+    int returnNumber)
+{
+    ChartData data;
+
+    if (!m_isInitialized) {
+        m_lastError = "Swiss Ephemeris not initialized";
+        return data;
+    }
+
+    // Convert birth data to Julian day
+    QDateTime birthDateTime(birthDate, birthTime);
+    double birthJd = dateTimeToJulianDay(birthDateTime, utcOffset);
+
+    // Get Mercury's position at birth
+    double xx[6];
+    char serr[256];
+    int flag = SEFLG_SWIEPH;
+    int ret = swe_calc_ut(birthJd, SE_MERCURY, flag, xx, serr);
+
+    if (ret < 0) {
+        m_lastError = QString("Error calculating Mercury position: %1").arg(serr);
+        return data;
+    }
+
+    double mercuryLongitude = xx[0];
+
+    // Estimate Mercury return time
+    // Mercury takes about 0.24 years for one orbit
+    double approxJd = birthJd + (returnNumber * 0.2408467 * 365.25);
+
+    // Find exact Mercury return (when Mercury returns to the same longitude)
+    double mrJd = findPlanetaryEvent(SE_MERCURY, approxJd, mercuryLongitude);
+
+    if (mrJd <= 0) {
+        m_lastError = "Could not find Mercury return";
+        return data;
+    }
+
+    // Calculate chart for the Mercury return time
+    double lat = latitude.toDouble();
+    double lon = longitude.toDouble();
+
+    // Calculate house cusps
+    QVector<HouseData> houses = calculateHouseCusps(mrJd, lat, lon, houseSystem);
+    data.houses = houses;
+
+    // Calculate angles
+    data.angles = calculateAngles(mrJd, lat, lon, houseSystem);
+
+    // Calculate planet positions
+    data.planets = calculatePlanetPositions(mrJd, houses);
+
+    // Add Syzygy, Pars Fortuna, and other methods
+    addSyzygyAndParsFortuna(data.planets, mrJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, mrJd, houses);
+
+    // Calculate aspects
+    double orbMax = getOrbMax();
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+    // Convert Julian Day to QDateTime
+    QDateTime returnDateTime = julianDayToDateTime(mrJd, utcOffset);
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = mrJd;
+
+    return data;
+}
+
+//Uranus Neptune Pluto
+
+ChartData ChartCalculator::calculateUranusReturn(const QDate &birthDate, const QTime &birthTime, const QString &utcOffset, const QString &latitude, const QString &longitude, const QString &houseSystem, int returnNumber)
+{
+    ChartData data;
+    if (!m_isInitialized) {
+        m_lastError = "Swiss Ephemeris not initialized";
+        return data;
+    }
+
+    QDateTime birthDateTime(birthDate, birthTime);
+    double birthJd = dateTimeToJulianDay(birthDateTime, utcOffset);
+
+    double xx[6];
+    char serr[256];
+    int flag = SEFLG_SWIEPH;
+    int ret = swe_calc_ut(birthJd, SE_URANUS, flag, xx, serr);
+    if (ret < 0) {
+        m_lastError = QString("Error calculating Uranus position: %1").arg(serr);
+        return data;
+    }
+    double uranusLongitude = xx[0];
+
+    double uranusPeriod = 84.016846;
+    double approxJd = birthJd + (returnNumber * uranusPeriod * 365.25);
+
+    double srJd = findPlanetaryEvent(SE_URANUS, approxJd, uranusLongitude);
+    if (srJd <= 0) {
+        m_lastError = "Could not find Uranus return";
+        return data;
+    }
+
+    double lat = latitude.toDouble();
+    double lon = longitude.toDouble();
+
+    QVector<HouseData> houses = calculateHouseCusps(srJd, lat, lon, houseSystem);
+    data.houses = houses;
+    data.angles = calculateAngles(srJd, lat, lon, houseSystem);
+    data.planets = calculatePlanetPositions(srJd, houses);
+
+    addSyzygyAndParsFortuna(data.planets, srJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, srJd, houses);
+
+    double orbMax = getOrbMax();
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+    QDateTime returnDateTime = julianDayToDateTime(srJd, utcOffset);
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = srJd;
+
+    return data;
+}
+
+ChartData ChartCalculator::calculateNeptuneReturn(const QDate &birthDate, const QTime &birthTime, const QString &utcOffset, const QString &latitude, const QString &longitude, const QString &houseSystem, int returnNumber)
+{
+    ChartData data;
+    if (!m_isInitialized) {
+        m_lastError = "Swiss Ephemeris not initialized";
+        return data;
+    }
+
+    QDateTime birthDateTime(birthDate, birthTime);
+    double birthJd = dateTimeToJulianDay(birthDateTime, utcOffset);
+
+    double xx[6];
+    char serr[256];
+    int flag = SEFLG_SWIEPH;
+    int ret = swe_calc_ut(birthJd, SE_NEPTUNE, flag, xx, serr);
+    if (ret < 0) {
+        m_lastError = QString("Error calculating Neptune position: %1").arg(serr);
+        return data;
+    }
+    double neptuneLongitude = xx[0];
+
+    double neptunePeriod = 164.79132;
+    double approxJd = birthJd + (returnNumber * neptunePeriod * 365.25);
+
+    double srJd = findPlanetaryEvent(SE_NEPTUNE, approxJd, neptuneLongitude);
+    if (srJd <= 0) {
+        m_lastError = "Could not find Neptune return";
+        return data;
+    }
+
+    double lat = latitude.toDouble();
+    double lon = longitude.toDouble();
+
+    QVector<HouseData> houses = calculateHouseCusps(srJd, lat, lon, houseSystem);
+    data.houses = houses;
+    data.angles = calculateAngles(srJd, lat, lon, houseSystem);
+    data.planets = calculatePlanetPositions(srJd, houses);
+
+    addSyzygyAndParsFortuna(data.planets, srJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, srJd, houses);
+
+    double orbMax = getOrbMax();
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+    QDateTime returnDateTime = julianDayToDateTime(srJd, utcOffset);
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = srJd;
+
+    return data;
+}
+
+ChartData ChartCalculator::calculatePlutoReturn(const QDate &birthDate, const QTime &birthTime, const QString &utcOffset, const QString &latitude, const QString &longitude, const QString &houseSystem, int returnNumber)
+{
+    ChartData data;
+    if (!m_isInitialized) {
+        m_lastError = "Swiss Ephemeris not initialized";
+        return data;
+    }
+
+    QDateTime birthDateTime(birthDate, birthTime);
+    double birthJd = dateTimeToJulianDay(birthDateTime, utcOffset);
+
+    double xx[6];
+    char serr[256];
+    int flag = SEFLG_SWIEPH;
+    int ret = swe_calc_ut(birthJd, SE_PLUTO, flag, xx, serr);
+    if (ret < 0) {
+        m_lastError = QString("Error calculating Pluto position: %1").arg(serr);
+        return data;
+    }
+    double plutoLongitude = xx[0];
+
+    double plutoPeriod = 248.00;
+    double approxJd = birthJd + (returnNumber * plutoPeriod * 365.25);
+
+    double srJd = findPlanetaryEvent(SE_PLUTO, approxJd, plutoLongitude);
+    if (srJd <= 0) {
+        m_lastError = "Could not find Pluto return";
+        return data;
+    }
+
+    double lat = latitude.toDouble();
+    double lon = longitude.toDouble();
+
+    QVector<HouseData> houses = calculateHouseCusps(srJd, lat, lon, houseSystem);
+    data.houses = houses;
+    data.angles = calculateAngles(srJd, lat, lon, houseSystem);
+    data.planets = calculatePlanetPositions(srJd, houses);
+
+    addSyzygyAndParsFortuna(data.planets, srJd, houses, data.angles);
+    calculateAdditionalBodies(data.planets, srJd, houses);
+
+    double orbMax = getOrbMax();
+    data.aspects = calculateAspects(data.planets, orbMax);
+
+    QDateTime returnDateTime = julianDayToDateTime(srJd, utcOffset);
+    data.returnDate = returnDateTime.date();
+    data.returnTime = returnDateTime.time();
+    data.returnJulianDay = srJd;
+
+    return data;
+}

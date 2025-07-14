@@ -61,16 +61,35 @@ void SymbolsDialog::populateAspectTable()
         QColor color;
     };
 
+
+
     AspectInfo aspects[] = {
-        {"CON", "Conjunction", "☌", QColor(128, 128, 128)},
-        {"OPP", "Opposition", "☍", QColor(220, 20, 60)},
-        {"SQR", "Square", "□", QColor(255, 69, 0)},
-        {"TRI", "Trine", "△", QColor(30, 144, 255)},
-        {"SEX", "Sextile", "✶", QColor(0, 206, 209)},
-        {"QUI", "Quincunx", "⦻", QColor(138, 43, 226)},
-        {"SSQ", "Semi-square", "∟", QColor(255, 165, 0)},
-        {"SSX", "Semi-sextile", "⧫", QColor(218, 112, 214)}
+        {"CON", "Conjunction",      "☌", QColor(128, 128, 128)},    // Conjunction - Neutral Gray
+        {"OPP", "Opposition",       "☍", QColor(220, 20, 60)},      // Opposition - Crimson
+        {"SQR", "Square",           "□", QColor(255, 69, 0)},       // Square - Fiery Red-Orange
+        {"TRI", "Trine",            "△", QColor(30, 144, 255)},     // Trine - Dodger Blue
+        {"SEX", "Sextile",          "✶", QColor(0, 206, 209)},      // Sextile - Turquoise
+        {"QUI", "Quincunx",         "⦻", QColor(138, 43, 226)},     // Quincunx - Blue Violet
+        {"SSQ", "Semi-square",      "∟", QColor(255, 165, 0)},      // Semi-square - Orange
+        {"SSX", "Semi-sextile",     "⧫", QColor(0, 128, 0)},        // Semi-sextile - Classic Green
+        {"SQQ", "Sesquiquadrate",   "⋔", QColor(255, 105, 180)},    // Sesquiquadrate - Pink
+        //{"SSP", "Semiparallel",     "?", QColor(124, 252, 0)},     // Semiparallel (custom) - Lawn Green
+        //{"PAR", "Parallel",         "?", QColor(218, 112, 214)},   // Parallel (custom) - Orchid
     };
+
+    /*
+    AspectInfo aspects[] = {
+        {"CON", "Conjunction",      "☌", QColor(220, 220, 220)},   // Light Gray
+        {"OPP", "Opposition",       "☍", QColor(220, 38, 38)},     // Soft Red
+        {"SQR", "Square",           "□", QColor(255, 179, 71)},    // Soft Orange
+        {"TRI", "Trine",            "△", QColor(100, 149, 237)},   // Cornflower Blue (soft blue)
+        {"SEX", "Sextile",          "✶", QColor(72, 187, 205)},    // Medium Turquoise (soft blue)
+        {"QUI", "Quincunx",         "⦻", QColor(255, 140, 105)},   // Light Coral (soft orange-pink)
+        {"SSQ", "Semi-square",      "∟", QColor(186, 104, 200)},   // Soft Purple
+        {"SQQ", "Sesquiquadrate",   "⋔", QColor(255, 105, 180)},   // Hot Pink
+        {"SSX", "Semi-sextile",     "⧫", QColor(67, 160, 71)}      // Soft Green
+    };
+    */
 
     int rowCount = sizeof(aspects) / sizeof(aspects[0]);
     m_aspectTable->setRowCount(rowCount);

@@ -75,6 +75,105 @@ public:
                                         const QString &longitude,
                                         const QDate &transitStartDate,
                                         int numberOfDays);
+
+    QJsonArray calculateEclipsesAsJson(
+        const QDate &fromDate,
+        const QDate &toDate,
+        bool solarEclipses,
+        bool lunarEclipses);
+
+    QJsonObject calculateSolarReturnAsJson(const QDate &birthDate,
+                                           const QTime &birthTime,
+                                           const QString &utcOffset,
+                                           const QString &latitude,
+                                           const QString &longitude,
+                                           const QString &houseSystem,
+
+                                           const int year);
+
+    QJsonObject calculateLunarReturnAsJson(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        const QDate &targetDate
+        );
+
+    QJsonObject calculateSaturnReturnAsJson(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber
+        );
+    QJsonObject calculateJupiterReturnAsJson(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber
+        );
+
+    QJsonObject calculateVenusReturnAsJson(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    QJsonObject calculateMarsReturnAsJson(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    QJsonObject calculateMercuryReturnAsJson(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    QJsonObject calculateUranusReturnAsJson(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    QJsonObject calculateNeptuneReturnAsJson(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    QJsonObject calculatePlutoReturnAsJson(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
 };
 
 #endif // CHARTDATAMANAGER_H

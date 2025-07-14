@@ -83,10 +83,10 @@ endif()
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 if(FLATHUB_BUILD)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
-        Widgets Network Svg QuickWidgets Positioning Location)
+        Widgets Network Svg QuickWidgets Positioning Location Charts)
 else()
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
-        Widgets Network PrintSupport Svg Pdf QuickWidgets Positioning Location)
+        Widgets Network PrintSupport Svg Pdf QuickWidgets Positioning Location Charts)
 endif()
 
 set(PROJECT_SOURCES
@@ -108,11 +108,16 @@ set(PROJECT_SOURCES
     resources.qrc)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
     qt_add_executable(Asteria
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         map.qml
         aspectsettingsdialog.h aspectsettingsdialog.cpp
+
+        transitsearchdialog.h transitsearchdialog.cpp
+        Globals.cpp
     )
 else()
     if(ANDROID)
@@ -142,6 +147,8 @@ if(FLATHUB_BUILD)
         Qt${QT_VERSION_MAJOR}::QuickWidgets
         Qt${QT_VERSION_MAJOR}::Location
         Qt${QT_VERSION_MAJOR}::Positioning
+        Qt${QT_VERSION_MAJOR}::Charts
+
         sweph
     )
 else()
@@ -154,8 +161,11 @@ else()
         Qt${QT_VERSION_MAJOR}::QuickWidgets
         Qt${QT_VERSION_MAJOR}::Location
         Qt${QT_VERSION_MAJOR}::Positioning
+        Qt${QT_VERSION_MAJOR}::Charts
+
         sweph
     )
+target_link_libraries(Asteria PRIVATE Qt6::Widgets)
 endif()
 
 # Set data directory definition

@@ -4,6 +4,8 @@
 #include <QNetworkRequest>
 #include <QJsonArray>
 #include <QDebug>
+#include"Globals.h"
+
 //#include<QNetworkRequest>
 //#include<QByteArray>
 MistralAPI::MistralAPI(QObject *parent)
@@ -100,6 +102,15 @@ void MistralAPI::interpretChart(const QJsonObject &chartData)
         emit error(m_lastError);
         return;
     }
+
+    /*
+    // Debug: Print the current chart type before making the request
+    qDebug() << "Interpretation requested for chart type:" << GlobalFlags::lastGeneratedChartType;
+
+    // For testing: stop here so you can check the output
+    return;
+    */
+
 
     // Create the prompt for Mistral
     QJsonObject prompt = createPrompt(chartData);
@@ -252,19 +263,22 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
     // Add language instruction if not English
     if (m_language != "English") {
         systemMessage["content"] = QString("You are an expert astrologer providing detailed and insightful "
-                                           "interpretations of natal charts. Analyze the following chart data "
+                                           "interpretations of %1 charts. Analyze the following chart data "
                                            "and provide a comprehensive reading covering personality traits, "
                                            "strengths, challenges, and life path insights. Be specific about "
                                            "what each planet position, house placement, and major aspect means for "
-                                           "the individual. IMPORTANT: Your entire response must be in %1.")
+                                           "the individual. IMPORTANT: Your entire response must be in %2.")
+                                       .arg(GlobalFlags::lastGeneratedChartType)
                                        .arg(m_language);
     } else {
-        systemMessage["content"] = "You are an expert astrologer providing detailed and insightful "
-                                   "interpretations of natal charts. Analyze the following chart data "
+        systemMessage["content"] = QString("You are an expert astrologer providing detailed and insightful "
+                                   "interpretations of %1 charts. Analyze the following chart data "
                                    "and provide a comprehensive reading covering personality traits, "
                                    "strengths, challenges, and life path insights. Be specific about "
                                    "what each planet position, house placement, and major aspect means for "
-                                   "the individual.";
+                                           "the individual.")
+                                       .arg(GlobalFlags::lastGeneratedChartType);
+
     }
 
     messages.append(systemMessage);
@@ -305,8 +319,8 @@ QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
 
     // Base content with dates
     QString baseContent = QString("You are an expert astrologer providing detailed and insightful "
-                                  "interpretations of planetary transits. The data provided contains "
-                                  "transits for EACH DAY from %1 to %2 (a full %3-day period). "
+                                  "interpretations of planetary transits on %1 charts. The data provided contains "
+                                  "transits for EACH DAY from %2 to %3 (a full %4-day period). "
                                   "Analyze the ENTIRE PERIOD, not just the first day. "
                                   "\n\nProvide a comprehensive reading covering the significant transits "
                                   "throughout this period, their exact dates of occurrence, their meanings, "
@@ -323,6 +337,7 @@ QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
                                   "\n\nOrganize your response as a COHERENT NARRATIVE with clear sections for "
                                   "different themes or time periods. Conclude with practical "
                                   "advice for navigating these energies.")
+                              .arg(GlobalFlags::lastGeneratedChartType)
                               .arg(transitData["transitStartDate"].toString())
                               .arg(QDate::fromString(transitData["transitStartDate"].toString(), "yyyy/MM/dd")
                                        .addDays(transitData["numberOfDays"].toInt() - 1)

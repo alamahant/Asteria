@@ -4,7 +4,7 @@
 #include<QSettings>
 #include <QFontDatabase>
 #include <QString>
-// At the top of your main.cpp file, after includes
+
 namespace {
 double g_orbMax = 8.0; // Default orb value
 }

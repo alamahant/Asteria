@@ -48,6 +48,9 @@ struct ChartData {
     QVector<HouseData> houses;
     QVector<AngleData> angles;
     QVector<AspectData> aspects;
+    QDate returnDate;
+    QTime returnTime;
+    double returnJulianDay = 0.0;
 };
 
 // Structure for eclipse data
@@ -98,6 +101,8 @@ public:
                                    const QString &utcOffset,
                                    const QString &latitude,
                                    const QString &longitude,
+                                   const QString &houseSystem,
+
                                    int year);
 
     // Calculate Saturn return
@@ -106,6 +111,7 @@ public:
                                     const QString &utcOffset,
                                     const QString &latitude,
                                     const QString &longitude,
+                                    const QString &houseSystem,
                                     int returnNumber = 1);
 
     // Find eclipses in a date range
@@ -114,6 +120,80 @@ public:
                                       const QDate &endDate,
                                       bool solarEclipses = true,
                                       bool lunarEclipses = true);
+
+    ChartData calculateLunarReturn(
+    const QDate &birthDate,
+    const QTime &birthTime,
+    const QString &utcOffset,
+    const QString &latitude,
+    const QString &longitude,
+    const QString &houseSystem,
+    const QDate &targetDate // The date for which to find the lunar return
+    );
+
+    ChartData calculateJupiterReturn(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    ChartData calculateVenusReturn(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    ChartData calculateMarsReturn(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    ChartData calculateMercuryReturn(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    ChartData calculateUranusReturn(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    ChartData calculateNeptuneReturn(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
+    ChartData calculatePlutoReturn(
+        const QDate &birthDate,
+        const QTime &birthTime,
+        const QString &utcOffset,
+        const QString &latitude,
+        const QString &longitude,
+        const QString &houseSystem,
+        int returnNumber);
+
 
     // Check if the calculator is available
     bool isAvailable() const;
@@ -152,6 +232,16 @@ private:
     QString houseSystem = "Placidus";
     //QString houseSystem;
     void calculateAdditionalBodies(QVector<PlanetData> &planets, double jd,const QVector<HouseData> &houses) const;
+
+
+    bool calculateSunriseSunset(
+        const QDate &date,
+        double latitude,
+        double longitude,
+        QDateTime &sunrise,
+        QDateTime &sunset,
+        QString &errorMsg
+        );
 
 };
 

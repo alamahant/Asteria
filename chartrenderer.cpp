@@ -361,7 +361,6 @@ void ChartRenderer::drawZodiacSigns()
     // In Qt, 0° is at the 3 o'clock position and increases counterclockwise
 
     //double ascendantLongitude = getAscendantLongitude(); // Get from chart data
-    //qDebug() << "Ascendant longitude:" << ascendantLongitude;
 
 
     double startAngle = 90.0; // Start at the top (12 o'clock)
@@ -370,16 +369,24 @@ void ChartRenderer::drawZodiacSigns()
 
     for (int i = 0; i < 12; i++) {
         // Calculate the angle for this sign (30 degrees per sign)
-        double startSignAngle = startAngle - (i * 30.0);
-        double endSignAngle = startSignAngle - 30.0;
+        //double startSignAngle = startAngle - (i * 30.0);
+        //double endSignAngle = startSignAngle - 30.0;
 
+        double startSignAngle = startAngle + (i * 30.0); // Add instead of subtract
+        double endSignAngle = startSignAngle + 30.0; // Add instead of subtract
         // Create a path for the sign segment
         QPainterPath path;
         path.moveTo(0, 0);
+        /*
         path.arcTo(-outerRadius, -outerRadius, outerRadius * 2, outerRadius * 2,
                    startSignAngle, -30.0);
         path.arcTo(-innerRadius, -innerRadius, innerRadius * 2, innerRadius * 2,
                    endSignAngle, 30.0);
+        */
+        path.arcTo(-outerRadius, -outerRadius, outerRadius * 2, outerRadius * 2,
+                   startSignAngle, 30.0); // Positive angle (counterclockwise)
+        path.arcTo(-innerRadius, -innerRadius, innerRadius * 2, innerRadius * 2,
+                   endSignAngle, -30.0); // Negative angle (clockwise)
         path.closeSubpath();
 
         // Create a path item for the sign segment
@@ -400,7 +407,10 @@ void ChartRenderer::drawZodiacSigns()
         m_scene->addItem(segment);
 
         // Calculate the angle for the text (middle of the segment)
-        double textAngle = startSignAngle - 15.0;
+        //double textAngle = startSignAngle - 15.0;
+        double textAngle = startSignAngle + 15.0; // Add instead of subtract
+
+
         double textRadians = qDegreesToRadians(textAngle);
 
         // Calculate position for the text
@@ -756,8 +766,9 @@ QPointF ChartRenderer::longitudeToPoint(double longitude, double radius){
     //double x = radius * qCos(angleRadians);
     //double y = -radius * qSin(angleRadians);
     //return QPointF(x, y);
+    //double angleRadians = qDegreesToRadians(450 - longitude);
 
-    double angleRadians = qDegreesToRadians(450 - longitude);
+    double angleRadians = qDegreesToRadians(90 + longitude); // Add instead of subtract
     double x = radius * qCos(angleRadians);
     double y = -radius * qSin(angleRadians); // Positive y (clockwise)
     return QPointF(x, y);
@@ -773,11 +784,32 @@ QColor ChartRenderer::aspectColor(const QString &aspectType) {
     if (aspectType == "QUI") return QColor(138, 43, 226);        // Quincunx - Blue Violet
     if (aspectType == "SSQ") return QColor(255, 165, 0);         // Semi-square - Orange
     if (aspectType == "SSX") return QColor(0, 128, 0);           // Semi-sextile - Classic Green
+    if (aspectType == "SQQ") return QColor(255, 105, 180); // Sesquiquadrate - Pink
+
+
     //if (aspectType == "SSP") return QColor(124, 252, 0);         // Semiparallel (custom) - Lawn Green
     //if (aspectType == "PAR") return QColor(218, 112, 214);       // Parallel (custom) - Orchid
 
     return QColor(105, 105, 105); // Default - Dim Gray
 }
+
+
+/*
+QColor ChartRenderer::aspectColor(const QString &aspectType) {
+    if (aspectType == "CON") return QColor(220, 220, 220);      // Conjunction - Light Gray
+    if (aspectType == "OPP") return QColor(220, 38, 38);        // Opposition - Soft Red
+    if (aspectType == "SQR") return QColor(255, 179, 71);       // Square - Soft Orange
+    if (aspectType == "TRI") return QColor(100, 149, 237);      // Trine - Cornflower Blue (soft blue)
+    if (aspectType == "SEX") return QColor(72, 187, 205);       // Sextile - Medium Turquoise (soft blue)
+    if (aspectType == "QUI") return QColor(255, 140, 105);      // Quincunx - Light Coral (soft orange-pink)
+    if (aspectType == "SSQ") return QColor(186, 104, 200);      // Semi-square - Soft Purple
+    if (aspectType == "SSX") return QColor(67, 160, 71);        // Semi-sextile - Soft Green
+    if (aspectType == "SQQ") return QColor(255, 105, 180);      // Sesquiquadrate - Hot Pink
+    //if (aspectType == "SSP") return QColor(255, 255, 255);    // Semiparallel - White (if needed)
+    //if (aspectType == "PAR") return QColor(0, 0, 0);          // Parallel - Black (if needed)
+    return QColor(220, 220, 220);                               // Default - Light Gray
+}
+*/
 
 bool ChartRenderer::isMajorAspect(const QString &aspectType) {
     // Major aspects: Conjunction, Opposition, Square, Trine, Sextile
@@ -841,7 +873,10 @@ void ChartRenderer::drawPlanets() {
         pos.radius = baseRadius;
 
         // Calculate position
-        double angle = 90.0 - planet.longitude;
+        //double angle = 90.0 - planet.longitude;
+        double angle = 90.0 + planet.longitude; // Add instead of subtract
+
+
         double radians = qDegreesToRadians(angle);
         pos.position = QPointF(
             pos.radius * qCos(radians),
@@ -875,7 +910,10 @@ void ChartRenderer::drawPlanets() {
                     planetPositions[j].radius -= minDistance / 2;
 
                     // Recalculate position
-                    double angle = 90.0 - planetPositions[j].planet.longitude;
+                    //double angle = 90.0 - planetPositions[j].planet.longitude;
+                    double angle = 90.0 + planetPositions[j].planet.longitude; // Add instead of subtract
+
+
                     double radians = qDegreesToRadians(angle);
                     planetPositions[j].position = QPointF(
                         planetPositions[j].radius * qCos(radians),
@@ -894,7 +932,10 @@ void ChartRenderer::drawPlanets() {
         // Draw a line connecting the planet to its actual position on the wheel
         if (pos.radius < baseRadius) {
             // Calculate actual position on the wheel
-            double angle = 90.0 - pos.planet.longitude;
+            //double angle = 90.0 - pos.planet.longitude;
+            double angle = 90.0 + pos.planet.longitude; // Add instead of subtract
+
+
             double radians = qDegreesToRadians(angle);
             QPointF actualPoint(
                 baseRadius * qCos(radians),
@@ -915,7 +956,9 @@ void ChartRenderer::drawPlanet(const PlanetData &planet, double radius) {
 
 
 
-    double angle = 90.0 - planet.longitude;
+    //double angle = 90.0 - planet.longitude;
+    double angle = 90.0 + planet.longitude; // Add instead of subtract
+
 
     // Convert to radians
     double radians = qDegreesToRadians(angle);
@@ -1069,10 +1112,15 @@ void ChartRenderer::drawHouseRing() {
             housePath.lineTo(outerStartPoint);
 
             // Arc along the outer radius to the next house cusp
-            double startAngle = 90.0 - currentLongitude;  // Convert from astro to Qt angles
-            double sweepAngle = currentLongitude - nextLongitude;
-            if (sweepAngle > 0) sweepAngle -= 360.0;  // Make sure we go clockwise
+            //double startAngle = 90.0 - currentLongitude;  // Convert from astro to Qt angles
+            //double sweepAngle = currentLongitude - nextLongitude;
+            //if (sweepAngle > 0) sweepAngle -= 360.0;  // Make sure we go clockwise
 
+            double startAngle = 90.0 + currentLongitude;  // Add instead of subtract
+            double sweepAngle = nextLongitude - currentLongitude; // Reverse the calculation
+            if (sweepAngle < 0) sweepAngle += 360.0;  // Make sure we go counterclockwise
+
+            /*
             housePath.arcTo(-houseRingOuterRadius, -houseRingOuterRadius,
                             houseRingOuterRadius * 2, houseRingOuterRadius * 2,
                             startAngle, sweepAngle);
@@ -1088,6 +1136,25 @@ void ChartRenderer::drawHouseRing() {
 
             // Close the path
             housePath.closeSubpath();
+            */
+
+            housePath.arcTo(-houseRingOuterRadius, -houseRingOuterRadius,
+                            houseRingOuterRadius * 2, houseRingOuterRadius * 2,
+                            startAngle, sweepAngle); // Positive for counterclockwise
+
+            // Line to the inner radius at the next house cusp
+            QPointF innerEndPoint = longitudeToPoint(nextLongitude, houseRingInnerRadius);
+            housePath.lineTo(innerEndPoint);
+
+            // Arc back along the inner radius to complete the path
+            housePath.arcTo(-houseRingInnerRadius, -houseRingInnerRadius,
+                            houseRingInnerRadius * 2, houseRingInnerRadius * 2,
+                            startAngle + sweepAngle, -sweepAngle); // Negative to go clockwise for return
+
+            // Close the path
+            housePath.closeSubpath();
+
+
 
             // Determine the color based on the element association
             QColor houseColor;
@@ -1112,9 +1179,14 @@ void ChartRenderer::drawHouseRing() {
 
             // Create a path item for the house ring segment
             QGraphicsPathItem *houseItem = new QGraphicsPathItem(housePath);
+
             houseItem->setPen(QPen(Qt::black, 1));
             houseItem->setBrush(QBrush(houseColor));
-            houseItem->setToolTip(houseTooltips[i]);
+            // Set Tooltip to display also in-sign degree
+            QString cuspInfo = QString("@ %1").arg(currentHouse.sign);
+            QString tooltip = houseTooltips[i] + QString("\nCusp: %1").arg(cuspInfo);
+            houseItem->setToolTip(tooltip);
+            //
             m_scene->addItem(houseItem);
 
             // Calculate position for the house number

@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <component type="desktop-application">
+
   <id>io.github.alamahant.Asteria</id>
   <name>Asteria</name>
   <summary>AI Reads your Birthchart</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>AGPL-3.0-or-later</project_license>
-  
   <description>
     <p>
       Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology.
@@ -23,10 +24,8 @@
       <li>Clean, intuitive interface for both beginners and experienced astrologers</li>
     </ul>
   </description>
-  
   <url type="homepage">https://github.com/alamahant/Asteria</url>
   <url type="bugtracker">https://github.com/alamahant/Asteria/issues</url>
-  
   <screenshots>
     <screenshot type="default">
       <caption>Main chart view</caption>
@@ -85,8 +84,27 @@
       <image>https://raw.githubusercontent.com/alamahant/Asteria/d578d5894b0fc806cce2521463aa0dcfe0c1f31b/screenshots/DavisonChart.png</image>
     </screenshot>
   </screenshots>
-  
   <releases>
+    <release version="2.1.0" date="2025-07-14">
+      <description>
+        <p>Major release with significant new features and improvements:</p>
+        <ul>
+          <li>Redesigned chart rendering system: all elements now drawn anticlockwise</li>
+          <li>Added return charts for all major planets (Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto)</li>
+          <li>Secondary progression chart calculation and display</li>
+          <li>Calculate both lunar and solar eclipses</li>
+          <li>Transits calculation for up to 1 year, with advanced search and filtering dialog</li>
+          <li>Julian/Gregorian calendar toggle for pre-1582 dates</li>
+          <li>Chart type flag for each transit, used for more targeted AI interpretations</li>
+          <li>Allowed date span extended to 0001–3000 CE (BCE years excluded)</li>
+          <li>Export all chart data as text from the Chart Details tab</li>
+          <li>Added an Angles table displaying the values of ASC (Ascendant), DESC (Descendant), IC (Imum Coeli), and MC (Medium Coeli)</li>
+          <li>Added the SQQ (Sesquiquadrate, 135°) aspect to aspect calculations and filtering</li>
+          <li>Numerous minor UI polishes, bug fixes, and code improvements</li>
+        </ul>
+        <p>For the complete changelog and version history, see the Changelog under the Help menu in the application.</p>
+      </description>
+    </release>
     <release version="2.0.1" date="2025-06-05">
       <description>
         <p>Improvements:</p>
@@ -134,9 +152,7 @@
       </description>
     </release>
   </releases>
-  
   <content_rating type="oars-1.1" />
-  
   <developer_name>Alamahant</developer_name>
   <categories>
     <category>Education</category>
@@ -144,9 +160,10 @@
     <category>Astronomy</category>
     <category>Utility</category>
   </categories>
-  
   <launchable type="desktop-id">io.github.alamahant.Asteria.desktop</launchable>
 </component>
+
+
 
 
 

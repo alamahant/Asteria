@@ -183,7 +183,6 @@ void ElementModalityWidget::setupUi()
 
 
 void ElementModalityWidget::updateData(const ChartData &chartData) {
-    //qDebug() << "Number of planets:" << chartData.planets.size();
 
     // Reset all counts and planet lists
     QMap<QString, QStringList> signPlanets;
@@ -212,7 +211,6 @@ void ElementModalityWidget::updateData(const ChartData &chartData) {
     // Collect planets in each sign
     for (const PlanetData &planet : chartData.planets) {
         QString signName = planet.sign.split(' ').first();
-        //qDebug() << "Planet:" << planet.id << "Sign:" << planet.sign;
 
         if (signPlanets.contains(signName)) {
             signPlanets[signName].append(planet.id);

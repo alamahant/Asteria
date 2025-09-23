@@ -4009,6 +4009,7 @@ void MainWindow::showChangelog(){
   <li><b>Drag-and-Drop Between Windows:</b> Use Ctrl+Left-Click to drag charts into another Asteria window (input or interpretation docks) to load all chart data instantly.</li>
   <li><b>Enhanced Viewing Options:</b> View menu checkboxes to toggle Chart-Only view or Info Overlay visibility (hidden by default).</li>
   <li><b>Clear Interpretation Button:</b> Clears both displayed interpretation and stored previous readings in one click.</li>
+  <li>Chart Zoom in/out functionality via CTRL+mouse wheel.</li>
 </ul>
 
 <h2>Version 2.1.0 (2025-07-14) <span style='color:#27ae60;'>&mdash; Major Release</span></h2>
@@ -6032,6 +6033,7 @@ Generates magazine-style horoscopes for all 12 signs for any chosen date/time, p
 <ul>
   <li>View menu checkboxes: toggle Chart-Only view or Info Overlay visibility (hidden by default).</li>
   <li>Clear Interpretation button: clears both displayed text and stored previous interpretations.</li>
+  <li>Chart Zoom in/out functionality via CTRL+mouse wheel.</li>
 </ul>
 
 <h1 style="color:#27ae60;">What’s New in Version 2.1.0</h1>

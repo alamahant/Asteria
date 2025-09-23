@@ -77,7 +77,7 @@ MainWindow::MainWindow(QWidget *parent)
     chartInfoOverlay->setVisible(false);
 
     // Set minimum size
-    this->setMinimumSize(1200, 800);
+    //this->setMinimumSize(1200, 800);
     //this->setWindowState(Qt::WindowNoState);
     // Explicitly disable full screen
 
@@ -4009,7 +4009,7 @@ void MainWindow::showChangelog(){
   <li><b>Drag-and-Drop Between Windows:</b> Use Ctrl+Left-Click to drag charts into another Asteria window (input or interpretation docks) to load all chart data instantly.</li>
   <li><b>Enhanced Viewing Options:</b> View menu checkboxes to toggle Chart-Only view or Info Overlay visibility (hidden by default).</li>
   <li><b>Clear Interpretation Button:</b> Clears both displayed interpretation and stored previous readings in one click.</li>
-  <li>Chart Zoom in/out functionality via CTRL+mouse wheel.</li>
+  <li><b>Chart Zoom in/out Functionality:</b> Use CTRL+mouse wheel to zoom in and out of generated chart.</li>
 </ul>
 
 <h2>Version 2.1.0 (2025-07-14) <span style='color:#27ae60;'>&mdash; Major Release</span></h2>

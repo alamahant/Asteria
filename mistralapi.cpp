@@ -12,7 +12,7 @@ MistralAPI::MistralAPI(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
     , m_apiEndpoint("https://api.mistral.ai/v1/chat/completions")
-    , m_model("mistral-medium")
+    , m_model("mistral-medium-latest")
     , m_requestInProgress(false)
 {
     // Connect network reply signal
@@ -260,6 +260,7 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
     QJsonObject systemMessage;
     systemMessage["role"] = "system";
 
+    /*
     // Add language instruction if not English
     if (m_language != "English") {
         systemMessage["content"] = QString("You are an expert astrologer providing detailed and insightful "
@@ -267,7 +268,8 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
                                            "and provide a comprehensive reading covering personality traits, "
                                            "strengths, challenges, and life path insights. Be specific about "
                                            "what each planet position, house placement, and major aspect means for "
-                                           "the individual. IMPORTANT: Your entire response must be in %2.")
+                                           "the individual. IMPORTANT: Your entire response must be in %2, using Markdown or plain text only. "
+                                           "Do NOT output JSON, XML, YAML, or any other structured data formats.")
                                        .arg(GlobalFlags::lastGeneratedChartType)
                                        .arg(m_language);
     } else {
@@ -275,10 +277,86 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
                                    "interpretations of %1 charts. Analyze the following chart data "
                                    "and provide a comprehensive reading covering personality traits, "
                                    "strengths, challenges, and life path insights. Be specific about "
-                                   "what each planet position, house placement, and major aspect means for "
-                                           "the individual.")
+                                   "what each planet position, house placement, and major aspect means for the individual. "
+                                   "IMPORTANT: Your entire response must be in Markdown or plain text only. "
+                                   "Do NOT output JSON, XML, YAML, or any other structured data formats.")
                                        .arg(GlobalFlags::lastGeneratedChartType);
 
+    }
+
+
+    if (GlobalFlags::lastGeneratedChartType == "Zodiac Signs") {
+        systemMessage["content"] = QString(
+            "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
+            "Analyze the following planetary chart data and provide detailed insights for each of the 12 zodiac signs (Aries through Pisces). "
+            "For each sign, treat it as the focal point:\n"
+            "- Consider which planets are currently in that sign.\n"
+            "- Consider which aspects involve the planet ruling that sign (e.g., Mars for Aries, Venus for Taurus, etc.).\n"
+            "- Describe how these planetary positions and aspects influence the sign's strengths, challenges, personality traits, life path, career/work, family and finances.\n"
+            "Make each sign’s narrative concise but detailed (about 12–15 sentences), like a magazine-style horoscope, with practical advice where appropriate.\n"
+            "IMPORTANT: Format the output in Markdown or plain text in %2, with each zodiac sign clearly separated as its own paragraph or section. "
+            "Do NOT output JSON, XML, YAML, or any other structured data formats."
+            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
+    } else {
+        // All other charts use the unified template
+        systemMessage["content"] = QString(
+            "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
+            "Analyze the following chart data and provide a comprehensive reading covering personality traits, "
+            "strengths, challenges, and life path insights. Be specific about what each planet position, house placement, "
+            "and major aspect means for the individual. IMPORTANT: Your entire response must be in %2, using Markdown or plain text only. "
+            "Do NOT output JSON, XML, YAML, or any other structured data formats."
+            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
+    }
+    */
+
+    if (GlobalFlags::lastGeneratedChartType == "Zodiac Signs") {
+        systemMessage["content"] = QString(
+            "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
+            "Analyze the following planetary chart data and provide detailed insights for each of the 12 zodiac signs (Aries through Pisces). "
+            "For each sign, treat it as the focal point:\n"
+            "- Consider which planets are currently in that sign.\n"
+            "- Consider which aspects involve the planet ruling that sign (e.g., Mars for Aries, Venus for Taurus, etc.).\n"
+            "- Describe how these planetary positions and aspects influence the sign's strengths, challenges, personality traits, life path, career/work, family and finances.\n"
+            "Make each sign’s narrative concise but detailed (about 12–15 sentences), like a magazine-style horoscope, with practical advice where appropriate.\n"
+            "IMPORTANT: Format the output in Markdown or plain text in %2, with each zodiac sign clearly separated as its own paragraph or section. "
+            "Do NOT output JSON, XML, YAML, or any other structured data formats."
+            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
+    }
+    else if (GlobalFlags::lastGeneratedChartType == "Secondary Progression") {
+        systemMessage["content"] = QString(
+            "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
+            "Secondary progressions represent the symbolic unfolding of the natal chart, where each day after birth corresponds to a year of life. "
+            "Analyze the progressed planets, houses, and aspects in the provided data, and explain how they reflect the person’s inner development, "
+            "psychological growth, and key life themes at this stage of their journey. "
+            "Be specific in describing how the Sun, Moon, and personal planets shift over time and how their progressed positions interact with the natal chart. "
+            "Offer insights into career, relationships, emotional life, and personal transformation. "
+            "Make the narrative detailed, providing both symbolic meaning and practical advice. "
+            "IMPORTANT: Format the output in Markdown or plain text in %2. "
+            "Do NOT output JSON, XML, YAML, or any other structured data formats."
+            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
+    }
+    else if (GlobalFlags::lastGeneratedChartType == "Davison Relationship") {
+        systemMessage["content"] = QString(
+            "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
+            "Davison charts are calculated by finding the exact midpoint in time and space between two individuals, creating a unique chart for the relationship itself. "
+            "Analyze the planets, houses, and aspects in the provided data as if this chart represents the living ‘entity’ of the relationship. "
+            "Explain the relationship’s strengths, challenges, emotional dynamics, communication style, and long-term potential. "
+            "Pay attention to the Sun, Moon, Venus, and Mars placements, as well as angles and major aspects. "
+            "Provide practical insights into how the partners can nurture harmony, overcome obstacles, and grow together. "
+            "Make the narrative detailed, blending psychological insight with grounded relationship advice. "
+            "IMPORTANT: Format the output in Markdown or plain text in %2. "
+            "Do NOT output JSON, XML, YAML, or any other structured data formats."
+            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
+    }
+    else {
+        // All other charts use the unified template
+        systemMessage["content"] = QString(
+            "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
+            "Analyze the following chart data and provide a comprehensive reading covering personality traits, "
+            "strengths, challenges, and life path insights. Be specific about what each planet position, house placement, "
+            "and major aspect means for the individual. IMPORTANT: Your entire response must be in %2, using Markdown or plain text only. "
+            "Do NOT output JSON, XML, YAML, or any other structured data formats."
+            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
     }
 
     messages.append(systemMessage);
@@ -304,7 +382,7 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
     requestObj["model"] = m_model;
     requestObj["messages"] = messages;
     requestObj["temperature"] = 0.7;
-    requestObj["max_tokens"] = 4096;
+    requestObj["max_tokens"] = 8192;
 
     return requestObj;
 }
@@ -336,7 +414,9 @@ QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
                                   "\n- Transits that repeat due to retrograde motion "
                                   "\n\nOrganize your response as a COHERENT NARRATIVE with clear sections for "
                                   "different themes or time periods. Conclude with practical "
-                                  "advice for navigating these energies.")
+                                  "advice for navigating these energies."
+                                  "IMPORTANT: Your entire response must be in Markdown or plain text only. "
+                                  "Do NOT output JSON, XML, YAML, or any other structured data formats.")
                               .arg(GlobalFlags::lastGeneratedChartType)
                               .arg(transitData["transitStartDate"].toString())
                               .arg(QDate::fromString(transitData["transitStartDate"].toString(), "yyyy/MM/dd")
@@ -394,7 +474,7 @@ QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
     requestObj["model"] = m_model;
     requestObj["messages"] = messages;
     requestObj["temperature"] = 0.7;
-    requestObj["max_tokens"] = 4096;
+    requestObj["max_tokens"] = 8192;
 
     return requestObj;
 }

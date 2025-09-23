@@ -1,5 +1,22 @@
 # Changelog
 
+## Version 2.1.1 (2025-09-23) – Major Update
+
+### Major Improvements & New Features
+
+- **Stunning AI Interpretations**: AI responses are now transformed from Markdown into rich HTML, making interpretations beautifully formatted, clear, and engaging—almost like reading a professional digital publication.
+- **Smarter Chart Tagging**: Every chart type (Natal, Relationship, Progression, Return, Zodiac Signs) now carries its own tag, so AI provides context-specific interpretations instead of defaulting to natal charts.  
+  - **Exception**: Composite charts remain excluded from AI interpretation for accuracy.
+- **New Zodiac Sign Chart**: Added a dedicated zodiac signs chart that can generate magazine-style horoscopes for all twelve signs at any chosen date/time.
+- **Multi-Window Support**: From **File → New Window**, users can now open multiple Asteria windows—either within the same instance or as new instances. Charts can also be opened in new windows for direct comparison.
+- **Drag-and-Drop Between Windows**: With **Ctrl + Left-Click**, charts can be dragged and dropped into another Asteria window (into input or interpretation docks) to instantly load all chart data there.
+- **Enhanced Viewing Options**: New checkboxes in the **View menu** let you toggle:
+  - **Chart-Only View** for distraction-free focus.
+  - **Info Overlay Visibility**, now hidden by default but switchable at will.
+- **Clear Interpretation Button**: Added to the interpretation dock, allowing users to clear both the displayed interpretation and stored memory of previous readings in one click.
+
+---
+
 ## Version 2.1.0 (2025-07-14) – Major Release
 
 ### Major Improvements & New Features

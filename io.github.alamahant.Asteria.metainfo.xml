@@ -85,7 +85,24 @@
     </screenshot>
   </screenshots>
   <releases>
-    <release version="2.1.0" date="2025-07-14">
+
+<release version="2.1.1" date="2025-09-24">
+  <description>
+    <p>Refinements and new features in AI interpretations, chart tagging, and Zodiac Sign predictions:</p>
+    <ul>
+      <li>All AI-generated markdown responses are transformed into rich HTML for beautifully formatted, clear, and engaging interpretations</li>
+      <li>Each chart type (Natal, Relationship, Progression, Return, Zodiac Signs) now has unique tags for accurate AI interpretation; exception: Composite charts are excluded</li>
+      <li>New Zodiac Sign Chart generates concise, magazine-style horoscopes for all 12 signs for a specified date and time</li>
+      <li>Multi-window support: open new windows from File → New Window in the same instance or a new instance</li>
+      <li>Drag-and-drop charts between windows with Ctrl + Left Mouse Button; all chart data loads in the target window's input or interpretation docks</li>
+      <li>View menu enhancements: toggle Chart-Only view and Info Overlay visibility; info overlay is hidden by default</li>
+      <li>Clear Interpretation button in the interpretation dock clears both displayed text and stored previous interpretations</li>
+    </ul>
+    <p>For complete changelog and version history, see the Changelog under the Help menu in the application</p>
+  </description>
+</release>
+
+     <release version="2.1.0" date="2025-07-14">
       <description>
         <p>Major release with significant new features and improvements:</p>
         <ul>

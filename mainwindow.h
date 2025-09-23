@@ -56,7 +56,7 @@
 #include<QJsonDocument>
 #include<QJsonObject>
 #include<QProgressDialog>
-
+#include<QPoint>
 
 struct ParsedDate {
     int year;   // Astronomical year (negative for BCE, 0 for 1 BCE, etc.)
@@ -149,6 +149,10 @@ private:
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragMoveEvent(QDragMoveEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 private slots:
     void updateChartDetailsTables(const QJsonObject &chartData);
 private:
@@ -295,6 +299,22 @@ private:
     QAction *useJulianForPre1582Action = nullptr;
     static const QRegularExpression dateRegex;
     QDialog* m_showNewFeaturesDialog = nullptr;
+
+private slots:
+    void toggleChartOnlyView(bool chartOnly);
+
+private:
+    QAction *m_chartOnlyAction = nullptr;
+    bool m_showInfoOverlay;
+    QAction *showOverlayAction = nullptr;
+    QPoint m_dragStartPosition;
+    void startChartDrag();
+    void importChartInputData(const QJsonObject &inputData);
+    QString markdownToHtml(const QString &markdown);
+    QString plainTextToHtml(const QString &plainText);
+private slots:
+    void calculateZodiacSignsChart();
+
 
 };
 #endif // MAINWINDOW_H

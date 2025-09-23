@@ -34,11 +34,18 @@
 #include <QCheckBox>  // Add this include if still needed
 #include <QRegularExpression>
 #include<QClipboard>
+#include<QDrag>
+#include<QDragEnterEvent>
+#include<QDragLeaveEvent>
+#include<QDragMoveEvent>
+#include<QDropEvent>
+#include<QMimeData>
+#include<QProcess>
 
 extern QString g_astroFontFamily;
 
 const QRegularExpression MainWindow::dateRegex(
-    R"(^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/(000[1-9]|00[1-9][0-9]|0[1-9][0-9]{2}|[12][0-9]{3}|3000)$)"
+        R"(^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/(000[1-9]|00[1-9][0-9]|0[1-9][0-9]{2}|[12][0-9]{3}|3000)$)"
 );
 
 
@@ -47,7 +54,9 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_chartCalculated(false)
     , m_transitDialog(nullptr)
+    , m_dragStartPosition(0, 0) // Initialize drag start position
 {
+    setAcceptDrops(true);
     preloadMapResources();
     // Set window title and size
     setWindowTitle("Asteria - Astrological Chart Analysis");
@@ -145,6 +154,13 @@ void MainWindow::setupCentralWidget() {
 
     // Create chart view and renderer
     m_chartView = new QGraphicsView(mainSplitter);
+
+    // drag drop
+    m_chartView->setAcceptDrops(true);
+    //m_chartView->viewport()->setMouseTracking(true);
+    //m_chartView->installEventFilter(this);
+    m_chartView->viewport()->installEventFilter(this);
+    //
 
     m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setDragMode(QGraphicsView::ScrollHandDrag);
@@ -347,17 +363,18 @@ void MainWindow::setupInputDock() {
 
     m_inputDock = new QDockWidget(this);
     m_inputDock->setObjectName("Birth Chart Input");
-
+    m_inputDock->setWindowTitle("Birth Chart Input");
     m_inputDock->setTitleBarWidget(titleLabel);
     m_inputDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    //m_inputDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetClosable);
-    m_inputDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    m_inputDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetClosable);
+
+    //m_inputDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
 
     QWidget *inputWidget = new QWidget(m_inputDock);
     QVBoxLayout *inputLayout = new QVBoxLayout(inputWidget);
 
     // Birth information group
-   QGroupBox *birthGroup = new QGroupBox("Birth Details", inputWidget);
+    QGroupBox *birthGroup = new QGroupBox("Birth Details", inputWidget);
 
     QFormLayout *birthLayout = new QFormLayout(birthGroup);
 
@@ -418,22 +435,22 @@ void MainWindow::setupInputDock() {
     m_googleCoordsEdit->setToolTip("Search for a location on Google, copy the coordinates, and paste them here");
 
     m_googleCoordsEdit->setStyleSheet(
-        "QLineEdit {"
-        "  background-color: #fff9c4;"  // soft yellow
-        "  border: 2px solid #f9a825;"  // amber border
-        "  border-radius: 5px;"
-        "  padding: 4px;"
-        "  font-weight: bold;"
-        "}"
-        );
+                "QLineEdit {"
+                "  background-color: #fff9c4;"  // soft yellow
+                "  border: 2px solid #f9a825;"  // amber border
+                "  border-radius: 5px;"
+                "  padding: 4px;"
+                "  font-weight: bold;"
+                "}"
+                );
 
 
 
     connect(m_googleCoordsEdit, &QLineEdit::textChanged, this, [=](const QString &text) {
         // Only try to parse if the text looks like it might be complete coordinates
         if (text.contains(',') &&
-            (text.contains('N') || text.contains('n') || text.contains('S') || text.contains('s')) &&
-            (text.contains('E') || text.contains('e') || text.contains('W') || text.contains('w'))) {
+                (text.contains('N') || text.contains('n') || text.contains('S') || text.contains('s')) &&
+                (text.contains('E') || text.contains('e') || text.contains('W') || text.contains('w'))) {
 
             // Remove all spaces to simplify parsing
             QString input = text;
@@ -544,8 +561,8 @@ void MainWindow::setupInputDock() {
     // Sort by numeric value
     std::sort(offsetsWithValues.begin(), offsetsWithValues.end(),
               [](const QPair<QString, double>& a, const QPair<QString, double>& b) {
-                  return a.second < b.second;
-              });
+        return a.second < b.second;
+    });
 
     // Add sorted items to combo box
     for (const auto& pair : offsetsWithValues) {
@@ -581,7 +598,7 @@ void MainWindow::setupInputDock() {
 
 
     // Location selection with OSM map
-   // m_selectLocationButton = new QPushButton("Select on Map", birthGroup);
+    // m_selectLocationButton = new QPushButton("Select on Map", birthGroup);
     //m_selectLocationButton->setIcon(QIcon::fromTheme("view-refresh"));
 
     //connect(m_selectLocationButton, &QPushButton::clicked, this, &MainWindow::onOpenMapClicked);
@@ -769,19 +786,21 @@ void MainWindow::setupInterpretationDock() {
     QVBoxLayout *interpretationLayout = new QVBoxLayout(interpretationWidget);
 
     // Get interpretation button
-    m_getInterpretationButton = new QPushButton("Get Birth Chart From AI", interpretationWidget);
+    m_getInterpretationButton = new QPushButton("Get Chart Interpretation From AI", interpretationWidget);
     m_getInterpretationButton->setIcon(QIcon::fromTheme("system-search"));
     m_getInterpretationButton->setEnabled(false);
 
     // Interpretation text area
     m_interpretationtextEdit = new QTextEdit(interpretationWidget);
+    m_interpretationtextEdit->setAcceptRichText(true);
     m_interpretationtextEdit->setReadOnly(true);
-    m_interpretationtextEdit->setPlaceholderText("AI interpretation will appear here after you click the 'Get Birth Chart From AI' button.");
+    m_interpretationtextEdit->setPlaceholderText("AI interpretation will appear here after you click the 'Get Chart Interpretation From AI' button.");
 
     // Add Language Button
     QHBoxLayout* languageLayout = new QHBoxLayout();
-    QLabel* languageLabel = new QLabel("Language:", interpretationWidget);
+    //QLabel* languageLabel = new QLabel("Language:", interpretationWidget);
     languageComboBox = new QComboBox(interpretationWidget);
+    languageComboBox->setToolTip("Select AI Response Language");
     languageComboBox->addItem("English");
     languageComboBox->addItem("Spanish");
     languageComboBox->addItem("French");
@@ -793,14 +812,26 @@ void MainWindow::setupInterpretationDock() {
     languageComboBox->addItem("Hindi");
     languageComboBox->addItem("Chinese (Simplified)");
     languageComboBox->setCurrentIndex(0);
-    languageComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    languageLayout->addWidget(languageLabel);
+    languageComboBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+
+    //add clear button
+    QPushButton *clearTextButton = new QPushButton("ClearText", this);
+    clearTextButton->setToolTip("Clear AI Interpretation Text Area");
+    clearTextButton->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+    // Connect using a lambda
+    connect(clearTextButton, &QPushButton::clicked, this, [this]() {
+        m_currentInterpretation.clear();              // Clear your stored interpretations
+        m_interpretationtextEdit->clear();           // Clear the QTextEdit content
+    });
+
+    //languageLayout->addWidget(languageLabel);
     languageLayout->addWidget(languageComboBox);
 
     // Add widgets to layout
     interpretationLayout->addWidget(m_getInterpretationButton);
     interpretationLayout->addWidget(m_interpretationtextEdit);
     interpretationLayout->addLayout(languageLayout);
+    interpretationLayout->addWidget(clearTextButton);
 
     // Set widget as dock content
     m_interpretationDock->setWidget(interpretationWidget);
@@ -814,6 +845,75 @@ void MainWindow::setupMenus()
 
     // File menu
     QMenu *fileMenu = menuBar()->addMenu("&File");
+    // Open new app window
+
+    // New Window action
+    QAction *newWindowAction = fileMenu->addAction("New &Window in New Process");
+    newWindowAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
+    newWindowAction->setIcon(QIcon::fromTheme("window-new"));
+    newWindowAction->setStatusTip("Open a new application window");
+
+    // Connect using lambda
+    connect(newWindowAction, &QAction::triggered, this, [this]() {
+        // Create and show a new MainWindow instance
+        QProcess::startDetached(QApplication::applicationFilePath(), QStringList());
+    });
+
+    fileMenu->addSeparator();
+
+
+    // open window in current process
+    QAction *newSameProcessAction = fileMenu->addAction("New &Window");
+    newSameProcessAction->setShortcut(QKeySequence("Ctrl+Shift+W"));
+    newSameProcessAction->setIcon(QIcon::fromTheme("window-new"));
+    newSameProcessAction->setStatusTip("Open a new window within current application");
+
+    connect(newSameProcessAction, &QAction::triggered, this, [this]() {
+        MainWindow *newWindow = new MainWindow();
+        newWindow->show();
+    });
+
+    fileMenu->addSeparator();
+
+    //open existing chart in new window- same as drag-drop
+    QAction *openChartInNewWindowAction = fileMenu->addAction("Open Chart in New &Window");
+    openChartInNewWindowAction->setShortcut(QKeySequence("Ctrl+Alt+O"));
+    openChartInNewWindowAction->setIcon(QIcon::fromTheme("window-duplicate"));
+    openChartInNewWindowAction->setStatusTip("Open current chart with all data in a new window");
+
+    connect(openChartInNewWindowAction, &QAction::triggered, this, [this]() {
+        if (!m_chartCalculated) {
+            QMessageBox::information(this, "No Chart", "Please calculate a chart first.");
+            return;
+        }
+
+        // Create the same data structure as drag operation
+        QJsonObject chartData;
+        chartData["birthDate"] = m_birthDateEdit->text();
+        chartData["birthTime"] = m_birthTimeEdit->text();
+        chartData["utcOffset"] = m_utcOffsetCombo->currentText();
+        chartData["latitude"] = m_latitudeEdit->text();
+        chartData["longitude"] = m_longitudeEdit->text();
+        chartData["houseSystem"] = m_houseSystemCombo->currentText();
+        chartData["useJulian"] = useJulianForPre1582Action->isChecked();
+        chartData["chartType"] = GlobalFlags::lastGeneratedChartType;
+
+        // Include interpretation text if available
+        if (m_interpretationtextEdit && !m_interpretationtextEdit->toPlainText().isEmpty()) {
+            chartData["interpretationText"] = m_interpretationtextEdit->toPlainText();
+        }
+
+        chartData["chartData"] = m_currentChartData;
+
+        // Create new window and import the data
+        MainWindow *newWindow = new MainWindow();
+        newWindow->importChartInputData(chartData);
+        newWindow->show();
+
+        statusBar()->showMessage("Chart opened in new window", 3000);
+    });
+    fileMenu->addSeparator();
+
     // New/Open/Save group
     QAction *newAction = fileMenu->addAction("&New Chart", this, &MainWindow::newChart);
     newAction->setShortcut(QKeySequence::New);
@@ -863,6 +963,29 @@ void MainWindow::setupMenus()
     QMenu *viewMenu = menuBar()->addMenu("&View");
     viewMenu->addAction(m_inputDock->toggleViewAction());
     viewMenu->addAction(m_interpretationDock->toggleViewAction());
+
+    // Add "Chart Only" toggle action
+    m_chartOnlyAction = new QAction("&View Chart Only", this);
+    m_chartOnlyAction->setCheckable(true);
+    m_chartOnlyAction->setChecked(false); // Default to not checked
+    connect(m_chartOnlyAction, &QAction::toggled, this, &MainWindow::toggleChartOnlyView);
+    // show infooverlay action
+    viewMenu->addAction(m_chartOnlyAction);
+
+    showOverlayAction = new QAction("Show &Info Overlay", this);
+    showOverlayAction->setCheckable(true);
+    showOverlayAction->setChecked(false); // Default to not checked (hidden)
+
+    // Connect with lambda that handles both UI and settings
+    connect(showOverlayAction, &QAction::toggled, this, [this](bool checked) {
+        m_showInfoOverlay = checked;
+        if(chartInfoOverlay && m_chartCalculated)
+            chartInfoOverlay->setVisible(checked);
+    });
+
+    viewMenu->addAction(showOverlayAction);
+
+
 
     // Settings menu
     QMenu *settingsMenu = menuBar()->addMenu("&Settings");
@@ -966,7 +1089,7 @@ void MainWindow::setupMenus()
     connect(changelogAction, &QAction::triggered, this, &MainWindow::showChangelog);
 
 
-    QAction *newFeaturesAction = helpMenu->addAction(tr("What's New in 2.1.0"));
+    QAction *newFeaturesAction = helpMenu->addAction(tr("What's New!"));
     connect(newFeaturesAction, &QAction::triggered, this, &MainWindow::showNewFeaturesDialog);
 
     QAction *transitFilterAction = new QAction("Transit Filter", this);
@@ -979,7 +1102,7 @@ void MainWindow::setupMenus()
     QAction *eclipseCalcAction = new QAction("Calculate Eclipses", this);
     eclipseCalcAction->setToolTip("Calculate solar and lunar eclipses in the selected date range");
     eclipseCalcAction->setStatusTip("Calculate eclipses for the current chart and date range");
-    eclipseCalcAction->setShortcut(QKeySequence("Ctrl+E"));
+    eclipseCalcAction->setShortcut(QKeySequence("Ctrl+Shift+E"));
 
     connect(eclipseCalcAction, &QAction::triggered, this, &MainWindow::CalculateEclipses);
 
@@ -991,7 +1114,7 @@ void MainWindow::setupMenus()
     QAction *solarReturnCalcAction = new QAction("Calculate Solar Return", this);
     solarReturnCalcAction->setToolTip("Calculate the solar return chart for a selected year");
     solarReturnCalcAction->setStatusTip("Calculate the solar return chart for the current birth data and chosen year");
-    solarReturnCalcAction->setShortcut(QKeySequence("Ctrl+R"));
+    solarReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+H"));
 
     connect(solarReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateSolarReturn);
 
@@ -1000,7 +1123,7 @@ void MainWindow::setupMenus()
     QAction *lunarReturnCalcAction = new QAction("Calculate Lunar Return", this);
     lunarReturnCalcAction->setToolTip("Calculate the lunar return chart for a selected month and year");
     lunarReturnCalcAction->setStatusTip("Calculate the lunar return chart for the current birth data and chosen month/year");
-    lunarReturnCalcAction->setShortcut(QKeySequence("Ctrl+L"));
+    lunarReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+L"));
 
     connect(lunarReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateLunarReturn);
 
@@ -1009,7 +1132,7 @@ void MainWindow::setupMenus()
     QAction *saturnReturnCalcAction = new QAction("Calculate Saturn Return", this);
     saturnReturnCalcAction->setToolTip("Calculate the Saturn return chart for a selected return number");
     saturnReturnCalcAction->setStatusTip("Calculate the Saturn return chart for the current birth data and chosen return number");
-    saturnReturnCalcAction->setShortcut(QKeySequence("Ctrl+S")); // Choose a shortcut that doesn't conflict
+    saturnReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+S")); // Choose a shortcut that doesn't conflict
     connect(saturnReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateSaturnReturn);
 
     returnChartsMenu->addAction(saturnReturnCalcAction);
@@ -1017,7 +1140,7 @@ void MainWindow::setupMenus()
     QAction *jupiterReturnCalcAction = new QAction("Calculate Jupiter Return", this);
     jupiterReturnCalcAction->setToolTip("Calculate the Jupiter return chart for a selected return number");
     jupiterReturnCalcAction->setStatusTip("Calculate the Jupiter return chart for the current birth data and chosen return number");
-    jupiterReturnCalcAction->setShortcut(QKeySequence("Ctrl+J"));
+    jupiterReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+J"));
     connect(jupiterReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateJupiterReturn);
     returnChartsMenu->addAction(jupiterReturnCalcAction);
 
@@ -1025,7 +1148,7 @@ void MainWindow::setupMenus()
     QAction *venusReturnCalcAction = new QAction("Calculate Venus Return", this);
     venusReturnCalcAction->setToolTip("Calculate the Venus return chart for a selected return number");
     venusReturnCalcAction->setStatusTip("Calculate the Venus return chart for the current birth data and chosen return number");
-    venusReturnCalcAction->setShortcut(QKeySequence("Ctrl+V"));
+    venusReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+V"));
     connect(venusReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateVenusReturn);
     returnChartsMenu->addAction(venusReturnCalcAction);
 
@@ -1033,7 +1156,7 @@ void MainWindow::setupMenus()
     QAction *marsReturnCalcAction = new QAction("Calculate Mars Return", this);
     marsReturnCalcAction->setToolTip("Calculate the Mars return chart for a selected return number");
     marsReturnCalcAction->setStatusTip("Calculate the Mars return chart for the current birth data and chosen return number");
-    marsReturnCalcAction->setShortcut(QKeySequence("Ctrl+M"));
+    marsReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+R"));
     connect(marsReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateMarsReturn);
     returnChartsMenu->addAction(marsReturnCalcAction);
 
@@ -1041,28 +1164,28 @@ void MainWindow::setupMenus()
     QAction *mercuryReturnCalcAction = new QAction("Calculate Mercury Return", this);
     mercuryReturnCalcAction->setToolTip("Calculate the Mercury return chart for a selected return number");
     mercuryReturnCalcAction->setStatusTip("Calculate the Mercury return chart for the current birth data and chosen return number");
-    mercuryReturnCalcAction->setShortcut(QKeySequence("Ctrl+E"));
+    mercuryReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+M"));
     connect(mercuryReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateMercuryReturn);
     returnChartsMenu->addAction(mercuryReturnCalcAction);
 
     QAction *uranusReturnCalcAction = new QAction("Calculate Uranus Return", this);
     uranusReturnCalcAction->setToolTip("Calculate the Uranus return chart for a selected return number");
     uranusReturnCalcAction->setStatusTip("Calculate the Uranus return chart for the current birth data and chosen return number");
-    uranusReturnCalcAction->setShortcut(QKeySequence("Ctrl+U"));
+    uranusReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+U"));
     connect(uranusReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateUranusReturn);
     returnChartsMenu->addAction(uranusReturnCalcAction);
 
     QAction *neptuneReturnCalcAction = new QAction("Calculate Neptune Return", this);
     neptuneReturnCalcAction->setToolTip("Calculate the Neptune return chart for a selected return number");
     neptuneReturnCalcAction->setStatusTip("Calculate the Neptune return chart for the current birth data and chosen return number");
-    neptuneReturnCalcAction->setShortcut(QKeySequence("Ctrl+N"));
+    neptuneReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+N"));
     connect(neptuneReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateNeptuneReturn);
     returnChartsMenu->addAction(neptuneReturnCalcAction);
 
     QAction *plutoReturnCalcAction = new QAction("Calculate Pluto Return", this);
     plutoReturnCalcAction->setToolTip("Calculate the Pluto return chart for a selected return number");
     plutoReturnCalcAction->setStatusTip("Calculate the Pluto return chart for the current birth data and chosen return number");
-    plutoReturnCalcAction->setShortcut(QKeySequence("Ctrl+P"));
+    plutoReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+P"));
     connect(plutoReturnCalcAction, &QAction::triggered, this, &MainWindow::calculatePlutoReturn);
     returnChartsMenu->addAction(plutoReturnCalcAction);
 
@@ -1073,6 +1196,14 @@ void MainWindow::setupMenus()
     secondaryProgressionAction->setShortcut(QKeySequence("Ctrl+G")); // Choose a shortcut that doesn't conflict
     connect(secondaryProgressionAction, &QAction::triggered, this, &MainWindow::calculateSecondaryProgression);
     toolsMenu->insertAction(nullptr, secondaryProgressionAction); // Add at the top of Tools menu
+
+    // Current Chart
+    QAction *zodiacChartAction = new QAction("Calculate Zodiac Chart", this);
+    zodiacChartAction->setToolTip("Calculate a chart for all Zodiac Signs");
+    //zodiacChartAction->setStatusTip("Calculate the current chart using the current date/time and entered location");
+    zodiacChartAction->setShortcut(QKeySequence("Ctrl+H")); // Choose a shortcut that doesn't conflict
+    connect(zodiacChartAction, &QAction::triggered, this, &MainWindow::calculateZodiacSignsChart);
+    toolsMenu->insertAction(nullptr, zodiacChartAction); // Add at the top of Tools menu
 
 }
 
@@ -1129,7 +1260,7 @@ void MainWindow::calculateChart()
     birthDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
 
     m_currentChartData = m_chartDataManager.calculateChartAsJson(
-        birthDate, birthTime, utcOffset, latitude, longitude, houseSystem);
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem);
 
     if (m_chartDataManager.getLastError().isEmpty()) {
 
@@ -1138,15 +1269,15 @@ void MainWindow::calculateChart()
         m_chartCalculated = true;
         // Set chart type for interpretation
 
-        GlobalFlags::lastGeneratedChartType = "natal (birth)";
+        GlobalFlags::lastGeneratedChartType = "Natal Birth";
 
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
         // Clear previous interpretation
-        m_currentInterpretation.clear();
-        m_interpretationtextEdit->clear();
-        m_interpretationtextEdit->setPlaceholderText("Click 'Get AI Interpretation' to analyze this chart.");
+        //m_currentInterpretation.clear();
+        //m_interpretationtextEdit->clear();
+        //m_interpretationtextEdit->setPlaceholderText("Click 'Get AI Interpretation' to analyze this chart.");
         statusBar()->showMessage("Chart calculated successfully", 3000);
     } else {
         handleError("Chart calculation error: " + m_chartDataManager.getLastError());
@@ -1221,12 +1352,12 @@ void MainWindow::displayChart(const QJsonObject &chartData) {
     updateChartDetailsTables(filteredChartData);
 
     //info overlay
-    chartInfoOverlay->setVisible(true);
+    chartInfoOverlay->setVisible(m_showInfoOverlay);
     populateInfoOverlay();
 
     // Switch to chart tab
     m_centralTabWidget->setCurrentIndex(0);
-   // this->setWindowTitle("Asteria - Astrological Chart Analysis - Birth Chart");
+    // this->setWindowTitle("Asteria - Astrological Chart Analysis - Birth Chart");
 }
 
 
@@ -1447,7 +1578,7 @@ void MainWindow::getInterpretation() {
     m_mistralApi.interpretChart(dataToSend);
 }
 
-
+/*
 void MainWindow::displayInterpretation(const QString &interpretation)
 {
     m_currentInterpretation += interpretation;
@@ -1457,6 +1588,7 @@ void MainWindow::displayInterpretation(const QString &interpretation)
         " at " + m_birthTimeEdit->text() +
         " in location " + m_googleCoordsEdit->text() + "\n"
         );
+    //m_interpretationtextEdit->append("\n" + interpretation);
     m_interpretationtextEdit->append("\n" + interpretation);
 
     m_getInterpretationButton->setEnabled(true);
@@ -1464,7 +1596,55 @@ void MainWindow::displayInterpretation(const QString &interpretation)
     m_interpretationtextEdit->append("\nReceived interpretation from AI...");
         statusBar()->showMessage("Interpretation received", 3000);
 }
+*/
 
+
+void MainWindow::displayInterpretation(const QString &interpretation)
+{
+    m_currentInterpretation += interpretation;
+
+    // Convert the AI response from Markdown to HTML
+    QString htmlInterpretation = markdownToHtml(interpretation);
+
+    // Get the existing text and convert it to HTML
+    //QString existingText = m_interpretationtextEdit->toPlainText();
+    //QString existingHtml = plainTextToHtml(existingText);
+    QString existingHtml = m_interpretationtextEdit->toHtml();
+
+    // Build the new header as HTML
+    QString header = QString(
+                "<p><b>Chart reading for %1 %2</b> born on %3 at %4 in location %5</p>"
+                ).arg(
+                first_name->text(),
+                last_name->text(),
+                m_birthDateEdit->text(),
+                m_birthTimeEdit->text(),
+                m_googleCoordsEdit->text()
+                );
+
+    // Combine everything into full HTML
+    QString fullHtml = existingHtml + "\n" + header + "\n" + htmlInterpretation + "\n" +
+            "<p><i>Received interpretation from AI...</i></p>";
+
+    // Set the complete HTML content
+    m_interpretationtextEdit->setAcceptRichText(true);
+    m_interpretationtextEdit->setHtml(fullHtml);
+
+    m_getInterpretationButton->setEnabled(true);
+    statusBar()->showMessage("Interpretation received", 3000);
+}
+
+// Helper function to convert plain text to basic HTML
+QString MainWindow::plainTextToHtml(const QString &plainText)
+{
+    if (plainText.isEmpty()) return "";
+
+    QString html = plainText;
+    // Convert line breaks to HTML paragraphs
+    html.replace("\n\n", "</p><p>");
+    html.replace("\n", "<br>");
+    return "<p>" + html + "</p>";
+}
 
 
 void MainWindow::newChart() {
@@ -1546,6 +1726,7 @@ void MainWindow::saveChart() {
     QString filePath = getFilepath("astr");
     if (filePath.isEmpty())
         return;
+
 
     QString name = first_name->text().simplified();
     QString surname = last_name->text().simplified();
@@ -1633,11 +1814,7 @@ void MainWindow::loadChart() {
                 m_getInterpretationButton->setEnabled(true);
             }
 
-            // Load interpretation
-            if (saveData.contains("interpretation") && saveData["interpretation"].isString()) {
-                m_currentInterpretation = saveData["interpretation"].toString();
-                m_interpretationtextEdit->setPlainText(m_currentInterpretation);
-            }
+
 
             // Load birth information
             if (saveData.contains("birthInfo") && saveData["birthInfo"].isObject()) {
@@ -1673,6 +1850,16 @@ void MainWindow::loadChart() {
                     m_googleCoordsEdit->setText(birthInfo["googleCoords"].toString());
                 }
             }
+
+            // Load interpretation
+            if (saveData.contains("interpretation") && saveData["interpretation"].isString()) {
+                m_currentInterpretation = saveData["interpretation"].toString();
+                //m_interpretationtextEdit->setPlainText(m_currentInterpretation);
+                //QString htmlInterpretation = markdownToHtml(m_currentInterpretation);
+                //m_interpretationtextEdit->setHtml(htmlInterpretation);
+                displayInterpretation(m_currentInterpretation);
+            }
+
 
             // Load relationship information if it exists
             if (saveData.contains("relationshipInfo") && saveData["relationshipInfo"].isObject()) {
@@ -1736,10 +1923,10 @@ void MainWindow::exportInterpretation()
 void MainWindow::printChart() {
 #ifdef FLATHUB_BUILD
     QMessageBox::information(
-        this,
-        tr("Functionality Unavailable"),
-        tr("This functionality is not available in the Flathub version of Asteria.")
-        );
+                this,
+                tr("Functionality Unavailable"),
+                tr("This functionality is not available in the Flathub version of Asteria.")
+                );
 #else
     if (!m_chartCalculated) {
         QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
@@ -1800,15 +1987,34 @@ void MainWindow::configureApiKey() {
     }
 }
 
+/*
 void MainWindow::showAboutDialog()
 {
-    QMessageBox::about(this, "About AdAstra",
+    QString version = QCoreApplication::applicationVersion();
+    QMessageBox::about(this, "About Asteria",
                        "Asteria - Astrological Chart Analysis\n\n"
-                       "Version 2.1.0\n\n"
+                       "Version 2.1.1\n\n"
                        "A tool for calculating and interpreting astrological charts "
                        "with AI-powered analysis.\n\n"
                        "© 2025 Alamahant");
 }
+*/void MainWindow::showAboutDialog()
+{
+    QString version = QCoreApplication::applicationVersion();
+    QMessageBox::about(
+        this,
+        "About Asteria",
+        QString("Asteria - Astrological Chart Analysis\n\n"
+                "Version %1\n\n"
+                "A tool for calculating and interpreting astrological charts "
+                "with AI-powered analysis.\n\n"
+                "© 2025 Alamahant")
+            .arg(version)
+    );
+}
+
+
+
 
 void MainWindow::handleError(const QString &errorMessage)
 {
@@ -1850,6 +2056,10 @@ void MainWindow::saveSettings()
     // add aditional bodies or not
     //settings.setValue("chart/includeAdditionalBodies", m_additionalBodiesCB->isChecked());
     // Save aspect display settings
+
+    // Save info overlay visibility setting
+    settings.setValue("view/showInfoOverlay", m_showInfoOverlay);
+
     AspectSettings::instance().saveToSettings(settings);
 
 }
@@ -1859,6 +2069,8 @@ void MainWindow::loadSettings()
     QSettings settings;
 
     // Restore window state
+
+    /*
     if (settings.contains("mainWindow/geometry")) {
         restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
     }
@@ -1866,6 +2078,7 @@ void MainWindow::loadSettings()
     if (settings.contains("mainWindow/windowState")) {
         restoreState(settings.value("mainWindow/windowState").toByteArray());
     }
+    */
 
     // Restore last used house system
     if (settings.contains("chart/houseSystem")) {
@@ -1886,6 +2099,19 @@ void MainWindow::loadSettings()
     }
     // Restore additional bodies setting
     //m_additionalBodiesCB->setChecked(settings.value("chart/includeAdditionalBodies", false).toBool());
+
+    //restore infooverlay visibility
+    // Load info overlay visibility setting
+    if (settings.contains("view/showInfoOverlay")) {
+        m_showInfoOverlay = settings.value("view/showInfoOverlay").toBool();
+    } else {
+        m_showInfoOverlay = false; // Default to false if setting doesn't exist
+    }
+
+    // Update the action checkbox state
+    if (showOverlayAction) {
+        showOverlayAction->setChecked(m_showInfoOverlay);
+    }
 
     AspectSettings::instance().loadFromSettings(settings);
 
@@ -1920,7 +2146,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
     // If we have a chart, make sure it fits in the view
     //if (m_chartCalculated && m_chartView && m_chartRenderer) {
-        //m_chartView->fitInView(m_chartRenderer->scene()->sceneRect(), Qt::KeepAspectRatio);
+    //m_chartView->fitInView(m_chartRenderer->scene()->sceneRect(), Qt::KeepAspectRatio);
     //}
 }
 
@@ -2039,12 +2265,12 @@ void MainWindow::getPrediction() {
 
     // Update status
     statusBar()->showMessage(QString("Calculating transits for %1 to %2...")
-                                 .arg(fromDate.toString("yyyy-MM-dd"))
-                                 .arg(toDate.toString("yyyy-MM-dd")));
+                             .arg(fromDate.toString("yyyy-MM-dd"))
+                             .arg(toDate.toString("yyyy-MM-dd")));
 
     // Calculate transits
     QJsonObject transitData = m_chartDataManager.calculateTransitsAsJson(
-        birthDate, birthTime, utcOffset, latitude, longitude, fromDate, transitDays);
+                birthDate, birthTime, utcOffset, latitude, longitude, fromDate, transitDays);
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         //populate tab
@@ -2060,6 +2286,7 @@ void MainWindow::getPrediction() {
 
 }
 
+/*
 void MainWindow::displayTransitInterpretation(const QString &interpretation) {
     m_currentInterpretation += interpretation;
 
@@ -2078,9 +2305,44 @@ void MainWindow::displayTransitInterpretation(const QString &interpretation) {
     getPredictionButton->setEnabled(true);
 
 }
+*/
+
+void MainWindow::displayTransitInterpretation(const QString &interpretation) {
+    m_currentInterpretation += interpretation;
+
+    // Convert the transit interpretation from Markdown to HTML
+    QString htmlInterpretation = markdownToHtml(interpretation);
+
+    // Get the existing content as HTML directly
+    QString existingHtml = m_interpretationtextEdit->toHtml();
+
+    // Build the header as HTML
+    QString header = QString(
+                "<p><b>Astrological Prediction reading for %1 %2</b> born on %3 at %4 "
+                "in location %5 for the period from %6 to %7</p>"
+                ).arg(
+                first_name->text(),
+                last_name->text(),
+                m_birthDateEdit->text(),
+                m_birthTimeEdit->text(),
+                m_googleCoordsEdit->text(),
+                m_predictiveFromEdit->text(),
+                m_predictiveToEdit->text()
+                );
+
+    // Combine everything into a single HTML string
+    QString fullHtml = existingHtml + "\n" + header + "\n" + htmlInterpretation + "\n" +
+            "<p><i>Transit interpretation received</i></p>";
+
+    m_interpretationtextEdit->setAcceptRichText(true);
+    m_interpretationtextEdit->setHtml(fullHtml);
+
+    statusBar()->showMessage("Transit interpretation complete", 3000);
+    getPredictionButton->setEnabled(true);
+}
 
 void MainWindow::populateInfoOverlay() {
-    chartInfoOverlay->setVisible(true);
+    chartInfoOverlay->setVisible(m_showInfoOverlay);
     m_nameLabel->setText(first_name->text());
     m_surnameLabel->setText(last_name->text());
     m_birthDateLabel->setText(m_birthDateEdit->text());
@@ -2173,7 +2435,7 @@ void MainWindow::displayRawTransitData(const QJsonObject &transitData) {
                     QString transitPlanet = aspectMatch.captured(1);
                     //bool isRetrograde = aspect.contains("(R)");
                     bool isRetrograde = aspect.contains("(R)") &&
-                                        !transitPlanet.contains("Node");
+                            !transitPlanet.contains("Node");
                     QString natalPlanet = aspectMatch.captured(3);
 
                     if (transitPlanet == "North Node") transitPlanet = "NNode";
@@ -2234,10 +2496,10 @@ void MainWindow::exportChartImage()
 void MainWindow::exportAsPdf() {
 #ifdef FLATHUB_BUILD
     QMessageBox::information(
-        this,
-        tr("Functionality Unavailable"),
-        tr("This functionality is not available in the Flathub version of Asteria.")
-    );
+                this,
+                tr("Functionality Unavailable"),
+                tr("This functionality is not available in the Flathub version of Asteria.")
+                );
 #else
     if (!m_chartCalculated) {
         QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
@@ -2548,7 +2810,8 @@ QString MainWindow::getFilepath(const QString &format)
 
     QString currentDate = QDate::currentDate().toString("yyyy-MM-dd");
     QString currentTime = QTime::currentTime().toString("HHmm");
-    QString baseName = QString("%1-%2-%3-%4-chart").arg(name, surname, currentDate, currentTime);
+    QString chartTypeSanitized = GlobalFlags::lastGeneratedChartType.replace(" ", "-");
+    QString baseName = QString("%1-%2-%3-%4-%5-chart").arg(chartTypeSanitized, name, surname, currentDate, currentTime);
     QString defaultFilename = QString("%1.%2").arg(baseName, format);
     QString defaultPath = appDir + "/" + defaultFilename;
 
@@ -2855,10 +3118,10 @@ void MainWindow::onOpenMapClicked()
 
         // Update only the Google coordinates field
         m_googleCoordsEdit->setText(QString("%1° %2, %3° %4")
-                                        .arg(qAbs(coords.latitude()), 0, 'f', 4)
-                                        .arg(latDir)
-                                        .arg(qAbs(coords.longitude()), 0, 'f', 4)
-                                        .arg(longDir));
+                                    .arg(qAbs(coords.latitude()), 0, 'f', 4)
+                                    .arg(latDir)
+                                    .arg(qAbs(coords.longitude()), 0, 'f', 4)
+                                    .arg(longDir));
 
         // The lat/long edits will be automatically updated by your existing onTextChanged handler
     }
@@ -2912,7 +3175,7 @@ void MainWindow::createCompositeChart() {
     QString appName = QApplication::applicationName();
     QString appDir;
 #ifdef FLATHUB_BUILD
-        // In Flatpak, use the app-specific data directory
+    // In Flatpak, use the app-specific data directory
     appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
 #else
     // For local builds, use a directory in home
@@ -2925,7 +3188,7 @@ void MainWindow::createCompositeChart() {
 
     // Open file dialog for selecting two charts
     QStringList filePaths = QFileDialog::getOpenFileNames(
-        this, "Select Two Charts", appDir, "Astrological Chart (*.astr)");
+                this, "Select Two Charts", appDir, "Astrological Chart (*.astr)");
 
     // Validate selection
     if (filePaths.size() != 2) {
@@ -3267,10 +3530,10 @@ void MainWindow::createCompositeChart() {
     QString latDirection = midLat >= 0 ? "N" : "S";
     QString lonDirection = midLon >= 0 ? "E" : "W";
     QString compositeGoogleCoords = QString("%1° %2, %3° %4")
-                                        .arg(fabs(midLat), 0, 'f', 4)
-                                        .arg(latDirection)
-                                        .arg(fabs(midLon), 0, 'f', 4)
-                                        .arg(lonDirection);
+            .arg(fabs(midLat), 0, 'f', 4)
+            .arg(latDirection)
+            .arg(fabs(midLon), 0, 'f', 4)
+            .arg(lonDirection);
 
     // Create the composite birth info object
     QJsonObject compositeBirthInfo;
@@ -3312,15 +3575,15 @@ void MainWindow::createCompositeChart() {
     m_currentChartData = compositeChartData;
     displayChart(compositeChartData);
     m_chartCalculated = true;
-    GlobalFlags::lastGeneratedChartType = "composite (relationship)";
+    GlobalFlags::lastGeneratedChartType = "Composite Relationship";
     populateInfoOverlay();
 
     // Save the composite chart
     QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmm");
     QString outputFileName = QString("Composite_%1_%2_%3.astr")
-                                 .arg(name1 + surname1)
-                                 .arg(name2 + surname2)
-                                 .arg(timestamp);
+            .arg(name1 + surname1)
+            .arg(name2 + surname2)
+            .arg(timestamp);
     QDir relationshipDir(appDir + "/RelationshipCharts");
     if (!relationshipDir.exists()) {
         relationshipDir.mkpath(".");
@@ -3358,7 +3621,7 @@ void MainWindow::createDavisonChart() {
         dir.mkpath(appDir);
 
     QStringList filePaths = QFileDialog::getOpenFileNames(
-        this, "Select Two Charts", appDir, "Astrological Chart (*.astr)");
+                this, "Select Two Charts", appDir, "Astrological Chart (*.astr)");
 
     if (filePaths.size() != 2) {
         QMessageBox::warning(this, "Invalid Selection",
@@ -3473,9 +3736,9 @@ void MainWindow::createDavisonChart() {
 
     // With this corrected version:
     QString midpointUtcOffsetStr = QString("%1%2:%3")
-                                       .arg(neg ? "-" : "+")
-                                       .arg(h, 1, 10, QChar('0'))  // Use width 1 to avoid unnecessary padding
-                                       .arg(m, 2, 10, QChar('0'));
+            .arg(neg ? "-" : "+")
+            .arg(h, 1, 10, QChar('0'))  // Use width 1 to avoid unnecessary padding
+            .arg(m, 2, 10, QChar('0'));
 
     QString houseSystem = birthInfo1["houseSystem"].toString();
     QString davisonFirstName = name1 + " " + surname1;
@@ -3489,8 +3752,8 @@ void MainWindow::createDavisonChart() {
     QString latDirection = (midpointLat >= 0) ? "N" : "S";
     QString lonDirection = (midpointLon >= 0) ? "E" : "W";
     QString googleCoords = QString("%1° %2, %3° %4")
-                               .arg(qAbs(midpointLat), 0, 'f', 4).arg(latDirection)
-                               .arg(qAbs(midpointLon), 0, 'f', 4).arg(lonDirection);
+            .arg(qAbs(midpointLat), 0, 'f', 4).arg(latDirection)
+            .arg(qAbs(midpointLon), 0, 'f', 4).arg(lonDirection);
     m_googleCoordsEdit->setText(googleCoords);
 
     int utcIndex = -1;
@@ -3518,7 +3781,7 @@ void MainWindow::createDavisonChart() {
         for (int i = 0; i < m_utcOffsetCombo->count(); i++) {
             QString itemText = m_utcOffsetCombo->itemText(i);
             if ((itemText.contains("+" + hourPart) || itemText.contains("-" + hourPart)) &&
-                ((neg && itemText.contains("-")) || (!neg && !itemText.contains("-")))) {
+                    ((neg && itemText.contains("-")) || (!neg && !itemText.contains("-")))) {
                 utcIndex = i;
                 break;
             }
@@ -3564,9 +3827,9 @@ void MainWindow::createDavisonChart() {
 
     QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmm");
     QString outputFileName = QString("Davison_%1_%2_%3.astr")
-                                 .arg(name1 + surname1)
-                                 .arg(name2 + surname2)
-                                 .arg(timestamp);
+            .arg(name1 + surname1)
+            .arg(name2 + surname2)
+            .arg(timestamp);
     QDir relationshipDir(appDir + "/RelationshipCharts");
     if (!relationshipDir.exists()) {
         relationshipDir.mkpath(".");
@@ -3585,7 +3848,7 @@ void MainWindow::createDavisonChart() {
 
     displayChart(m_currentChartData);
     m_chartCalculated = true;
-    GlobalFlags::lastGeneratedChartType = "Davison (relationship)";
+    GlobalFlags::lastGeneratedChartType = "Davison Relationship";
 
     populateInfoOverlay();
     setWindowTitle("Asteria - Astrological Chart Analysis - " + relationshipInfo["displayName"].toString());
@@ -3737,6 +4000,17 @@ void MainWindow::showChangelog(){
 
 <h1>Changelog</h1>
 
+<h2>Version 2.1.1 (2025-09-23) <span style='color:#27ae60;'>&mdash; Major Update</span></h2>
+<ul>
+  <li><b>Stunning AI Interpretations:</b> Markdown AI responses are now transformed into rich HTML, producing beautifully formatted, clear, and engaging interpretations—like reading a professional digital publication.</li>
+  <li><b>Smarter Chart Tagging:</b> All chart types (Natal, Relationship, Progression, Return, Zodiac Signs) now carry unique tags, so AI provides context-specific interpretations. <b>Exception:</b> Composite charts are excluded for accuracy.</li>
+  <li><b>New Zodiac Sign Chart:</b> Generates magazine-style horoscopes for all 12 signs for any chosen date/time.</li>
+  <li><b>Multi-Window Support:</b> Open multiple Asteria windows via File → New Window, either in the same instance or as new instances. Charts can also be opened in new windows for comparison.</li>
+  <li><b>Drag-and-Drop Between Windows:</b> Use Ctrl+Left-Click to drag charts into another Asteria window (input or interpretation docks) to load all chart data instantly.</li>
+  <li><b>Enhanced Viewing Options:</b> View menu checkboxes to toggle Chart-Only view or Info Overlay visibility (hidden by default).</li>
+  <li><b>Clear Interpretation Button:</b> Clears both displayed interpretation and stored previous readings in one click.</li>
+</ul>
+
 <h2>Version 2.1.0 (2025-07-14) <span style='color:#27ae60;'>&mdash; Major Release</span></h2>
 <ul>
   <li><b>Rendering System Overhaul:</b> Redesigned the chart rendering engine—now all chart elements are drawn in an <b>anticlockwise</b> direction for improved astrological convention and clarity.</li>
@@ -3873,18 +4147,18 @@ void MainWindow::CalculateTransits() {
 
 
     // Gregorian calendar reform date
-        QDate gregorianStart(1582, 10, 15);
+    QDate gregorianStart(1582, 10, 15);
 
-        // Validate all dates are post-Gregorian
-        if (birthDate < gregorianStart || fromDate < gregorianStart || toDate < gregorianStart) {
-            QMessageBox::warning(
-                this,
-                tr("Unsupported Date"),
-                tr("All dates (birth, start, and end) must be after 15 October 1582 (Gregorian calendar reform) for transit calculations.\n"
-                   "Please enter valid post-Gregorian dates.")
-            );
-            return;
-        }
+    // Validate all dates are post-Gregorian
+    if (birthDate < gregorianStart || fromDate < gregorianStart || toDate < gregorianStart) {
+        QMessageBox::warning(
+                    this,
+                    tr("Unsupported Date"),
+                    tr("All dates (birth, start, and end) must be after 15 October 1582 (Gregorian calendar reform) for transit calculations.\n"
+                       "Please enter valid post-Gregorian dates.")
+                    );
+        return;
+    }
 
     // Validate dates
     if (!fromDate.isValid() || !toDate.isValid()) {
@@ -3907,25 +4181,25 @@ void MainWindow::CalculateTransits() {
 
     if (transitDays > 60) {
         QMessageBox::information(
-            this,
-            "Please Be Patient",
-            "This operation may take some time.\n"
+                    this,
+                    "Please Be Patient",
+                    "This operation may take some time.\n"
 
-            " When finished you will be notified."
-            );
+                    " When finished you will be notified."
+                    );
     }
 
 
     // Update status
     statusBar()->showMessage(QString("Calculating transits for %1 to %2...")
-                                 .arg(fromDate.toString("yyyy-MM-dd"))
-                                 .arg(toDate.toString("yyyy-MM-dd")));
+                             .arg(fromDate.toString("yyyy-MM-dd"))
+                             .arg(toDate.toString("yyyy-MM-dd")));
 
     // Calculate transits
     this->setEnabled(false); // Disable all widgets in the main window
 
     QJsonObject transitData = m_chartDataManager.calculateTransitsAsJson(
-        birthDate, birthTime, utcOffset, latitude, longitude, fromDate, transitDays);
+                birthDate, birthTime, utcOffset, latitude, longitude, fromDate, transitDays);
 
     this->setEnabled(true); // Enable all widgets in the main window
 
@@ -4010,10 +4284,10 @@ void MainWindow::applyTransitFilter(const QString &datePattern,
                 if(!trimmedTerm.isEmpty()) {
                     // Check if any column contains the exclude term
                     bool containsExcludeTerm =
-                        rawTransitTable->item(row, 0)->text().contains(trimmedTerm, Qt::CaseInsensitive) ||
-                        rawTransitTable->item(row, 1)->text().contains(trimmedTerm, Qt::CaseInsensitive) ||
-                        rawTransitTable->item(row, 2)->text().contains(trimmedTerm, Qt::CaseInsensitive) ||
-                        rawTransitTable->item(row, 3)->text().contains(trimmedTerm, Qt::CaseInsensitive);
+                            rawTransitTable->item(row, 0)->text().contains(trimmedTerm, Qt::CaseInsensitive) ||
+                            rawTransitTable->item(row, 1)->text().contains(trimmedTerm, Qt::CaseInsensitive) ||
+                            rawTransitTable->item(row, 2)->text().contains(trimmedTerm, Qt::CaseInsensitive) ||
+                            rawTransitTable->item(row, 3)->text().contains(trimmedTerm, Qt::CaseInsensitive);
 
                     if(containsExcludeTerm) {
                         match = false;
@@ -4027,8 +4301,8 @@ void MainWindow::applyTransitFilter(const QString &datePattern,
         if(match) matchCount++;
     }
     // Show "Filter applied" after finishing
-       if (m_transitSearchDialog && m_transitSearchDialog->statusLabel)
-           m_transitSearchDialog->statusLabel->setText("Filter applied");
+    if (m_transitSearchDialog && m_transitSearchDialog->statusLabel)
+        m_transitSearchDialog->statusLabel->setText("Filter applied");
 }
 
 
@@ -4138,8 +4412,8 @@ void MainWindow::CalculateEclipses()
 {
     // Optional: Only proceed if a chart is calculated
     //if (!m_chartCalculated) {
-      //  QMessageBox::warning(this, "No Chart", "Please calculate a birth chart first.");
-        //return;
+    //  QMessageBox::warning(this, "No Chart", "Please calculate a birth chart first.");
+    //return;
     //}
 
     // Use the same date fields as for transits
@@ -4172,11 +4446,11 @@ void MainWindow::CalculateEclipses()
     }
 
     statusBar()->showMessage(QString("Calculating eclipses for %1 to %2...")
-                                 .arg(fromDate.toString("yyyy-MM-dd"))
-                                 .arg(toDate.toString("yyyy-MM-dd")));
+                             .arg(fromDate.toString("yyyy-MM-dd"))
+                             .arg(toDate.toString("yyyy-MM-dd")));
 
     QJsonArray eclipseData = m_chartDataManager.calculateEclipsesAsJson(
-        fromDate, toDate, solarEclipses, lunarEclipses);
+                fromDate, toDate, solarEclipses, lunarEclipses);
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayRawEclipseData(eclipseData);
@@ -4227,7 +4501,7 @@ void MainWindow::calculateSolarReturn()
 
     if (!validateDateFormat(dateText, this)) {
 
-    return;
+        return;
 
     }
     // Get input values
@@ -4237,12 +4511,12 @@ void MainWindow::calculateSolarReturn()
     // Prompt user for the solar return year
     bool ok = false;
     int year = QInputDialog::getInt(
-        this,
-        tr("Solar Return Year"),
-        tr("Enter the year for the solar return:"),
-        QDate::currentDate().year(), // default value
-        1900, 2999, 1, &ok
-        );
+                this,
+                tr("Solar Return Year"),
+                tr("Enter the year for the solar return:"),
+                QDate::currentDate().year(), // default value
+                1900, 2999, 1, &ok
+                );
     if (!ok) {
         // User cancelled the dialog
         return;
@@ -4301,15 +4575,15 @@ void MainWindow::doSolarReturnCalculation(const QDate& birthDate, const QTime& b
     QDate chartDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
 
     m_currentChartData = m_chartDataManager.calculateSolarReturnAsJson(
-        birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, year
-        );
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, year
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         // Display chart
         displayChart(m_currentChartData);
         m_chartCalculated = true;
 
-        GlobalFlags::lastGeneratedChartType = "solar return (yearly)";
+        GlobalFlags::lastGeneratedChartType = "Solar Return";
 
 
         m_getInterpretationButton->setEnabled(true);
@@ -4330,19 +4604,20 @@ void MainWindow::doSolarReturnCalculation(const QDate& birthDate, const QTime& b
         QString jdStr   = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                               "Solar Return Moment\n"
-                               "Date: %1\n"
-                               "Time: %2\n"
-                               "Julian Day: %3\n\n"
-                               ).arg(dateStr, timeStr, jdStr);
+                    "Solar Return Year: %1\n"
+                    "Solar Return Moment\n"
+                    "Date: %2\n"
+                    "Time: %3\n"
+                    "Julian Day: %4\n\n"
+                    ).arg(QString::number(year), dateStr, timeStr, jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Solar return occurs on %1 at %2 (Julian Day: %3)")
-                          .arg(dateStr)
-                          .arg(timeStr)
-                          .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Solar Return Moment", msg);
 
@@ -4362,7 +4637,7 @@ void MainWindow::calculateLunarReturn()
 
     if (!validateDateFormat(dateText, this)) {
 
-    return;
+        return;
 
     }
     // Get input values
@@ -4372,12 +4647,12 @@ void MainWindow::calculateLunarReturn()
     // Prompt user for the lunar return year
     bool ok = false;
     int year = QInputDialog::getInt(
-        this,
-        tr("Lunar Return Year"),
-        tr("Enter the year for the lunar return:"),
-        QDate::currentDate().year(),
-        1900, 2100, 1, &ok
-        );
+                this,
+                tr("Lunar Return Year"),
+                tr("Enter the year for the lunar return:"),
+                QDate::currentDate().year(),
+                1900, 2100, 1, &ok
+                );
     if (!ok) {
         // User cancelled the dialog
         return;
@@ -4385,12 +4660,12 @@ void MainWindow::calculateLunarReturn()
 
     // Prompt user for the lunar return month
     int month = QInputDialog::getInt(
-        this,
-        tr("Lunar Return Month"),
-        tr("Enter the month for the lunar return (1-12):"),
-        QDate::currentDate().month(),
-        1, 12, 1, &ok
-        );
+                this,
+                tr("Lunar Return Month"),
+                tr("Enter the month for the lunar return (1-12):"),
+                QDate::currentDate().month(),
+                1, 12, 1, &ok
+                );
     if (!ok) {
         // User cancelled the dialog
         return;
@@ -4451,15 +4726,15 @@ void MainWindow::doLunarReturnCalculation(const QDate& birthDate, const QTime& b
     QDate chartDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
 
     m_currentChartData = m_chartDataManager.calculateLunarReturnAsJson(
-        birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, targetDate
-        );
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, targetDate
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         // Display chart
         displayChart(m_currentChartData);
         m_chartCalculated = true;
         // Set chart type for interpretation
-        GlobalFlags::lastGeneratedChartType = "lunar return (monthly)";
+        GlobalFlags::lastGeneratedChartType = "Lunar Return";
 
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
@@ -4480,19 +4755,19 @@ void MainWindow::doLunarReturnCalculation(const QDate& birthDate, const QTime& b
         QString jdStr   = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                               "Lunar Return Moment\n"
-                               "Date: %1\n"
-                               "Time: %2\n"
-                               "Julian Day: %3\n\n"
-                               ).arg(dateStr, timeStr, jdStr);
+                    "Lunar Return Moment\n"
+                    "Date: %1\n"
+                    "Time: %2\n"
+                    "Julian Day: %3\n\n"
+                    ).arg(dateStr, timeStr, jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Lunar return occurs on %1 at %2 (Julian Day: %3)")
-                          .arg(dateStr)
-                          .arg(timeStr)
-                          .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Lunar Return Moment", msg);
 
@@ -4513,7 +4788,7 @@ void MainWindow::calculateSaturnReturn()
 
     if (!validateDateFormat(dateText, this)) {
 
-    return;
+        return;
 
     }
     // Get input values
@@ -4532,15 +4807,15 @@ void MainWindow::calculateSaturnReturn()
                         "Saturn orbital period: %1 years\n"
                         "You are currently in your approx. %2 Saturn return.")
 
-                        .arg(QString::number(saturnPeriod, 'f', 3))
-                        .arg(approxReturn);
+            .arg(QString::number(saturnPeriod, 'f', 3))
+            .arg(approxReturn);
 
     int returnNumber = QInputDialog::getInt(
-        this,
-        tr("Saturn Return Number"),
-        prompt,
-        approxReturn, 1, 200, 1, &ok // Allow up to 5 Saturn returns
-    );
+                this,
+                tr("Saturn Return Number"),
+                prompt,
+                approxReturn, 1, 200, 1, &ok // Allow up to 5 Saturn returns
+                );
 
     if (!ok) return;
 
@@ -4553,10 +4828,10 @@ void MainWindow::calculateSaturnReturn()
     QVBoxLayout* layout = new QVBoxLayout(dialog);
 
     QLabel* label = new QLabel(tr(
-        "If you want to set a different location, set it now with the proper UTC offset; "
-        "otherwise, the birth location will be used.\n\n"
-        "Click 'Continue' when ready."
-    ), dialog);
+                                   "If you want to set a different location, set it now with the proper UTC offset; "
+                                   "otherwise, the birth location will be used.\n\n"
+                                   "Click 'Continue' when ready."
+                                   ), dialog);
     label->setWordWrap(true);
     layout->addWidget(label);
 
@@ -4603,14 +4878,14 @@ void MainWindow::doSaturnReturnCalculation(const QDate& birthDate, const QTime& 
 
 
     m_currentChartData = m_chartDataManager.calculateSaturnReturnAsJson(
-        chartDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
-        );
+                chartDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         // Display chart
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "saturn return";
+        GlobalFlags::lastGeneratedChartType = "Saturn Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -4628,19 +4903,20 @@ void MainWindow::doSaturnReturnCalculation(const QDate& birthDate, const QTime& 
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                               "Saturn Return Moment\n"
-                               "Date: %1\n"
-                               "Time: %2\n"
-                               "Julian Day: %3\n\n"
-                               ).arg(dateStr, timeStr, jdStr);
+                    "Saturn Return %1\n"
+                    "Saturn Return Moment\n"
+                    "Date: %2\n"
+                    "Time: %3\n"
+                    "Julian Day: %4\n\n"
+                    ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Saturn return occurs on %1 at %2 (Julian Day: %3)")
-                          .arg(dateStr)
-                          .arg(timeStr)
-                          .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Saturn Return Moment", msg);
 
@@ -4659,7 +4935,7 @@ void MainWindow::calculateJupiterReturn()
 
     if (!validateDateFormat(dateText, this)) {
 
-    return;
+        return;
 
     }
     // Get input values
@@ -4677,15 +4953,15 @@ void MainWindow::calculateJupiterReturn()
     QString prompt = tr("Enter which Jupiter return (1 = first, 2 = second, etc.):\n"
                         "Jupiter orbital period: %1 years\n"
                         "You are currently in your approx. %2 Jupiter return.")
-                         .arg(QString::number(jupiterPeriod, 'f', 3))
-                         .arg(approxReturn);
+            .arg(QString::number(jupiterPeriod, 'f', 3))
+            .arg(approxReturn);
 
     int returnNumber = QInputDialog::getInt(
-        this,
-        tr("Jupiter Return Number"),
-        prompt,
-        approxReturn, 1, 300, 1, &ok // Allow up to 20 returns for flexibility
-        );
+                this,
+                tr("Jupiter Return Number"),
+                prompt,
+                approxReturn, 1, 300, 1, &ok // Allow up to 20 returns for flexibility
+                );
 
     if (!ok) return;
 
@@ -4744,14 +5020,14 @@ void MainWindow::doJupiterReturnCalculation(const QDate& birthDate, const QTime&
     QDate chartDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
 
     m_currentChartData = m_chartDataManager.calculateJupiterReturnAsJson(
-        birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
-        );
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         // Display chart
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "jupiter return";
+        GlobalFlags::lastGeneratedChartType = "Jupiter Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -4764,19 +5040,20 @@ void MainWindow::doJupiterReturnCalculation(const QDate& birthDate, const QTime&
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                               "Jupiter Return Moment\n"
-                               "Date: %1\n"
-                               "Time: %2\n"
-                               "Julian Day: %3\n\n"
-                               ).arg(dateStr, timeStr, jdStr);
+                    "Jupiter Return %1\n"
+                    "Jupiter Return Moment\n"
+                    "Date: %2\n"
+                    "Time: %3\n"
+                    "Julian Day: %4\n\n"
 
+                    ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Jupiter return occurs on %1 at %2 (Julian Day: %3)")
-                          .arg(dateStr)
-                          .arg(timeStr)
-                          .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Jupiter Return Moment", msg);
 
@@ -4797,7 +5074,7 @@ void MainWindow::calculateVenusReturn()
 
     if (!validateDateFormat(dateText, this)) {
 
-    return;
+        return;
 
     }
     // Get input values
@@ -4815,15 +5092,15 @@ void MainWindow::calculateVenusReturn()
     QString prompt = tr("Enter which Venus return (1 = first, 2 = second, etc.):\n"
                         "Venus orbital period: %1 years\n"
                         "You are currently in your approx. %2 Venus return.")
-                         .arg(QString::number(venusPeriod, 'f', 3))
-                         .arg(approxReturn);
+            .arg(QString::number(venusPeriod, 'f', 3))
+            .arg(approxReturn);
 
     int returnNumber = QInputDialog::getInt(
-        this,
-        tr("Venus Return Number"),
-        prompt,
-        approxReturn, 1, 1000, 1, &ok
-        );
+                this,
+                tr("Venus Return Number"),
+                prompt,
+                approxReturn, 1, 1000, 1, &ok
+                );
     if (!ok) return;
 
     // Create a non-modal dialog with a Continue button
@@ -4877,14 +5154,14 @@ void MainWindow::doVenusReturnCalculation(const QDate& birthDate, const QTime& b
     QDate chartDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
 
     m_currentChartData = m_chartDataManager.calculateVenusReturnAsJson(
-        birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
-        );
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         // Display chart
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "venus return";
+        GlobalFlags::lastGeneratedChartType = "Venus Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -4896,19 +5173,20 @@ void MainWindow::doVenusReturnCalculation(const QDate& birthDate, const QTime& b
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                               "Venus Return Moment\n"
-                               "Date: %1\n"
-                               "Time: %2\n"
-                               "Julian Day: %3\n\n"
-                               ).arg(dateStr, timeStr, jdStr);
+                    "Venus Return %1\n"
+                    "Venus Return Moment\n"
+                    "Date: %2\n"
+                    "Time: %3\n"
+                    "Julian Day: %4\n\n"
+                    ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Venus return occurs on %1 at %2 (Julian Day: %3)")
-                          .arg(dateStr)
-                          .arg(timeStr)
-                          .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Venus Return Moment", msg);
 
@@ -4928,7 +5206,7 @@ void MainWindow::calculateMarsReturn()
 
     if (!validateDateFormat(dateText, this)) {
 
-    return;
+        return;
 
     }
     // Get input values
@@ -4946,15 +5224,15 @@ void MainWindow::calculateMarsReturn()
     QString prompt = tr("Enter which Mars return (1 = first, 2 = second, etc.):\n"
                         "Mars orbital period: %1 years\n"
                         "You are currently in your approx. %2 Mars return.")
-                         .arg(QString::number(marsPeriod, 'f', 3))
-                         .arg(approxReturn);
+            .arg(QString::number(marsPeriod, 'f', 3))
+            .arg(approxReturn);
 
     int returnNumber = QInputDialog::getInt(
-        this,
-        tr("Mars Return Number"),
-        prompt,
-        approxReturn, 1, 1000, 1, &ok
-        );
+                this,
+                tr("Mars Return Number"),
+                prompt,
+                approxReturn, 1, 1000, 1, &ok
+                );
     if (!ok) return;
 
     // Create a non-modal dialog with a Continue button
@@ -5008,14 +5286,14 @@ void MainWindow::doMarsReturnCalculation(const QDate& birthDate, const QTime& bi
     QDate chartDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
 
     m_currentChartData = m_chartDataManager.calculateMarsReturnAsJson(
-        birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
-        );
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         // Display chart
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "mars return";
+        GlobalFlags::lastGeneratedChartType = "Mars Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5027,19 +5305,20 @@ void MainWindow::doMarsReturnCalculation(const QDate& birthDate, const QTime& bi
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                               "Mars Return Moment\n"
-                               "Date: %1\n"
-                               "Time: %2\n"
-                               "Julian Day: %3\n\n"
-                               ).arg(dateStr, timeStr, jdStr);
+                    "Mars Return %1\n"
+                    "Mars Return Moment\n"
+                    "Date: %2\n"
+                    "Time: %3\n"
+                    "Julian Day: %4\n\n"
+                    ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Mars return occurs on %1 at %2 (Julian Day: %3)")
-                          .arg(dateStr)
-                          .arg(timeStr)
-                          .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Mars Return Moment", msg);
 
@@ -5059,7 +5338,7 @@ void MainWindow::calculateMercuryReturn()
 
     if (!validateDateFormat(dateText, this)) {
 
-    return;
+        return;
 
     }
     // Get input values
@@ -5077,15 +5356,15 @@ void MainWindow::calculateMercuryReturn()
     QString prompt = tr("Enter which Mercury return (1 = first, 2 = second, etc.):\n"
                         "Mercury orbital period: %1 years\n"
                         "You are currently in your approx. %2 Mercury return.")
-                         .arg(QString::number(mercuryPeriod, 'f', 3))
-                         .arg(approxReturn);
+            .arg(QString::number(mercuryPeriod, 'f', 3))
+            .arg(approxReturn);
 
     int returnNumber = QInputDialog::getInt(
-        this,
-        tr("Mercury Return Number"),
-        prompt,
-        approxReturn, 1, 1000, 1, &ok
-        );
+                this,
+                tr("Mercury Return Number"),
+                prompt,
+                approxReturn, 1, 1000, 1, &ok
+                );
     if (!ok) return;
 
     // Create a non-modal dialog with a Continue button
@@ -5139,14 +5418,14 @@ void MainWindow::doMercuryReturnCalculation(const QDate& birthDate, const QTime&
     QDate chartDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
 
     m_currentChartData = m_chartDataManager.calculateMercuryReturnAsJson(
-        birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
-        );
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         // Display chart
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "mercury return";
+        GlobalFlags::lastGeneratedChartType = "Mercury Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5158,19 +5437,20 @@ void MainWindow::doMercuryReturnCalculation(const QDate& birthDate, const QTime&
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                               "Mercury Return Moment\n"
-                               "Date: %1\n"
-                               "Time: %2\n"
-                               "Julian Day: %3\n\n"
-                               ).arg(dateStr, timeStr, jdStr);
+                    "Mercury Return %1\n"
+                    "Mercury Return Moment\n"
+                    "Date: %2\n"
+                    "Time: %3\n"
+                    "Julian Day: %4\n\n"
+                    ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Mercury return occurs on %1 at %2 (Julian Day: %3)")
-                          .arg(dateStr)
-                          .arg(timeStr)
-                          .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Mercury Return Moment", msg);
 
@@ -5187,27 +5467,27 @@ void MainWindow::doMercuryReturnCalculation(const QDate& birthDate, const QTime&
 bool MainWindow::validateDateFormat(const QString& dateText, QWidget* parentWidget)
 {
     QRegularExpressionMatch match = dateRegex.match(dateText);
-        if (!match.hasMatch()) {
-            QMessageBox::warning(parentWidget ? parentWidget : this, tr("Input Error"),
-                tr("Please enter the date in DD/MM/YYYY format with a four-digit year (0001–3000)."));
-            return false;
-        }
+    if (!match.hasMatch()) {
+        QMessageBox::warning(parentWidget ? parentWidget : this, tr("Input Error"),
+                             tr("Please enter the date in DD/MM/YYYY format with a four-digit year (0001–3000)."));
+        return false;
+    }
 
-        // Now, check if the date is a real calendar date
-        QDate date = QDate::fromString(dateText, "dd/MM/yyyy");
-        if (!date.isValid()) {
-            QMessageBox::warning(parentWidget ? parentWidget : this, tr("Input Error"),
-                tr("The date you entered does not exist in the calendar.\n\n"
-                   "Examples of invalid dates:\n"
-                   "  - 30/02/2023 (February never has 30 days)\n"
-                   "  - 31/04/2022 (April has only 30 days)\n"
-                   "  - 29/02/2023 (2023 is not a leap year)\n"
-                   "  - 32/01/2020 (No month has more than 31 days)\n"
-                   "  - 15/13/2020 (There is no 13th month)\n\n"
-                   "Please check your entry and try again."));
-            return false;
-            }
-        return true;
+    // Now, check if the date is a real calendar date
+    QDate date = QDate::fromString(dateText, "dd/MM/yyyy");
+    if (!date.isValid()) {
+        QMessageBox::warning(parentWidget ? parentWidget : this, tr("Input Error"),
+                             tr("The date you entered does not exist in the calendar.\n\n"
+                                "Examples of invalid dates:\n"
+                                "  - 30/02/2023 (February never has 30 days)\n"
+                                "  - 31/04/2022 (April has only 30 days)\n"
+                                "  - 29/02/2023 (2023 is not a leap year)\n"
+                                "  - 32/01/2020 (No month has more than 31 days)\n"
+                                "  - 15/13/2020 (There is no 13th month)\n\n"
+                                "Please check your entry and try again."));
+        return false;
+    }
+    return true;
 }
 
 QDate MainWindow::julianToGregorian(int year, int month, int day) const
@@ -5254,15 +5534,15 @@ void MainWindow::calculateUranusReturn()
     QString prompt = tr("Enter which Uranus return (1 = first, 2 = second, etc.):\n"
                         "Uranus orbital period: %1 years\n"
                         "You are currently in your approx. %2 Uranus return.")
-                        .arg(QString::number(uranusPeriod, 'f', 3))
-                        .arg(approxReturn);
+            .arg(QString::number(uranusPeriod, 'f', 3))
+            .arg(approxReturn);
 
     int returnNumber = QInputDialog::getInt(
-        this,
-        tr("Uranus Return Number"),
-        prompt,
-        approxReturn, 1, 200, 1, &ok
-    );
+                this,
+                tr("Uranus Return Number"),
+                prompt,
+                approxReturn, 1, 200, 1, &ok
+                );
     if (!ok) return;
 
     QDialog* dialog = new QDialog(this);
@@ -5271,10 +5551,10 @@ void MainWindow::calculateUranusReturn()
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     QVBoxLayout* layout = new QVBoxLayout(dialog);
     QLabel* label = new QLabel(tr(
-        "If you want to set a different location, set it now with the proper UTC offset; "
-        "otherwise, the birth location will be used.\n\n"
-        "Click 'Continue' when ready."
-    ), dialog);
+                                   "If you want to set a different location, set it now with the proper UTC offset; "
+                                   "otherwise, the birth location will be used.\n\n"
+                                   "Click 'Continue' when ready."
+                                   ), dialog);
     label->setWordWrap(true);
     layout->addWidget(label);
     QPushButton* continueBtn = new QPushButton(tr("Continue"), dialog);
@@ -5306,13 +5586,13 @@ void MainWindow::doUranusReturnCalculation(const QDate& birthDate, const QTime& 
 
     QDate chartDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
     m_currentChartData = m_chartDataManager.calculateUranusReturnAsJson(
-        chartDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
-    );
+                chartDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "uranus return";
+        GlobalFlags::lastGeneratedChartType = "Uranus Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5325,19 +5605,20 @@ void MainWindow::doUranusReturnCalculation(const QDate& birthDate, const QTime& 
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-            "Uranus Return Moment\n"
-            "Date: %1\n"
-            "Time: %2\n"
-            "Julian Day: %3\n\n"
-        ).arg(dateStr, timeStr, jdStr);
+                    "Uranus Return %1\n"
+                    "Uranus Return Moment\n"
+                    "Date: %2\n"
+                    "Time: %3\n"
+                    "Julian Day: %4\n\n"
+                    ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Uranus return occurs on %1 at %2 (Julian Day: %3)")
-            .arg(dateStr)
-            .arg(timeStr)
-            .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Uranus Return Moment", msg);
 
@@ -5370,15 +5651,15 @@ void MainWindow::calculateNeptuneReturn()
     QString prompt = tr("Enter which Neptune return (1 = first, 2 = second, etc.):\n"
                         "Neptune orbital period: %1 years\n"
                         "You are currently in your approx. %2 Neptune return.")
-                        .arg(QString::number(neptunePeriod, 'f', 3))
-                        .arg(approxReturn);
+            .arg(QString::number(neptunePeriod, 'f', 3))
+            .arg(approxReturn);
 
     int returnNumber = QInputDialog::getInt(
-        this,
-        tr("Neptune Return Number"),
-        prompt,
-        approxReturn, 1, 200, 1, &ok
-    );
+                this,
+                tr("Neptune Return Number"),
+                prompt,
+                approxReturn, 1, 200, 1, &ok
+                );
     if (!ok) return;
 
     QDialog* dialog = new QDialog(this);
@@ -5387,10 +5668,10 @@ void MainWindow::calculateNeptuneReturn()
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     QVBoxLayout* layout = new QVBoxLayout(dialog);
     QLabel* label = new QLabel(tr(
-        "If you want to set a different location, set it now with the proper UTC offset; "
-        "otherwise, the birth location will be used.\n\n"
-        "Click 'Continue' when ready."
-    ), dialog);
+                                   "If you want to set a different location, set it now with the proper UTC offset; "
+                                   "otherwise, the birth location will be used.\n\n"
+                                   "Click 'Continue' when ready."
+                                   ), dialog);
     label->setWordWrap(true);
     layout->addWidget(label);
     QPushButton* continueBtn = new QPushButton(tr("Continue"), dialog);
@@ -5422,13 +5703,13 @@ void MainWindow::doNeptuneReturnCalculation(const QDate& birthDate, const QTime&
 
     QDate chartDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
     m_currentChartData = m_chartDataManager.calculateNeptuneReturnAsJson(
-        chartDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
-    );
+                chartDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "neptune return";
+        GlobalFlags::lastGeneratedChartType = "Neptune Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5441,19 +5722,20 @@ void MainWindow::doNeptuneReturnCalculation(const QDate& birthDate, const QTime&
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-            "Neptune Return Moment\n"
-            "Date: %1\n"
-            "Time: %2\n"
-            "Julian Day: %3\n\n"
-        ).arg(dateStr, timeStr, jdStr);
+                    "Neptune Return %1\n"
+                    "Neptune Return Moment\n"
+                    "Date: %2\n"
+                    "Time: %3\n"
+                    "Julian Day: %4\n\n"
+                    ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Neptune return occurs on %1 at %2 (Julian Day: %3)")
-            .arg(dateStr)
-            .arg(timeStr)
-            .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Neptune Return Moment", msg);
 
@@ -5486,15 +5768,15 @@ void MainWindow::calculatePlutoReturn()
     QString prompt = tr("Enter which Pluto return (1 = first, 2 = second, etc.):\n"
                         "Pluto orbital period: %1 years\n"
                         "You are currently in your approx. %2 Pluto return.")
-                        .arg(QString::number(plutoPeriod, 'f', 3))
-                        .arg(approxReturn);
+            .arg(QString::number(plutoPeriod, 'f', 3))
+            .arg(approxReturn);
 
     int returnNumber = QInputDialog::getInt(
-        this,
-        tr("Pluto Return Number"),
-        prompt,
-        approxReturn, 1, 200, 1, &ok
-    );
+                this,
+                tr("Pluto Return Number"),
+                prompt,
+                approxReturn, 1, 200, 1, &ok
+                );
     if (!ok) return;
 
     QDialog* dialog = new QDialog(this);
@@ -5503,10 +5785,10 @@ void MainWindow::calculatePlutoReturn()
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     QVBoxLayout* layout = new QVBoxLayout(dialog);
     QLabel* label = new QLabel(tr(
-        "If you want to set a different location, set it now with the proper UTC offset; "
-        "otherwise, the birth location will be used.\n\n"
-        "Click 'Continue' when ready."
-    ), dialog);
+                                   "If you want to set a different location, set it now with the proper UTC offset; "
+                                   "otherwise, the birth location will be used.\n\n"
+                                   "Click 'Continue' when ready."
+                                   ), dialog);
     label->setWordWrap(true);
     layout->addWidget(label);
     QPushButton* continueBtn = new QPushButton(tr("Continue"), dialog);
@@ -5538,13 +5820,13 @@ void MainWindow::doPlutoReturnCalculation(const QDate& birthDate, const QTime& b
 
     QDate chartDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
     m_currentChartData = m_chartDataManager.calculatePlutoReturnAsJson(
-        chartDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
-    );
+                chartDate, birthTime, utcOffset, latitude, longitude, houseSystem, returnNumber
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "pluto return";
+        GlobalFlags::lastGeneratedChartType = "Pluto Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5557,19 +5839,20 @@ void MainWindow::doPlutoReturnCalculation(const QDate& birthDate, const QTime& b
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-            "Pluto Return Moment\n"
-            "Date: %1\n"
-            "Time: %2\n"
-            "Julian Day: %3\n\n"
-        ).arg(dateStr, timeStr, jdStr);
+                    "Pluto Return %1\n"
+                    "Pluto Return Moment\n"
+                    "Date: %2\n"
+                    "Time: %3\n"
+                    "Julian Day: %4\n\n"
+                    ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
         QString msg = QString("Pluto return occurs on %1 at %2 (Julian Day: %3)")
-            .arg(dateStr)
-            .arg(timeStr)
-            .arg(jdStr);
+                .arg(dateStr)
+                .arg(timeStr)
+                .arg(jdStr);
 
         QMessageBox::information(this, "Pluto Return Moment", msg);
 
@@ -5600,14 +5883,14 @@ void MainWindow::calculateSecondaryProgression()
     bool ok = false;
     QString prompt = tr("Enter the progression year (1 = first year after birth, etc.):\n"
                         "You are currently approximately %1 years old.")
-                        .arg(yearsSinceBirth);
+            .arg(yearsSinceBirth);
 
     int progressionYear = QInputDialog::getInt(
-        this,
-        tr("Secondary Progression Year"),
-        prompt,
-        qMax(1, yearsSinceBirth), 1, 120, 1, &ok
-    );
+                this,
+                tr("Secondary Progression Year"),
+                prompt,
+                qMax(1, yearsSinceBirth), 1, 120, 1, &ok
+                );
     if (!ok) return;
 
     QDialog* dialog = new QDialog(this);
@@ -5616,10 +5899,10 @@ void MainWindow::calculateSecondaryProgression()
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     QVBoxLayout* layout = new QVBoxLayout(dialog);
     QLabel* label = new QLabel(tr(
-        "If you want to set a different location, set it now with the proper UTC offset; "
-        "otherwise, the birth location will be used.\n\n"
-        "Click 'Continue' when ready."
-    ), dialog);
+                                   "If you want to set a different location, set it now with the proper UTC offset; "
+                                   "otherwise, the birth location will be used.\n\n"
+                                   "Click 'Continue' when ready."
+                                   ), dialog);
     label->setWordWrap(true);
     layout->addWidget(label);
     QPushButton* continueBtn = new QPushButton(tr("Continue"), dialog);
@@ -5664,13 +5947,13 @@ void MainWindow::doSecondaryProgressionCalculation(int progressionYear)
     progressedDate = checkAndConvertJulian(progressedDate, useJulianForPre1582Action->isChecked());
 
     m_currentChartData = m_chartDataManager.calculateChartAsJson(
-        progressedDate, birthTime, utcOffset, latitude, longitude, houseSystem
-    );
+                progressedDate, birthTime, utcOffset, latitude, longitude, houseSystem
+                );
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "secondary progression";
+        GlobalFlags::lastGeneratedChartType = "Secondary Progression";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5684,11 +5967,11 @@ void MainWindow::doSecondaryProgressionCalculation(int progressionYear)
         QString dateStr = m_currentChartData.value("date").toString();
         QString timeStr = m_currentChartData.value("time").toString();
         QString infoText = QString(
-            "Secondary Progression Chart\n"
-            "Progressed Date: %1\n"
-            "Time: %2\n"
-            "Progression Year: %3\n\n"
-        ).arg(dateStr, timeStr).arg(progressionYear);
+                    "Secondary Progression Chart\n"
+                    "Progressed Date: %1\n"
+                    "Time: %2\n"
+                    "Progression Year: %3\n\n"
+                    ).arg(dateStr, timeStr).arg(progressionYear);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
@@ -5706,7 +5989,7 @@ void MainWindow::showNewFeaturesDialog() {
     // Create the dialog only if it doesn't exist yet
     if (!m_showNewFeaturesDialog) {
         m_showNewFeaturesDialog = new QDialog(this);
-        m_showNewFeaturesDialog->setWindowTitle("What's New in Version 2.1.0");
+        m_showNewFeaturesDialog->setWindowTitle("What's New!");
         m_showNewFeaturesDialog->setMinimumSize(650, 600);
 
         // Create layout
@@ -5718,6 +6001,39 @@ void MainWindow::showNewFeaturesDialog() {
 
         // Set the new features content
         QString featuresText = R"(
+
+<h1 style="color:#27ae60;">What’s New in Version 2.1.1</h1>
+<p>
+Welcome to the 2.1.1 update! This release refines AI interpretations, adds new chart tagging, and introduces the Zodiac Sign Chart, making your astrological analysis more powerful and visually appealing than ever.
+</p>
+
+<h2>Enhanced AI Interpretations</h2>
+<p>
+All AI-generated markdown responses are now transformed into rich HTML, producing beautifully formatted, clear, and engaging interpretations—like reading a professional digital publication.
+</p>
+
+<h2>Chart Type Tagging</h2>
+<p>
+All charts (Natal, Relationship, Progression, Return, Zodiac Signs) now carry unique tags, allowing AI to interpret them accurately. <b>Exception:</b> Composite charts are excluded for correctness.
+</p>
+
+<h2>Zodiac Sign Chart</h2>
+<p>
+Generates magazine-style horoscopes for all 12 signs for any chosen date/time, providing concise but detailed narratives with practical advice.
+</p>
+
+<h2>Multi-Window & Drag-and-Drop</h2>
+<ul>
+  <li>Open multiple Asteria windows from File → New Window, either in the same instance or as a new instance.</li>
+  <li>Drag charts between windows using Ctrl + Left Mouse Button to load all data into the target window’s input or interpretation docks.</li>
+</ul>
+
+<h2>View & Dock Enhancements</h2>
+<ul>
+  <li>View menu checkboxes: toggle Chart-Only view or Info Overlay visibility (hidden by default).</li>
+  <li>Clear Interpretation button: clears both displayed text and stored previous interpretations.</li>
+</ul>
+
 <h1 style="color:#27ae60;">What’s New in Version 2.1.0</h1>
 <p>
 Welcome to the major <b>2.1.0</b> release of our astrology application! This update brings a wealth of new features, enhancements, and refinements designed to make your astrological work more powerful, flexible, and insightful than ever before.
@@ -5810,3 +6126,460 @@ We hope you enjoy these new features and improvements. As always, your feedback 
     m_showNewFeaturesDialog->activateWindow();
 }
 
+void MainWindow::toggleChartOnlyView(bool chartOnly)
+{
+    if (chartOnly) {
+        // Hide docks, but respect the overlay setting
+        m_inputDock->hide();
+        m_interpretationDock->hide();
+        if (chartInfoOverlay) {
+            chartInfoOverlay->setVisible(false);
+        }
+    } else {
+        // Show docks, and restore overlay based on its setting
+        m_inputDock->show();
+        m_interpretationDock->show();
+        if (chartInfoOverlay && m_chartCalculated) {
+            chartInfoOverlay->setVisible(m_showInfoOverlay);
+        }
+    }
+}
+
+//event filter for drad-drop
+/*
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    // Only handle events from the chart view's viewport
+    if (obj == m_chartView->viewport()) {
+        if (event->type() == QEvent::MouseButtonPress) {
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            if ((mouseEvent->buttons() & Qt::LeftButton) &&
+                (QApplication::keyboardModifiers() & Qt::ControlModifier)) {
+                // Store the starting position for drag operation
+                m_dragStartPosition = mouseEvent->pos();
+                return true;
+            }
+        }
+        else if (event->type() == QEvent::MouseMove) {
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            if ((mouseEvent->buttons() & Qt::LeftButton) &&
+                (QApplication::keyboardModifiers() & Qt::ControlModifier)) {
+                // Check if we've moved enough to start a drag (minimum drag distance)
+                if ((mouseEvent->pos() - m_dragStartPosition).manhattanLength()
+                    >= QApplication::startDragDistance()) {
+                    // Start the drag operation
+                    startChartDrag();
+                    return true;
+                }
+            }
+        }
+    }
+    // Let other events be handled normally
+    return QMainWindow::eventFilter(obj, event);
+}
+*/
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == m_chartView->viewport()) {
+        bool ctrlPressed = (QApplication::keyboardModifiers() & Qt::ControlModifier);
+
+        // Handle Ctrl+Mouse Wheel for zooming
+        if (event->type() == QEvent::Wheel && ctrlPressed) {
+            QWheelEvent *wheelEvent = static_cast<QWheelEvent*>(event);
+            QPoint numDegrees = wheelEvent->angleDelta() / 8;
+
+            if (!numDegrees.isNull()) {
+                // Get current scale to apply limits
+                qreal currentScale = m_chartView->transform().m11();
+                qreal zoomFactor = numDegrees.y() > 0 ? 1.2 : 0.8;
+                qreal newScale = currentScale * zoomFactor;
+
+                // Apply zoom limits (0.1x to 10x)
+                if (newScale >= 0.1 && newScale <= 10.0) {
+                    m_chartView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+                    m_chartView->scale(zoomFactor, zoomFactor);
+                }
+                return true;
+            }
+        }
+        // Handle Ctrl+Left Drag for chart transfer
+        else if (ctrlPressed) {
+            if (event->type() == QEvent::MouseButtonPress) {
+                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+                if ((mouseEvent->buttons() & Qt::LeftButton)) {
+                    m_dragStartPosition = mouseEvent->pos();
+                    return true;
+                }
+            }
+            else if (event->type() == QEvent::MouseMove) {
+                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+                if ((mouseEvent->buttons() & Qt::LeftButton)) {
+                    if ((mouseEvent->pos() - m_dragStartPosition).manhattanLength() >=
+                            QApplication::startDragDistance()) {
+                        startChartDrag();
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
+}
+
+
+void MainWindow::startChartDrag()
+{
+    if (!m_chartCalculated) return;
+
+    // Create a JSON representation of the input data only
+    QJsonObject inputData;
+    inputData["birthDate"] = m_birthDateEdit->text();
+    inputData["birthTime"] = m_birthTimeEdit->text();
+    inputData["utcOffset"] = m_utcOffsetCombo->currentText();
+    inputData["latitude"] = m_latitudeEdit->text();
+    inputData["longitude"] = m_longitudeEdit->text();
+    inputData["houseSystem"] = m_houseSystemCombo->currentText();
+    inputData["useJulian"] = useJulianForPre1582Action->isChecked();
+
+    //include chartType
+    // Include the chart type
+    inputData["chartType"] = GlobalFlags::lastGeneratedChartType;
+
+    // Include interpretation text if available
+    if (m_interpretationtextEdit && !m_interpretationtextEdit->toPlainText().isEmpty()) {
+
+        inputData["interpretationText"] = m_interpretationtextEdit->toPlainText();
+    }
+
+    inputData["chartData"] = m_currentChartData;
+
+    // Create MIME data for drag
+    QMimeData *mimeData = new QMimeData();
+    QByteArray jsonData = QJsonDocument(inputData).toJson();
+    mimeData->setData("application/x-astrological-input", jsonData);
+    mimeData->setText("Astrological Chart Input Data");
+
+    // Create drag object
+    QDrag *drag = new QDrag(this);
+    drag->setMimeData(mimeData);
+
+    // Use a simple icon instead of chart screenshot
+    drag->setPixmap(QIcon::fromTheme("x-office-calendar").pixmap(32, 32));
+
+    // Start drag
+    drag->exec(Qt::CopyAction);
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->hasFormat("application/x-astrological-input")) {
+        event->acceptProposedAction();
+    }
+}
+
+void MainWindow::dragMoveEvent(QDragMoveEvent *event)
+{
+    if (event->mimeData()->hasFormat("application/x-astrological-input")) {
+        event->acceptProposedAction();
+    }
+}
+
+void MainWindow::dropEvent(QDropEvent *event)
+{
+    if (event->mimeData()->hasFormat("application/x-astrological-input")) {
+        QByteArray jsonData = event->mimeData()->data("application/x-astrological-input");
+        QJsonDocument doc = QJsonDocument::fromJson(jsonData);
+        QJsonObject inputData = doc.object();
+
+        importChartInputData(inputData);
+        event->acceptProposedAction();
+    }
+}
+
+void MainWindow::importChartInputData(const QJsonObject &inputData)
+{
+    // Populate input fields from dragged data (optional, for UI consistency)
+    m_birthDateEdit->setText(inputData["birthDate"].toString());
+    m_birthTimeEdit->setText(inputData["birthTime"].toString());
+    m_utcOffsetCombo->setCurrentText(inputData["utcOffset"].toString());
+    m_latitudeEdit->setText(inputData["latitude"].toString());
+    m_longitudeEdit->setText(inputData["longitude"].toString());
+    m_houseSystemCombo->setCurrentText(inputData["houseSystem"].toString());
+    useJulianForPre1582Action->setChecked(inputData["useJulian"].toBool());
+
+    // Set the chart type from the dragged data
+    if (inputData.contains("chartType")) {
+        GlobalFlags::lastGeneratedChartType = inputData["chartType"].toString();
+    }
+
+    // Extract and set interpretation text if available
+    if (inputData.contains("interpretationText") && m_interpretationtextEdit) {
+        QString interpretation = inputData["interpretationText"].toString();
+        m_interpretationtextEdit->setPlainText(interpretation);
+    }
+
+    // Always use the pre-calculated chart data - call displayChart directly!
+    QJsonObject chartData = inputData["chartData"].toObject();
+    displayChart(chartData);
+
+    m_chartCalculated = true;
+    m_currentChartData = chartData;
+    statusBar()->showMessage("Chart imported via drag & drop", 3000);
+    setWindowTitle("Asteria - " + GlobalFlags::lastGeneratedChartType + " Chart");
+
+}
+
+// tranform markdown to html for ai response
+QString MainWindow::markdownToHtml(const QString &markdown)
+{
+    QString html = markdown;
+
+    // Convert headers
+    html.replace(QRegularExpression("^###### (.*)$", QRegularExpression::MultilineOption), "<h6>\\1</h6>");
+    html.replace(QRegularExpression("^##### (.*)$", QRegularExpression::MultilineOption), "<h5>\\1</h5>");
+    html.replace(QRegularExpression("^#### (.*)$", QRegularExpression::MultilineOption), "<h4>\\1</h4>"); // ← THIS ONE!
+    html.replace(QRegularExpression("^### (.*)$", QRegularExpression::MultilineOption), "<h3>\\1</h3>");
+    html.replace(QRegularExpression("^## (.*)$", QRegularExpression::MultilineOption), "<h2>\\1</h2>");
+    html.replace(QRegularExpression("^# (.*)$", QRegularExpression::MultilineOption), "<h1>\\1</h1>");
+
+    // Convert bold (**text**)
+    html.replace(QRegularExpression("\\*\\*(.*?)\\*\\*"), "<b>\\1</b>");
+
+    // Convert italic (*text*)
+    html.replace(QRegularExpression("\\*(.*?)\\*"), "<i>\\1</i>");
+
+    // Convert bullet points
+    //html.replace(QRegularExpression("^\\- (.*)$", QRegularExpression::MultilineOption), "• \\1<br>");
+    //html.replace(QRegularExpression("^\\- (.*)$", QRegularExpression::MultilineOption), "• \\1<br>");
+
+    // Handle • bullets (with optional whitespace)
+    html.replace(QRegularExpression("^[\\s]*\\•[\\s]+(.*)$", QRegularExpression::MultilineOption), "• \\1<br>");
+
+    // Handle - bullets (with optional whitespace)
+    html.replace(QRegularExpression("^[\\s]*\\-[\\s]+(.*)$", QRegularExpression::MultilineOption), "• \\1<br>");
+
+    // Handle * bullets (with optional whitespace)
+    html.replace(QRegularExpression("^[\\s]*\\*[\\s]+(.*)$", QRegularExpression::MultilineOption), "• \\1<br>");
+
+    // Convert horizontal rules (---, ***, ___) with optional spaces
+    html.replace(QRegularExpression("^\\s*(---|\\*\\*\\*|___)\\s*$", QRegularExpression::MultilineOption), "<hr>");
+
+    html.replace("\n", "<br>");
+
+    //return "<html><body>" + html + "</body></html>";
+    return html;
+}
+
+/*
+void MainWindow::calculateCurrentChart()
+{
+    // Use current date and time
+    QDate currentDate = QDate::currentDate();
+    QTime currentTime = QTime::currentTime();
+
+    // Format as in original fields
+    QString dateText = currentDate.toString("dd/MM/yyyy");
+    QString timeText = currentTime.toString("HH:mm");
+
+    // Get longitude and latitude from the fields
+    QString latitude = m_latitudeEdit->text();
+    QString longitude = m_longitudeEdit->text();
+
+    // Validate inputs
+    if (latitude.isEmpty() || longitude.isEmpty()) {
+        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        return;
+    }
+
+    QString utcOffset = m_utcOffsetCombo->currentText();
+    QString houseSystem = m_houseSystemCombo->currentText();
+
+    // Reset chart state before new calculation
+    m_chartCalculated = false;
+    m_currentChartData = QJsonObject();
+    m_currentRelationshipInfo = QJsonObject(); // Reset relationship info
+    m_chartRenderer->scene()->clear();
+
+    // Convert formatted date/time back to QDate/QTime for calculation
+    QDate birthDate = QDate::fromString(dateText, "dd/MM/yyyy");
+    QTime birthTime = QTime::fromString(timeText, "HH:mm");
+
+    birthDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
+
+    m_currentChartData = m_chartDataManager.calculateChartAsJson(
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem);
+
+    if (m_chartDataManager.getLastError().isEmpty()) {
+
+        // Display chart
+        displayChart(m_currentChartData);
+        m_chartCalculated = true;
+
+        // Fill name fields with no/ name
+        first_name->setText("no");
+        last_name->setText("name");
+        m_birthDateEdit->setText(currentDate.toString("dd/MM/yyyy"));
+        m_birthTimeEdit->setText(currentTime.toString("HH:mm"));
+        // Store in global flags
+        GlobalFlags::lastGeneratedChartType = "Current Zodiac";
+
+        m_getInterpretationButton->setEnabled(true);
+        getPredictionButton->setEnabled(true);
+        getTransitsButton->setEnabled(true);
+
+        statusBar()->showMessage("Current chart calculated successfully", 3000);
+    } else {
+        handleError("Chart calculation error: " + m_chartDataManager.getLastError());
+        m_chartCalculated = false;
+        m_getInterpretationButton->setEnabled(false);
+        getPredictionButton->setEnabled(false);
+        m_chartRenderer->scene()->clear();
+    }
+}
+*/
+/*
+void MainWindow::calculateCurrentChart()
+{
+    // Use current date and time
+    QDate currentDate = QDate::currentDate();
+    QTime currentTime = QTime::currentTime();
+
+    // Get longitude and latitude from the fields
+    QString latitude = m_latitudeEdit->text();
+    QString longitude = m_longitudeEdit->text();
+
+    // Validate inputs
+    if (latitude.isEmpty() || longitude.isEmpty()) {
+        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        return;
+    }
+
+    QString utcOffset = m_utcOffsetCombo->currentText();
+    QString houseSystem = m_houseSystemCombo->currentText();
+
+    // Reset chart state before new calculation
+    m_chartCalculated = false;
+    m_currentChartData = QJsonObject();
+    m_currentRelationshipInfo = QJsonObject(); // Reset relationship info
+    m_chartRenderer->scene()->clear();
+
+    // Convert Julian date if needed
+    QDate birthDate = checkAndConvertJulian(currentDate, useJulianForPre1582Action->isChecked());
+    QTime birthTime = currentTime;
+
+    // Calculate chart
+    m_currentChartData = m_chartDataManager.calculateChartAsJson(
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem);
+
+    if (m_chartDataManager.getLastError().isEmpty()) {
+
+        // Display chart
+        displayChart(m_currentChartData);
+        m_chartCalculated = true;
+
+        // Fill name and date/time fields
+        first_name->setText("no");
+        last_name->setText("name");
+        m_birthDateEdit->setText(currentDate.toString("dd/MM/yyyy"));
+        m_birthTimeEdit->setText(currentTime.toString("HH:mm"));
+
+        // Set chart type for interpretation
+        GlobalFlags::lastGeneratedChartType = "Zodiac Signs";
+
+        // Enable interpretation buttons
+        m_getInterpretationButton->setEnabled(true);
+        getPredictionButton->setEnabled(true);
+        getTransitsButton->setEnabled(true);
+
+        statusBar()->showMessage("Current chart calculated successfully", 3000);
+    } else {
+        handleError("Chart calculation error: " + m_chartDataManager.getLastError());
+        m_chartCalculated = false;
+        m_getInterpretationButton->setEnabled(false);
+        getPredictionButton->setEnabled(false);
+        m_chartRenderer->scene()->clear();
+    }
+}
+*/
+
+
+void MainWindow::calculateZodiacSignsChart()
+{
+    // Show info dialog before proceeding
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(
+        this,
+        "Zodiac Signs Chart",
+        "The Zodiac Signs Chart looks like a Birth chart but provides general astrological interpretations "
+        "for all 12 zodiac signs based on planetary positions at a chosen date, time, and location.\n\n"
+        "This chart's AI interpretations are not personal birth readings but give magazine-style forecasts. "
+        "Please make sure to populate the relevant date, time, and location fields before proceeding.\n\n"
+        "Do you want to continue?",
+        QMessageBox::Ok | QMessageBox::Cancel
+    );
+
+    if (reply == QMessageBox::Cancel) {
+        return;
+    }
+
+    // Proceed like in calculateChart()
+    QString dateText = m_birthDateEdit->text();
+    if (!validateDateFormat(dateText, this)) {
+        return;
+    }
+
+    // Get input values
+    QDate birthDate = getBirthDate();
+    QTime birthTime = QTime::fromString(m_birthTimeEdit->text(), "HH:mm");
+    QString utcOffset = m_utcOffsetCombo->currentText();
+    QString latitude = m_latitudeEdit->text();
+    QString longitude = m_longitudeEdit->text();
+    QString houseSystem = m_houseSystemCombo->currentText();
+
+    // Validate inputs
+    if (latitude.isEmpty() || longitude.isEmpty()) {
+        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        return;
+    }
+
+    // Reset chart state before new calculation
+    m_chartCalculated = false;
+    m_currentChartData = QJsonObject();
+    m_currentRelationshipInfo = QJsonObject(); // Reset relationship info
+
+    m_chartRenderer->scene()->clear();
+
+    // Calculate chart
+    birthDate = checkAndConvertJulian(birthDate, useJulianForPre1582Action->isChecked());
+
+    m_currentChartData = m_chartDataManager.calculateChartAsJson(
+                birthDate, birthTime, utcOffset, latitude, longitude, houseSystem);
+
+    if (m_chartDataManager.getLastError().isEmpty()) {
+        // Display chart
+        displayChart(m_currentChartData);
+        m_chartCalculated = true;
+
+        // Set default name fields
+        first_name->setText("no");
+        last_name->setText("name");
+
+        // Set chart type for interpretation
+        GlobalFlags::lastGeneratedChartType = "Zodiac Signs";
+
+        m_getInterpretationButton->setEnabled(true);
+        getPredictionButton->setEnabled(true);
+        getTransitsButton->setEnabled(true);
+
+        statusBar()->showMessage("Zodiac Signs chart calculated successfully", 3000);
+    } else {
+        handleError("Chart calculation error: " + m_chartDataManager.getLastError());
+        m_chartCalculated = false;
+        m_getInterpretationButton->setEnabled(false);
+        getPredictionButton->setEnabled(false);
+
+        // Clear any partial chart data after error
+        m_chartRenderer->scene()->clear();
+    }
+}

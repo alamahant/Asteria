@@ -20,6 +20,10 @@ Asteria is a comprehensive astrological chart application that combines traditio
 
 Asteria is available as a Flatpak on Flathub.
 
+- [Flatpak](https://flathub.org/en/apps/io.github.alamahant.Asteria)
+- [Linux AppImage and Windows Deploy](https://github.com/alamahant/Asteria/releases/latest)
+
+
 ```bash
 flatpak install flathub io.github.alamahant.Asteria
 ```

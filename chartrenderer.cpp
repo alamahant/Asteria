@@ -223,15 +223,16 @@ void ChartRenderer::renderChart()
     }
 
     drawChartWheel();
+    //testing
+    drawAngles();
 
     drawZodiacSigns();
     if (m_showHouseCusps) {
         drawHouseCusps();
         drawHouseRing(); // Added this line to draw the house ring
     }
-    drawAngles();
-    drawPlanets();
     //drawAngles();
+    drawPlanets();
 
     if (m_showAspects) {
         drawAspects();
@@ -363,10 +364,10 @@ void ChartRenderer::drawZodiacSigns()
     //double ascendantLongitude = getAscendantLongitude(); // Get from chart data
 
 
-    double startAngle = 90.0; // Start at the top (12 o'clock)
+    double refAsc = (!m_chartData.houses.isEmpty() ? m_chartData.houses[0].longitude : getAscendantLongitude()); // prefer House 1 cusp
+    double startAngle = 180.0 - refAsc; // Aries starts rotated by Asc/House1
     // Should be dynamic based on Ascendant:
     //double startAngle = 90.0 - ascendantLongitude;
-
     for (int i = 0; i < 12; i++) {
         // Calculate the angle for this sign (30 degrees per sign)
         //double startSignAngle = startAngle - (i * 30.0);
@@ -421,8 +422,11 @@ void ChartRenderer::drawZodiacSigns()
         QGraphicsTextItem *signText = new QGraphicsTextItem(signs[i]);
 
         // Set font
-        QFont font;
-        font.setPointSize(16);
+        QFont font("DejaVu Sans", 16);      // use a known system font
+        font.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback <<<<<<----
+
+        //QFont font;
+        //font.setPointSize(16);
         signText->setFont(font);
 
         // Center the text at the calculated position
@@ -482,7 +486,8 @@ void ChartRenderer::drawHouseCusps(){
 
 
 void ChartRenderer::drawAspects() {
-
+    bool showAspectsLines = AspectSettings::instance().getShowAspectLines();
+    if (!showAspectsLines) return;
     // Create a map to collect aspects for each planet
     QMap<QString, QList<AspectData>> planetAspects;
 
@@ -636,7 +641,14 @@ void ChartRenderer::drawAngles() {
 
     // Draw special lines for the angles (ASC, MC, DESC, IC)
     for (const AngleData &angle : m_chartData.angles) {
+
         double longitude = angle.longitude;
+        if (m_chartData.houses.size() == 12) {
+            if (angle.id == "Asc")      longitude = m_chartData.houses[0].longitude;  // House 1 cusp
+            else if (angle.id == "Desc") longitude = m_chartData.houses[6].longitude;  // House 7 cusp
+            else if (angle.id == "MC")   longitude = m_chartData.houses[9].longitude;  // House 10 cusp
+            else if (angle.id == "IC")   longitude = m_chartData.houses[3].longitude;  // House 4 cusp
+        }
         QPointF outerPoint = longitudeToPoint(longitude, outerRadius);
         QPointF centerPoint = QPointF(0, 0);
 
@@ -733,6 +745,7 @@ void ChartRenderer::drawAngles() {
     }
 }
 
+
 QPointF ChartRenderer::longitudeToPoint(double longitude, double radius){
     /* Traditional astrological chart orientation:
  * - Degrees increase counterclockwise (following the natural motion of planets)
@@ -768,9 +781,16 @@ QPointF ChartRenderer::longitudeToPoint(double longitude, double radius){
     //return QPointF(x, y);
     //double angleRadians = qDegreesToRadians(450 - longitude);
 
-    double angleRadians = qDegreesToRadians(90 + longitude); // Add instead of subtract
+    //double ascendantLongitude = getAscendantLongitude(); // Get from chart data
+
+    //double rotatedLongitude = longitude - ascendantLongitude + 180;
+    //double angleRadians = qDegreesToRadians(90.0 - rotatedLongitude);
+    double refAsc = (!m_chartData.houses.isEmpty() ? m_chartData.houses[0].longitude : getAscendantLongitude());
+    double angleDeg = 180.0 + (longitude - refAsc);
+    double angleRadians = qDegreesToRadians(angleDeg);
+
     double x = radius * qCos(angleRadians);
-    double y = -radius * qSin(angleRadians); // Positive y (clockwise)
+    double y = -radius * qSin(angleRadians);
     return QPointF(x, y);
 }
 
@@ -872,16 +892,8 @@ void ChartRenderer::drawPlanets() {
         pos.planet = planet;
         pos.radius = baseRadius;
 
-        // Calculate position
-        //double angle = 90.0 - planet.longitude;
-        double angle = 90.0 + planet.longitude; // Add instead of subtract
-
-
-        double radians = qDegreesToRadians(angle);
-        pos.position = QPointF(
-            pos.radius * qCos(radians),
-            -pos.radius * qSin(radians)
-            );
+        // Calculate position using Asc-rotated mapping
+        pos.position = longitudeToPoint(planet.longitude, pos.radius);
 
         planetPositions.append(pos);
     }
@@ -909,16 +921,8 @@ void ChartRenderer::drawPlanets() {
                     // Move the second planet inward
                     planetPositions[j].radius -= minDistance / 2;
 
-                    // Recalculate position
-                    //double angle = 90.0 - planetPositions[j].planet.longitude;
-                    double angle = 90.0 + planetPositions[j].planet.longitude; // Add instead of subtract
-
-
-                    double radians = qDegreesToRadians(angle);
-                    planetPositions[j].position = QPointF(
-                        planetPositions[j].radius * qCos(radians),
-                        -planetPositions[j].radius * qSin(radians)
-                        );
+                    // Recalculate position using Asc-rotated mapping
+                    planetPositions[j].position = longitudeToPoint(planetPositions[j].planet.longitude, planetPositions[j].radius);
                 }
             }
         }
@@ -931,16 +935,8 @@ void ChartRenderer::drawPlanets() {
 
         // Draw a line connecting the planet to its actual position on the wheel
         if (pos.radius < baseRadius) {
-            // Calculate actual position on the wheel
-            //double angle = 90.0 - pos.planet.longitude;
-            double angle = 90.0 + pos.planet.longitude; // Add instead of subtract
-
-
-            double radians = qDegreesToRadians(angle);
-            QPointF actualPoint(
-                baseRadius * qCos(radians),
-                -baseRadius * qSin(radians)
-                );
+            // Calculate actual position on the wheel at the base radius
+            QPointF actualPoint = longitudeToPoint(pos.planet.longitude, baseRadius);
 
             QGraphicsLineItem *line = m_scene->addLine(
                 QLineF(actualPoint, pos.position)
@@ -956,16 +952,9 @@ void ChartRenderer::drawPlanet(const PlanetData &planet, double radius) {
 
 
 
-    //double angle = 90.0 - planet.longitude;
-    double angle = 90.0 + planet.longitude; // Add instead of subtract
-
-
-    // Convert to radians
-    double radians = qDegreesToRadians(angle);
-
-    // Calculate position
-    double x = radius * qCos(radians);
-    double y = -radius * qSin(radians); // Negative because Y increases downward in Qt
+    QPointF p = longitudeToPoint(planet.longitude, radius);
+    double x = p.x();
+    double y = p.y();
 
 
 
@@ -1082,6 +1071,7 @@ void ChartRenderer::drawHouseRing() {
 
     // Draw house numbers and extend house cusp lines
     if (m_chartData.houses.size() == 12) {
+        double refAsc = (!m_chartData.houses.isEmpty() ? m_chartData.houses[0].longitude : getAscendantLongitude());
         for (int i = 0; i < 12; i++) {
             const HouseData &currentHouse = m_chartData.houses[i];
             const HouseData &nextHouse = m_chartData.houses[(i + 1) % 12];
@@ -1116,9 +1106,9 @@ void ChartRenderer::drawHouseRing() {
             //double sweepAngle = currentLongitude - nextLongitude;
             //if (sweepAngle > 0) sweepAngle -= 360.0;  // Make sure we go clockwise
 
-            double startAngle = 90.0 + currentLongitude;  // Add instead of subtract
-            double sweepAngle = nextLongitude - currentLongitude; // Reverse the calculation
-            if (sweepAngle < 0) sweepAngle += 360.0;  // Make sure we go counterclockwise
+            double startAngle = 180.0 + (currentLongitude - refAsc);  // rotated by Asc/House1
+            double sweepAngle = nextLongitude - currentLongitude; // counterclockwise extent
+            if (sweepAngle < 0) sweepAngle += 360.0;  // ensure positive extent
 
             /*
             housePath.arcTo(-houseRingOuterRadius, -houseRingOuterRadius,

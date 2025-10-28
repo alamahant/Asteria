@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 
     QCoreApplication::setOrganizationName("");  // Instead of "Your Organization"
     QCoreApplication::setApplicationName("Asteria");
-    QCoreApplication::setApplicationVersion("2.1.1");
+    QCoreApplication::setApplicationVersion("2.1.2");
     MainWindow w;
     w.show();
     return a.exec();

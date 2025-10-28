@@ -151,7 +151,8 @@ void MainWindow::setupCentralWidget() {
 
     // Create main horizontal splitter
     QSplitter *mainSplitter = new QSplitter(Qt::Horizontal, chartContainer);
-
+    mainSplitter->setObjectName("mainSplitter");
+    mainSplitter->setHandleWidth(10);
     // Create chart view and renderer
     m_chartView = new QGraphicsView(mainSplitter);
 
@@ -206,6 +207,12 @@ void MainWindow::setupCentralWidget() {
 
     // Create right sidebar with vertical splitter
     QSplitter *sidebarSplitter = new QSplitter(Qt::Vertical, mainSplitter);
+
+    //
+    sidebarSplitter->setObjectName("sidebarSplitter");
+    sidebarSplitter->setHandleWidth(10);
+    sidebarSplitter->setStyleSheet( "QSplitter#sidebarSplitter::handle:vertical {" " background: rgba(120,120,120,0.5);" " margin: 0;" "}" "QSplitter#sidebarSplitter::handle:vertical:hover {" " background: rgba(90,90,90,0.8);" "}" "QSplitter#sidebarSplitter::handle:vertical:pressed {" " background: rgba(70,70,70,0.9);" "}" "QSplitter#sidebarSplitter::handle:vertical > * {" " background: transparent;" "}" );
+    //
 
     // Create PlanetListWidget
     m_planetListWidget = new PlanetListWidget(sidebarSplitter);
@@ -1091,6 +1098,12 @@ void MainWindow::setupMenus()
 
     QAction *newFeaturesAction = helpMenu->addAction(tr("What's New!"));
     connect(newFeaturesAction, &QAction::triggered, this, &MainWindow::showNewFeaturesDialog);
+
+    QAction *supportAction = helpMenu->addAction(tr("Support Us"));
+    connect(supportAction, &QAction::triggered, this, [this]() {
+        DonationDialog dialog(this);
+        dialog.exec();
+    });
 
     QAction *transitFilterAction = new QAction("Transit Filter", this);
     transitFilterAction->setToolTip("Filter transit data by date, planets and aspects");
@@ -1998,7 +2011,9 @@ void MainWindow::showAboutDialog()
                        "with AI-powered analysis.\n\n"
                        "© 2025 Alamahant");
 }
-*/void MainWindow::showAboutDialog()
+*/
+/*
+void MainWindow::showAboutDialog()
 {
     QString version = QCoreApplication::applicationVersion();
     QMessageBox::about(
@@ -2007,12 +2022,32 @@ void MainWindow::showAboutDialog()
         QString("Asteria - Astrological Chart Analysis\n\n"
                 "Version %1\n\n"
                 "A tool for calculating and interpreting astrological charts "
-                "with AI-powered analysis.\n\n"
+                "with AI-powered analysis.\n"
+                "Available for Linux, Windows, Macos and Flatpak. \n"
+                "https://github.com/alamahant/Asteria/releases/latest\n\n"
                 "© 2025 Alamahant")
             .arg(version)
     );
 }
+*/
 
+void MainWindow::showAboutDialog()
+{
+    QString version = QCoreApplication::applicationVersion();
+    QMessageBox::about(
+        this,
+        "About Asteria",
+        QString("<h3>Asteria - Astrological Chart Analysis</h3>"
+                "<p>Version %1</p>"
+                "<p>A tool for calculating and interpreting astrological charts "
+                "with AI-powered analysis.</p>"
+                "<p>Available for Linux, Windows, Macos and Flatpak.</p>"
+                "<p><a href=\"https://github.com/alamahant/Asteria/releases/latest\">"
+                "https://github.com/alamahant/Asteria/releases/latest</a></p>"
+                "<p>© 2025 Alamahant</p>")
+            .arg(version)
+    );
+}
 
 
 
@@ -3999,6 +4034,16 @@ void MainWindow::showChangelog(){
         QString changelogText = R"(
 
 <h1>Changelog</h1>
+
+<h2>Version 2.1.2 (2025-10-29) <span style='color:#27ae60;'>&mdash; Polish & Compatibility Update</span></h2>
+<ul>
+  <li><b>Updated KDE Runtime:</b> Upgraded to KDE Platform 6.9 for enhanced stability and performance across all systems.</li>
+  <li><b>Improved Qt 6.9 Compatibility:</b> Optimized QTableWidget rendering and font handling for the latest Qt framework.</li>
+  <li><b>Western Chart Convention:</b> Chart rendering now places the Ascendant at 9 o'clock position to align with standard Western astrological practices.</li>
+  <li><b>Zodiac Sign Coloring:</b> Planet list widget now displays zodiac signs in their traditional corresponding colors for better visual recognition.</li>
+  <li><b>Code Polish & Optimization:</b> Various code improvements and performance enhancements throughout the application.</li>
+  <li><b>Enhanced Stability:</b> General bug fixes and maintenance improvements for smoother user experience.</li>
+</ul>
 
 <h2>Version 2.1.1 (2025-09-23) <span style='color:#27ae60;'>&mdash; Major Update</span></h2>
 <ul>
@@ -6003,6 +6048,39 @@ void MainWindow::showNewFeaturesDialog() {
         // Set the new features content
         QString featuresText = R"(
 
+<h1 style="color:#27ae60;">What’s New in Version 2.1.2</h1>
+<p>
+Welcome to the 2.1.2 update! This release brings platform upgrades, improved compatibility, and astrological refinements that enhance chart accuracy and visual clarity.
+</p>
+
+<h2>Platform & Runtime Upgrade</h2>
+<p>
+Updated to KDE Platform 6.9 runtime for enhanced stability and performance, ensuring smoother operation across all supported systems.
+</p>
+
+<h2>Qt 6.9 Compatibility</h2>
+<p>
+Optimized QTableWidget rendering and font handling for full compatibility with Qt 6.9, providing better text clarity and interface responsiveness.
+</p>
+
+<h2>Western Chart Convention</h2>
+<p>
+Chart rendering now places the Ascendant at the 9 o'clock position to align with standard Western astrological practices, ensuring traditional chart layout accuracy.
+</p>
+
+<h2>Zodiac Sign Coloring</h2>
+<p>
+Planet list widget now displays zodiac signs in their traditional corresponding colors, making sign identification more intuitive and visually consistent.
+</p>
+
+<h2>Code Improvements</h2>
+<ul>
+  <li>Various code polish and optimization throughout the application</li>
+  <li>Enhanced stability and performance for smoother user experience</li>
+  <li>General bug fixes and maintenance improvements</li>
+</ul>
+
+
 <h1 style="color:#27ae60;">What’s New in Version 2.1.1</h1>
 <p>
 Welcome to the 2.1.1 update! This release refines AI interpretations, adds new chart tagging, and introduces the Zodiac Sign Chart, making your astrological analysis more powerful and visually appealing than ever.
@@ -6340,7 +6418,7 @@ QString MainWindow::markdownToHtml(const QString &markdown)
     // Convert headers
     html.replace(QRegularExpression("^###### (.*)$", QRegularExpression::MultilineOption), "<h6>\\1</h6>");
     html.replace(QRegularExpression("^##### (.*)$", QRegularExpression::MultilineOption), "<h5>\\1</h5>");
-    html.replace(QRegularExpression("^#### (.*)$", QRegularExpression::MultilineOption), "<h4>\\1</h4>"); // ← THIS ONE!
+    html.replace(QRegularExpression("^#### (.*)$", QRegularExpression::MultilineOption), "<h4>\\1</h4>");
     html.replace(QRegularExpression("^### (.*)$", QRegularExpression::MultilineOption), "<h3>\\1</h3>");
     html.replace(QRegularExpression("^## (.*)$", QRegularExpression::MultilineOption), "<h2>\\1</h2>");
     html.replace(QRegularExpression("^# (.*)$", QRegularExpression::MultilineOption), "<h1>\\1</h1>");

@@ -1,7 +1,5 @@
 # Asteria - Astrological Chart Calculator and Analyzer
 
-![Asteria Screenshot](screenshots/Screenshot_main.png)
-
 Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology. Calculate, visualize, and interpret natal charts with precision and insight.
 
 ## Features
@@ -21,10 +19,6 @@ Asteria is a comprehensive astrological chart application that combines traditio
 ### Flatpak
 
 Asteria is available as a Flatpak on Flathub.
-
-- [Flatpak](https://flathub.org/en/apps/io.github.alamahant.Asteria)
-- [Linux AppImage and Windows Deploy](https://github.com/alamahant/Asteria/releases/latest)
-
 
 ```bash
 flatpak install flathub io.github.alamahant.Asteria

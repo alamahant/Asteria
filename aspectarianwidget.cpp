@@ -32,6 +32,12 @@ void AspectarianWidget::setupUi() {
     m_table->horizontalHeader()->setVisible(true);
     m_table->verticalHeader()->setVisible(true);
 
+    // Mitigate Qt 6.9 size-hint dominance so splitter moves contract/expand cells
+    m_table->setSizeAdjustPolicy(QAbstractScrollArea::AdjustIgnored);
+    m_table->horizontalHeader()->setMinimumSectionSize(1);
+    m_table->verticalHeader()->setMinimumSectionSize(1);
+    m_table->setWordWrap(false);
+
     // Make the table expand to fill available space
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_table->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -95,6 +101,12 @@ void AspectarianWidget::updateData(const ChartData &chartData)
     int numPlanets = displayPlanets.size();
     m_table->setRowCount(numPlanets);
     m_table->setColumnCount(numPlanets);
+
+    // Re-apply header modes/minimums after model geometry changes (Qt 6.9 may reset these)
+    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_table->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_table->horizontalHeader()->setMinimumSectionSize(1);
+    m_table->verticalHeader()->setMinimumSectionSize(1);
 
     // Create symbol headers
     QStringList symbolHeaders;

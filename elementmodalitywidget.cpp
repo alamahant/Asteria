@@ -70,6 +70,19 @@ void ElementModalityWidget::setupUi()
     m_gridLayout->addWidget(headerFixed, 2, 0);
     m_gridLayout->addWidget(headerMutable, 3, 0);
 
+    // Make grid responsive to parent/splitter resizing
+    gridWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_gridLayout->setContentsMargins(0, 0, 0, 0);
+    m_gridLayout->setColumnStretch(1, 1);
+    m_gridLayout->setColumnStretch(2, 1);
+    m_gridLayout->setColumnStretch(3, 1);
+    m_gridLayout->setColumnStretch(4, 1);
+    m_gridLayout->setColumnStretch(5, 1);
+    m_gridLayout->setRowStretch(1, 1);
+    m_gridLayout->setRowStretch(2, 1);
+    m_gridLayout->setRowStretch(3, 1);
+    m_gridLayout->setRowStretch(4, 0); // totals row minimal stretch
+
     // Create cells for each sign
     QStringList signs = {
         "Aries", "Taurus", "Gemini", "Cancer",
@@ -104,11 +117,16 @@ void ElementModalityWidget::setupUi()
 
 
         label->setFrameShape(QFrame::Box);
-        label->setMinimumSize(80, 60);
+        label->setMinimumSize(1, 1);
+        label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        label->setWordWrap(false);
 
         // Use a font that supports Unicode symbols
-        QFont glyphFont = label->font();
-        glyphFont.setPointSize(16); // Larger font for the glyph
+        //QFont glyphFont = label->font();
+        //glyphFont.setPointSize(16); // Larger font for the glyph
+
+        QFont glyphFont("DejaVu Sans", 14);      // use a known system font
+        glyphFont.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback
         label->setFont(glyphFont);
 
         // Set background color based on element
@@ -177,6 +195,7 @@ void ElementModalityWidget::setupUi()
     // Add the grid to the main layout
     mainLayout->addWidget(m_titleLabel);
     mainLayout->addWidget(gridWidget);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
 
     setLayout(mainLayout);
 }
@@ -243,7 +262,10 @@ void ElementModalityWidget::updateData(const ChartData &chartData) {
 
             // Apply the Astromoony font to the label
             if (!g_astroFontFamily.isEmpty()) {
-                QFont astroFont(g_astroFontFamily, 16);
+                //QFont astroFont(g_astroFontFamily, 16);
+                QFont astroFont("DejaVu Sans", 14);      // use a known system font
+                astroFont.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback <<<<<<----
+
                 astroFont.setBold(true);
                 m_signLabels[sign]->setFont(astroFont);
             }

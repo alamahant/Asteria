@@ -2,5 +2,5 @@
 
 namespace GlobalFlags {
 bool additionalBodiesEnabled = false;
-QString lastGeneratedChartType = "natal (birth)";
+QString lastGeneratedChartType = "Natal Birth";
 }

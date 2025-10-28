@@ -86,6 +86,20 @@
   </screenshots>
   <releases>
 
+<release version="2.1.2" date="2025-10-29">
+  <description>
+    <p>Platform upgrades and astrological refinements:</p>
+    <ul>
+      <li>Updated KDE Runtime to version 6.9 for enhanced stability and performance</li>
+      <li>Improved Qt 6.9 compatibility with optimized QTableWidget rendering and font handling</li>
+      <li>Chart rendering now places Ascendant at 9 o'clock position to conform with Western astrological conventions</li>
+      <li>Planet list widget displays zodiac signs in their traditional corresponding colors</li>
+      <li>Various code polish and performance improvements throughout the application</li>
+    </ul>
+    <p>For complete changelog and version history, see the Changelog under the Help menu in the application</p>
+  </description>
+</release>
+
 <release version="2.1.1" date="2025-09-24">
   <description>
     <p>Refinements and new features in AI interpretations, chart tagging, and Zodiac Sign predictions:</p>

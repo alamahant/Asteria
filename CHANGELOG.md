@@ -1,5 +1,22 @@
 # Changelog
 
+## Version 2.1.2 (2025-10-29) – Polish & Compatibility Update
+
+### Platform & Compatibility
+- **Updated KDE Runtime**: Upgraded to KDE Platform 6.9 for enhanced stability and performance
+- **Improved Qt 6.9 Compatibility**: Optimized QTableWidget rendering and font handling for the latest Qt framework
+
+### Astrological Accuracy
+- **Western Chart Convention**: Chart rendering now places the Ascendant at 9 o'clock position to align with standard Western astrological practices
+- **Zodiac Sign Coloring**: Planet list widget now displays zodiac signs in their traditional corresponding colors for better visual recognition
+
+### Code Quality & Performance
+- **Code Polish**: Various code improvements and optimizations throughout the application
+- **Enhanced Stability**: General bug fixes and performance enhancements for smoother user experience
+
+---
+
+
 ## Version 2.1.1 (2025-09-23) – Major Update
 
 ### Major Improvements & New Features

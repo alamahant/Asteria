@@ -30,8 +30,13 @@ void PlanetListWidget::setupUi()
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setShowGrid(true);
     m_table->setAlternatingRowColors(true);
-    m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->verticalHeader()->setVisible(false);
+    m_table->setSizeAdjustPolicy(QAbstractScrollArea::AdjustIgnored);
+    m_table->setWordWrap(false);
+    m_table->horizontalHeader()->setMinimumSectionSize(1);
+    m_table->verticalHeader()->setMinimumSectionSize(1);
+    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Set up columns
     m_table->setColumnCount(5);
@@ -42,6 +47,7 @@ void PlanetListWidget::setupUi()
     // Add widgets to layout
     layout->addWidget(m_titleLabel);
     layout->addWidget(m_table);
+    layout->setContentsMargins(0, 0, 0, 0);
 
     setLayout(layout);
 }
@@ -55,7 +61,7 @@ void PlanetListWidget::updateData(const ChartData &chartData)
     QStringList orderedPlanets = {
         "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
         "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
-        "Part of Fortune", "Syzygy",
+        "Pars Fortuna", "Syzygy",
         // Additional bodies
         "Lilith", "Ceres", "Pallas", "Juno", "Vesta",
         "Vertex", "East Point", "Part of Spirit"
@@ -96,11 +102,16 @@ void PlanetListWidget::updateData(const ChartData &chartData)
             QString signName = planet.sign.split(' ').first();
             QString signSymbol = getSymbolForSign(signName);
             QTableWidgetItem *signItem = new QTableWidgetItem(signSymbol + " " + signName);
+            //QTableWidgetItem *signItem = new QTableWidgetItem(signName);
 
             if (useCustomFont) {
-                signItem->setFont(symbolFont);
+                //QFont zodiacFont = m_table->font(); // ordinary UI font
+                QFont zodiacFont("Dejavu Sans", 11);      // use a known system font
+                zodiacFont.setStyleStrategy(QFont::NoFontMerging); // prevent emoji fallback
+
+                signItem->setFont(zodiacFont);
             }
-            signItem->setBackground(getColorForSign(planet.sign));
+            signItem->setBackground(getColorForSign(signName));
 
             // Degree
             int degree = static_cast<int>(planet.longitude) % 30;
@@ -140,7 +151,7 @@ void PlanetListWidget::updateData(const ChartData &chartData)
             //QTableWidgetItem *signItem = new QTableWidgetItem(planet.sign);
             QString signName = planet.sign.split(' ').first();
             QTableWidgetItem *signItem = new QTableWidgetItem(signName);
-            signItem->setBackground(getColorForSign(planet.sign));
+            signItem->setBackground(getColorForSign(signName));
 
             // Degree
             int degree = static_cast<int>(planet.longitude) % 30;
@@ -166,8 +177,10 @@ void PlanetListWidget::updateData(const ChartData &chartData)
             }
         }
     }
-    // Resize columns to content
-    m_table->resizeColumnsToContents();
+    // Re-apply header modes/minimums after model changes (Qt 6.9 may reset these)
+    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_table->horizontalHeader()->setMinimumSectionSize(1);
+    m_table->verticalHeader()->setMinimumSectionSize(1);
 }
 
 QString PlanetListWidget::getSymbolForPlanet(const QString &planetId)
@@ -226,9 +239,11 @@ QColor PlanetListWidget::getColorForSign(const QString &sign)
     if (sign == "Aries" || sign == "Leo" || sign == "Sagittarius") {
         return QColor(255, 200, 200);  // Light red for Fire
     } else if (sign == "Taurus" || sign == "Virgo" || sign == "Capricorn") {
-        return QColor(255, 255, 200);  // Light green for Earth 200, 255, 200
+        return QColor(255, 255, 200);  // Light yellow for earth 255, 255, 200
+
     } else if (sign == "Gemini" || sign == "Libra" || sign == "Aquarius") {
-        return QColor(200, 255, 200);  // Light yellow for Air 255, 255, 200
+        return QColor(200, 255, 200);  // Light green for Air 200, 255, 200
+
     } else if (sign == "Cancer" || sign == "Scorpio" || sign == "Pisces") {
         return QColor(200, 200, 255);  // Light blue for Water
     }

@@ -118,6 +118,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
         transitsearchdialog.h transitsearchdialog.cpp
         Globals.cpp
+        donationdialog.h donationdialog.cpp
     )
 else()
     if(ANDROID)

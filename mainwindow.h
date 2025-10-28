@@ -57,6 +57,7 @@
 #include<QJsonObject>
 #include<QProgressDialog>
 #include<QPoint>
+#include"donationdialog.h"
 
 struct ParsedDate {
     int year;   // Astronomical year (negative for BCE, 0 for 1 BCE, etc.)
@@ -314,7 +315,7 @@ private:
     QString plainTextToHtml(const QString &plainText);
 private slots:
     void calculateZodiacSignsChart();
-
+private:
 
 };
 #endif // MAINWINDOW_H

@@ -12,7 +12,7 @@ MistralAPI::MistralAPI(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
     , m_apiEndpoint("https://api.mistral.ai/v1/chat/completions")
-    , m_model("mistral-medium")
+    , m_model("mistral-medium-latest")
     , m_requestInProgress(false)
 {
     // Connect network reply signal

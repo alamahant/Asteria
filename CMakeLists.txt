@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Option to build for Flathub
 option(FLATHUB_BUILD "Build for Flathub" OFF)
+option(GENTOO_BUILD "Build for Flathub" OFF)
 
 ##### Swiss Ephemeris setup
 if(FLATHUB_BUILD)
@@ -50,6 +51,46 @@ if(FLATHUB_BUILD)
             DESTINATION share/swisseph)
     
     include_directories(${SWISSEPH_INCLUDE_DIR})
+
+elseif(GENTOO_BUILD)
+    # Path inside the Gentoo build environment
+    set(SWISSEPH_DATA_DIR "${CMAKE_INSTALL_PREFIX}/share/asteria/ephemeris")
+    set(SWISSEPH_SRC_DIR "${CMAKE_SOURCE_DIR}/swisseph_src")
+
+    if(NOT EXISTS ${SWISSEPH_SRC_DIR})
+        message(FATAL_ERROR "Swiss Ephemeris source directory not found at ${SWISSEPH_SRC_DIR}")
+    endif()
+
+    # Build Swiss Ephemeris
+    execute_process(
+        COMMAND make
+        WORKING_DIRECTORY ${SWISSEPH_SRC_DIR}
+        RESULT_VARIABLE MAKE_RESULT
+    )
+
+    if(NOT MAKE_RESULT EQUAL "0")
+        message(FATAL_ERROR "Failed to build Swiss Ephemeris")
+    endif()
+
+    # Set paths for CMake to find the library
+    set(SWISSEPH_INCLUDE_DIR "${SWISSEPH_SRC_DIR}")
+    set(SWISSEPH_LIBRARY "${SWISSEPH_SRC_DIR}/libswe.a")
+
+    # Header files
+    file(GLOB SWISSEPH_HEADERS "${SWISSEPH_SRC_DIR}/*.h")
+
+    # Install the files to Gentoo prefix
+    install(FILES ${SWISSEPH_LIBRARY}
+            DESTINATION share/asteria/ephemeris)
+
+    install(FILES ${SWISSEPH_HEADERS}
+            DESTINATION share/asteria/ephemeris)
+
+    install(DIRECTORY ${SWISSEPH_SRC_DIR}/ephe/
+            DESTINATION share/asteria/ephemeris)
+
+    include_directories(${SWISSEPH_INCLUDE_DIR})
+
 else()
     # For local builds, use the local Swiss Ephemeris
     set(SWISSEPH_DIR "/home/dharma/ssd/cpp/swisseph")
@@ -77,6 +118,9 @@ endif()
 # Define FLATHUB_BUILD for conditional compilation
 if(FLATHUB_BUILD)
     add_definitions(-DFLATHUB_BUILD)
+endif()
+if(GENTOO_BUILD)
+    add_definitions(-DGENTOO_BUILD)
 endif()
 
 # Find required Qt components

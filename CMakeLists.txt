@@ -134,7 +134,7 @@ if(FLATHUB_BUILD)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
         Widgets Network Svg QuickWidgets Positioning Location Charts)
 elseif(GENTOO_BUILD)
-    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
+    find_package(Qt6 REQUIRED COMPONENTS
         Widgets Network Svg QuickWidgets Positioning Location Charts)
 else()
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
@@ -314,15 +314,3 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(Asteria)
 endif()
-
-
-
-
-
-
-
-
-
-
-
-

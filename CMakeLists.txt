@@ -9,7 +9,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Option to build for Flathub
 option(FLATHUB_BUILD "Build for Flathub" OFF)
-option(GENTOO_BUILD "Build for Flathub" OFF)
+option(GENTOO_BUILD "Build for Gentoo" OFF)
+
+# Define FLATHUB_BUILD for conditional compilation
+if(FLATHUB_BUILD)
+    add_definitions(-DFLATHUB_BUILD)
+endif()
+if(GENTOO_BUILD)
+    add_definitions(-DGENTOO_BUILD)
+endif()
 
 ##### Swiss Ephemeris setup
 if(FLATHUB_BUILD)
@@ -115,13 +123,7 @@ else()
     target_include_directories(sweph PUBLIC ${SWISSEPH_INCLUDE_DIR})
 endif()
 
-# Define FLATHUB_BUILD for conditional compilation
-if(FLATHUB_BUILD)
-    add_definitions(-DFLATHUB_BUILD)
-endif()
-if(GENTOO_BUILD)
-    add_definitions(-DGENTOO_BUILD)
-endif()
+
 
 # Find required Qt components
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
@@ -199,6 +201,26 @@ if(FLATHUB_BUILD)
 
         sweph
     )
+elseif(GENTOO_BUILD)
+    # Create imported target for Swiss Ephemeris
+    add_library(sweph STATIC IMPORTED)
+    set_target_properties(sweph PROPERTIES
+        IMPORTED_LOCATION ${SWISSEPH_LIBRARY}
+        INTERFACE_INCLUDE_DIRECTORIES ${SWISSEPH_INCLUDE_DIR}
+    )
+
+    target_link_libraries(Asteria PRIVATE
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::Network
+        Qt${QT_VERSION_MAJOR}::Svg
+        Qt${QT_VERSION_MAJOR}::QuickWidgets
+        Qt${QT_VERSION_MAJOR}::Location
+        Qt${QT_VERSION_MAJOR}::Positioning
+        Qt${QT_VERSION_MAJOR}::Charts
+
+        sweph
+    )
+
 else()
     target_link_libraries(Asteria PRIVATE
         Qt${QT_VERSION_MAJOR}::Widgets

@@ -127,6 +127,9 @@ endif()
 
 # Find required Qt components
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+
+
 if(FLATHUB_BUILD)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
         Widgets Network Svg QuickWidgets Positioning Location Charts)

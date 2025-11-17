@@ -19,7 +19,7 @@
 //#include <QPrinter>
 //#include <QPrintDialog>
 
-#ifdef FLATHUB_BUILD
+#if defined(FLATHUB_BUILD) || defined(GENTOO_BUILD)
 // QPdfWriter is not available in Flathub
 #else
 #include <QPdfWriter>
@@ -1934,12 +1934,13 @@ void MainWindow::exportInterpretation()
 
 
 void MainWindow::printChart() {
-#ifdef FLATHUB_BUILD
+#if defined(FLATHUB_BUILD) || defined(GENTOO_BUILD)
     QMessageBox::information(
                 this,
                 tr("Functionality Unavailable"),
-                tr("This functionality is not available in the Flathub version of Asteria.")
+                tr("This functionality is not available in the Flathub or Gentoo versions of Asteria.")
                 );
+    return;
 #else
     if (!m_chartCalculated) {
         QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
@@ -2529,12 +2530,13 @@ void MainWindow::exportChartImage()
 }
 
 void MainWindow::exportAsPdf() {
-#ifdef FLATHUB_BUILD
+#if defined(FLATHUB_BUILD) || defined(GENTOO_BUILD)
     QMessageBox::information(
                 this,
                 tr("Functionality Unavailable"),
-                tr("This functionality is not available in the Flathub version of Asteria.")
+                tr("This functionality is not available in the Flathub or Gentoo versions of Asteria.")
                 );
+    return;
 #else
     if (!m_chartCalculated) {
         QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
@@ -2880,7 +2882,7 @@ QString MainWindow::getFilepath(const QString &format)
 
 
 void MainWindow::printPdfFromPath(const QString& filePath) {
-#ifdef FLATHUB_BUILD
+#if defined(FLATHUB_BUILD) || defined(GENTOO_BUILD)
     // Empty implementation for Flathub
     Q_UNUSED(filePath);
 #else
@@ -2916,7 +2918,7 @@ void MainWindow::printPdfFromPath(const QString& filePath) {
 #endif
 }
 
-#ifndef FLATHUB_BUILD
+#if !defined(FLATHUB_BUILD) && !defined(GENTOO_BUILD)
 void MainWindow::drawPage0(QPainter &painter, QPdfWriter &writer) {
     painter.save();
     const QRect pageRect = writer.pageLayout().paintRectPixels(writer.resolution());
@@ -2973,8 +2975,8 @@ void MainWindow::drawPage0(QPainter &painter, QPdfWriter &writer) {
 
 
 void MainWindow::drawStarBanner(QPainter &painter, const QRect &rect) {
-#ifdef FLATHUB_BUILD
-    // Empty implementation for Flathub
+#if defined(FLATHUB_BUILD) || defined(GENTOO_BUILD)
+    // Empty implementation for Flathub and Gentoo
     Q_UNUSED(painter);
     Q_UNUSED(rect);
 #else

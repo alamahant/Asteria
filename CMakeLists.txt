@@ -128,6 +128,9 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 if(FLATHUB_BUILD)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
         Widgets Network Svg QuickWidgets Positioning Location Charts)
+elseif(GENTOO_BUILD)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
+        Widgets Network Svg QuickWidgets Positioning Location Charts)
 else()
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
         Widgets Network PrintSupport Svg Pdf QuickWidgets Positioning Location Charts)

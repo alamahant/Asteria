@@ -9,15 +9,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Option to build for Flathub
 option(FLATHUB_BUILD "Build for Flathub" OFF)
-option(GENTOO_BUILD "Build for Gentoo" OFF)
-
-# Define FLATHUB_BUILD for conditional compilation
-if(FLATHUB_BUILD)
-    add_definitions(-DFLATHUB_BUILD)
-endif()
-if(GENTOO_BUILD)
-    add_definitions(-DGENTOO_BUILD)
-endif()
 
 ##### Swiss Ephemeris setup
 if(FLATHUB_BUILD)
@@ -59,46 +50,6 @@ if(FLATHUB_BUILD)
             DESTINATION share/swisseph)
     
     include_directories(${SWISSEPH_INCLUDE_DIR})
-
-elseif(GENTOO_BUILD)
-    # Path inside the Gentoo build environment
-    set(SWISSEPH_DATA_DIR "${CMAKE_INSTALL_PREFIX}/share/asteria/ephemeris")
-    set(SWISSEPH_SRC_DIR "${CMAKE_SOURCE_DIR}/swisseph_src")
-
-    if(NOT EXISTS ${SWISSEPH_SRC_DIR})
-        message(FATAL_ERROR "Swiss Ephemeris source directory not found at ${SWISSEPH_SRC_DIR}")
-    endif()
-
-    # Build Swiss Ephemeris
-    execute_process(
-        COMMAND make
-        WORKING_DIRECTORY ${SWISSEPH_SRC_DIR}
-        RESULT_VARIABLE MAKE_RESULT
-    )
-
-    if(NOT MAKE_RESULT EQUAL "0")
-        message(FATAL_ERROR "Failed to build Swiss Ephemeris")
-    endif()
-
-    # Set paths for CMake to find the library
-    set(SWISSEPH_INCLUDE_DIR "${SWISSEPH_SRC_DIR}")
-    set(SWISSEPH_LIBRARY "${SWISSEPH_SRC_DIR}/libswe.a")
-
-    # Header files
-    file(GLOB SWISSEPH_HEADERS "${SWISSEPH_SRC_DIR}/*.h")
-
-    # Install the files to Gentoo prefix
-    install(FILES ${SWISSEPH_LIBRARY}
-            DESTINATION share/asteria/ephemeris)
-
-    install(FILES ${SWISSEPH_HEADERS}
-            DESTINATION share/asteria/ephemeris)
-
-    install(DIRECTORY ${SWISSEPH_SRC_DIR}/ephe/
-            DESTINATION share/asteria/ephemeris)
-
-    include_directories(${SWISSEPH_INCLUDE_DIR})
-
 else()
     # For local builds, use the local Swiss Ephemeris
     set(SWISSEPH_DIR "/home/dharma/ssd/cpp/swisseph")
@@ -123,18 +74,15 @@ else()
     target_include_directories(sweph PUBLIC ${SWISSEPH_INCLUDE_DIR})
 endif()
 
-
+# Define FLATHUB_BUILD for conditional compilation
+if(FLATHUB_BUILD)
+    add_definitions(-DFLATHUB_BUILD)
+endif()
 
 # Find required Qt components
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-
-
 if(FLATHUB_BUILD)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
-        Widgets Network Svg QuickWidgets Positioning Location Charts)
-elseif(GENTOO_BUILD)
-    find_package(Qt6 REQUIRED COMPONENTS
         Widgets Network Svg QuickWidgets Positioning Location Charts)
 else()
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
@@ -204,26 +152,6 @@ if(FLATHUB_BUILD)
 
         sweph
     )
-elseif(GENTOO_BUILD)
-    # Create imported target for Swiss Ephemeris
-    add_library(sweph STATIC IMPORTED)
-    set_target_properties(sweph PROPERTIES
-        IMPORTED_LOCATION ${SWISSEPH_LIBRARY}
-        INTERFACE_INCLUDE_DIRECTORIES ${SWISSEPH_INCLUDE_DIR}
-    )
-
-    target_link_libraries(Asteria PRIVATE
-        Qt${QT_VERSION_MAJOR}::Widgets
-        Qt${QT_VERSION_MAJOR}::Network
-        Qt${QT_VERSION_MAJOR}::Svg
-        Qt${QT_VERSION_MAJOR}::QuickWidgets
-        Qt${QT_VERSION_MAJOR}::Location
-        Qt${QT_VERSION_MAJOR}::Positioning
-        Qt${QT_VERSION_MAJOR}::Charts
-
-        sweph
-    )
-
 else()
     target_link_libraries(Asteria PRIVATE
         Qt${QT_VERSION_MAJOR}::Widgets
@@ -314,3 +242,15 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(Asteria)
 endif()
+
+
+
+
+
+
+
+
+
+
+
+

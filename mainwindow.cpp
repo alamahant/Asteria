@@ -21,6 +21,10 @@
 
 #if defined(FLATHUB_BUILD) || defined(GENTOO_BUILD)
 // QPdfWriter is not available in Flathub
+//#include <QPdfWriter>
+//#include <QPrinter>
+//#include <QPrintDialog>
+
 #else
 #include <QPdfWriter>
 #include <QPrinter>

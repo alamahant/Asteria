@@ -31,7 +31,7 @@
 #include <QTextBrowser>
 #include <QDialog>
 
-#ifdef FLATHUB_BUILD
+#if defined(FLATHUB_BUILD) || defined(GENTOO_BUILD)
 // QtPdf is not available in Flathub
 #else
 #include <QtPdf/QPdfDocument>

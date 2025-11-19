@@ -186,7 +186,7 @@ private:
     QLabel *m_ascendantLabel;
     QLabel *m_housesystemLabel;
     void drawStarBanner(QPainter &painter, const QRect &rect);
-#ifndef FLATHUB_BUILD
+#if !defined(FLATHUB_BUILD) && !defined(GENTOO_BUILD)
     void drawPage0(QPainter &painter, QPdfWriter &writer);
 #endif
     //void drawPage0(QPainter &painter, QPdfWriter &writer);

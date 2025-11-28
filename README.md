@@ -1,6 +1,7 @@
 # Asteria - Astrological Chart Calculator and Analyzer
 
 Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology. Calculate, visualize, and interpret natal charts with precision and insight.
+![Asteria Screenshot](screenshots/Screenshot_main.png)
 
 ## Features
 

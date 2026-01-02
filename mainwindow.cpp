@@ -21,10 +21,6 @@
 
 #if defined(FLATHUB_BUILD) || defined(GENTOO_BUILD)
 // QPdfWriter is not available in Flathub
-//#include <QPdfWriter>
-//#include <QPrinter>
-//#include <QPrintDialog>
-
 #else
 #include <QPdfWriter>
 #include <QPrinter>
@@ -955,8 +951,14 @@ void MainWindow::setupMenus()
 
     QAction *exportDataAction = fileMenu->addAction("Export Chart &Data as Text...", this, &MainWindow::exportChartData);
     exportDataAction->setIcon(QIcon::fromTheme("text-x-generic"));
+    fileMenu->addSeparator();
+
+    QAction *getDataDirAction = fileMenu->addAction("Copy Save Location...", this, &MainWindow::copySavePath);
+    getDataDirAction->setShortcut(QKeySequence("Ctrl+C"));
+    getDataDirAction->setIcon(QIcon::fromTheme("edit-copy"));
 
     fileMenu->addSeparator();
+
 
     // Print group
     QAction *printAction = fileMenu->addAction("&Print...", this, &MainWindow::printChart);
@@ -1793,13 +1795,13 @@ void MainWindow::loadChart() {
     newChart();
 
     QString appName = QApplication::applicationName();
-    QString appDir;
+    QString appDir = GlobalFlags::appDir;
 #ifdef FLATHUB_BUILD
     // In Flatpak, use the app-specific data directory
-    appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
+    //appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
 #else
     // For local builds, use a directory in home
-    appDir = QDir::homePath() + "/" + appName;
+    //appDir = QDir::homePath() + "/" + appName;
 #endif
 
     // Create directory if it doesn't exist
@@ -2066,15 +2068,15 @@ void MainWindow::handleError(const QString &errorMessage)
 
 QString MainWindow::getChartFilePath(bool forSaving)
 {
-    QString directory = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+   // QString directory = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     QString filePath;
 
     if (forSaving) {
         filePath = QFileDialog::getSaveFileName(this, "Save Chart",
-                                                directory, "Chart Files (*.chart)");
+                                                GlobalFlags::appDir, "Chart Files (*.chart)");
     } else {
         filePath = QFileDialog::getOpenFileName(this, "Open Chart",
-                                                directory, "Chart Files (*.chart)");
+                                                GlobalFlags::appDir, "Chart Files (*.chart)");
     }
 
     return filePath;
@@ -2833,14 +2835,14 @@ QString MainWindow::getFilepath(const QString &format)
     }
 
     QString appName = QApplication::applicationName();
-    QString appDir;
+    QString appDir = GlobalFlags::appDir;
 
 #ifdef FLATHUB_BUILD
     // In Flatpak, use the app-specific data directory
-    appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
+    //appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
 #else
     // For local builds, use a directory in home
-    appDir = QDir::homePath() + "/" + appName;
+    //appDir = QDir::homePath() + "/" + appName;
     //appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
 
 #endif
@@ -3214,13 +3216,13 @@ void MainWindow::createCompositeChart() {
                              "Please select two natal charts to create a composite chart.");
     // Get app directory for file dialog
     QString appName = QApplication::applicationName();
-    QString appDir;
+    QString appDir = GlobalFlags::appDir;
 #ifdef FLATHUB_BUILD
     // In Flatpak, use the app-specific data directory
-    appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
+    //appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
 #else
     // For local builds, use a directory in home
-    appDir = QDir::homePath() + "/" + appName;
+    //appDir = QDir::homePath() + "/" + appName;
 #endif
     // Create directory if it doesn't exist
     QDir dir;
@@ -3651,11 +3653,11 @@ void MainWindow::createDavisonChart() {
     QMessageBox::information(this, "Select Charts",
                              "Please select two natal charts to create a Davison chart.");
     QString appName = QApplication::applicationName();
-    QString appDir;
+    QString appDir = GlobalFlags::appDir;
 #ifdef FLATHUB_BUILD
-    appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
+    //appDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + appName;
 #else
-    appDir = QDir::homePath() + "/" + appName;
+    //appDir = QDir::homePath() + "/" + appName;
 #endif
     QDir dir;
     if (!dir.exists(appDir))
@@ -4040,6 +4042,17 @@ void MainWindow::showChangelog(){
         QString changelogText = R"(
 
 <h1>Changelog</h1>
+
+<h2>Version 2.1.3 (2026-01-02) <span style='color:#27ae60;'>&mdash; Data Management & Organization Update</span></h2>
+<ul>
+  <li><b>Dedicated Documents Directory:</b> Created a dedicated <code>~/Documents/Asteria</code> directory where all charts and user data are now saved and loaded from for improved accessibility and organization.</li>
+  <li><b>Data Migration Support:</b> Existing user data is not automatically migrated from the previous location. To manually migrate your charts and materials, please open a terminal and run:</li>
+  <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto;">
+cp -a ~/.var/app/io.github.alamahant.Asteria/data/Asteria/* ~/Documents/Asteria/</pre>
+  <li><b>Improved File Management:</b> Simplified chart backup, sharing, and management through standard documents location.</li>
+  <li><b>Cross-Platform Compatibility:</b> Ensures better compatibility with backup systems and cloud synchronization services.</li>
+  <li><b>User Experience Enhancement:</b> More intuitive file access without navigating through hidden application directories.</li>
+</ul>
 
 <h2>Version 2.1.2 (2025-10-29) <span style='color:#27ae60;'>&mdash; Polish & Compatibility Update</span></h2>
 <ul>
@@ -6054,6 +6067,24 @@ void MainWindow::showNewFeaturesDialog() {
         // Set the new features content
         QString featuresText = R"(
 
+<h1 style="color:#27ae60;">What’s New in Version 2.1.3</h1>
+<p>
+This update introduces a streamlined data management system with a dedicated documents directory, making your astrological charts and materials more accessible and easier to manage.
+</p>
+
+<h2>Dedicated Documents Directory</h2>
+<p>
+All charts and user data are now saved and loaded from <code>~/Documents/Asteria</code>, providing improved organization and accessibility outside of hidden application directories.
+</p>
+
+<h2>Data Migration Support</h2>
+<p>
+Your existing data can be easily migrated to the new location. To manually transfer your charts and materials, open a terminal and run:
+</p>
+<pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; margin: 10px 20px;">
+cp -a ~/.var/app/io.github.alamahant.Asteria/data/Asteria/* ~/Documents/Asteria/
+</pre>
+
 <h1 style="color:#27ae60;">What’s New in Version 2.1.2</h1>
 <p>
 Welcome to the 2.1.2 update! This release brings platform upgrades, improved compatibility, and astrological refinements that enhance chart accuracy and visual clarity.
@@ -6668,4 +6699,19 @@ void MainWindow::calculateZodiacSignsChart()
         // Clear any partial chart data after error
         m_chartRenderer->scene()->clear();
     }
+}
+
+void MainWindow::copySavePath()
+{
+#ifdef FLATHUB_BUILD
+    QString dataDirPath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/" + QApplication::applicationName();
+#else
+    QString dataDirPath = QDir::homePath() + "/" + QApplication::applicationName();
+
+#endif
+
+    QApplication::clipboard()->setText(dataDirPath);
+        // Optional: Show a confirmation message
+    QMessageBox::information(this, "Path Copied",
+            QString("Save location copied to clipboard:\n%1").arg(dataDirPath));
 }

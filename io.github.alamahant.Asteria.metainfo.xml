@@ -84,7 +84,19 @@
       <image>https://raw.githubusercontent.com/alamahant/Asteria/d578d5894b0fc806cce2521463aa0dcfe0c1f31b/screenshots/DavisonChart.png</image>
     </screenshot>
   </screenshots>
+
   <releases>
+
+<release version="2.1.3" date="2026-01-02">
+  <description>
+    <p>Data organization and accessibility improvements:</p>
+    <ul>
+      <li>All charts are now saved and loaded from a dedicated ~/Documents/Asteria directory for improved accessibility</li>
+      <li>Simplified chart management through standard documents location</li>
+    </ul>
+    <p>For complete changelog, version history and migrartion info, please see the Changelog and Whatsnew under the Help menu in the application</p>
+  </description>
+</release>
 
 <release version="2.1.2" date="2025-10-29">
   <description>

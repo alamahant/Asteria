@@ -4,6 +4,8 @@
 #include<QSettings>
 #include <QFontDatabase>
 #include <QString>
+#include"Globals.h"
+#include<QDir>
 
 namespace {
 double g_orbMax = 8.0; // Default orb value
@@ -23,6 +25,7 @@ QString g_astroFontFamily;
 
 int main(int argc, char *argv[])
 {
+
     QApplication a(argc, argv);
 
     // Load custom astronomical font
@@ -35,7 +38,10 @@ int main(int argc, char *argv[])
 
     QCoreApplication::setOrganizationName("");  // Instead of "Your Organization"
     QCoreApplication::setApplicationName("Asteria");
-    QCoreApplication::setApplicationVersion("2.1.2");
+    QDir().mkpath(GlobalFlags::appDir);
+    QCoreApplication::setApplicationVersion("2.1.3");
+
+
     MainWindow w;
     w.show();
     return a.exec();

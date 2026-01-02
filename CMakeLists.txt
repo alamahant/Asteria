@@ -15,40 +15,40 @@ if(FLATHUB_BUILD)
     # For Flatpak builds, build Swiss Ephemeris from source
     set(SWISSEPH_DATA_DIR "/app/share/swisseph")  # Runtime path in Flatpak
     set(SWISSEPH_SRC_DIR "${CMAKE_SOURCE_DIR}/swisseph_src")
-    
+
     # Check if source directory exists
     if(NOT EXISTS ${SWISSEPH_SRC_DIR})
         message(FATAL_ERROR "Swiss Ephemeris source directory not found at ${SWISSEPH_SRC_DIR}")
     endif()
-    
+
     # Build Swiss Ephemeris
     execute_process(
         COMMAND make
         WORKING_DIRECTORY ${SWISSEPH_SRC_DIR}
         RESULT_VARIABLE MAKE_RESULT
     )
-    
+
     if(NOT MAKE_RESULT EQUAL "0")
         message(FATAL_ERROR "Failed to build Swiss Ephemeris")
     endif()
-    
+
     # Set paths for finding Swiss Ephemeris in the build environment
     set(SWISSEPH_INCLUDE_DIR "${SWISSEPH_SRC_DIR}")
     set(SWISSEPH_LIBRARY "${SWISSEPH_SRC_DIR}/libswe.a")
-    
+
     # Get header files
     file(GLOB SWISSEPH_HEADERS "${SWISSEPH_SRC_DIR}/*.h")
-    
+
     # Install the files to the Flatpak
     install(FILES ${SWISSEPH_LIBRARY}
             DESTINATION share/swisseph)
-    
+
     install(FILES ${SWISSEPH_HEADERS}
             DESTINATION share/swisseph)
-    
+
     install(DIRECTORY ${SWISSEPH_SRC_DIR}/ephe/
             DESTINATION share/swisseph)
-    
+
     include_directories(${SWISSEPH_INCLUDE_DIR})
 else()
     # For local builds, use the local Swiss Ephemeris
@@ -56,7 +56,7 @@ else()
     set(SWISSEPH_INCLUDE_DIR "${SWISSEPH_DIR}")
     set(SWISSEPH_DATA_DIR "${SWISSEPH_DIR}/ephe")
     include_directories(${SWISSEPH_INCLUDE_DIR})
-    
+
     # Swiss Ephemeris source files
     set(SWISSEPH_SOURCES
         ${SWISSEPH_DIR}/swecl.c
@@ -68,7 +68,7 @@ else()
         ${SWISSEPH_DIR}/sweph.c
         ${SWISSEPH_DIR}/swephlib.c
     )
-    
+
     # Create a static library for Swiss Ephemeris
     add_library(sweph STATIC ${SWISSEPH_SOURCES})
     target_include_directories(sweph PUBLIC ${SWISSEPH_INCLUDE_DIR})
@@ -140,7 +140,7 @@ if(FLATHUB_BUILD)
         IMPORTED_LOCATION ${SWISSEPH_LIBRARY}
         INTERFACE_INCLUDE_DIRECTORIES ${SWISSEPH_INCLUDE_DIR}
     )
-    
+
     target_link_libraries(Asteria PRIVATE
         Qt${QT_VERSION_MAJOR}::Widgets
         Qt${QT_VERSION_MAJOR}::Network
@@ -196,18 +196,18 @@ include(GNUInstallDirs)
 if(NOT FLATHUB_BUILD)
     # Create ephemeris directory in build directory
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/ephemeris)
-    
+
     # Copy ephemeris files from local directory
     file(GLOB EPHEMERIS_FILES "${SWISSEPH_DATA_DIR}/*.se1" "${SWISSEPH_DATA_DIR}/*.txt")
     foreach(EPHEMERIS_FILE ${EPHEMERIS_FILES})
         get_filename_component(FILENAME ${EPHEMERIS_FILE} NAME)
         configure_file(${EPHEMERIS_FILE} ${CMAKE_BINARY_DIR}/ephemeris/${FILENAME} COPYONLY)
     endforeach()
-    
+
     # Install ephemeris files
     install(DIRECTORY ${CMAKE_BINARY_DIR}/ephemeris/
             DESTINATION "share/Asteria/ephemeris")
-    
+
     # Install additional files if they exist
     if(EXISTS "${SWISSEPH_DATA_DIR}/transits_updated")
         install(FILES "${SWISSEPH_DATA_DIR}/transits_updated"
@@ -242,15 +242,3 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(Asteria)
 endif()
-
-
-
-
-
-
-
-
-
-
-
-

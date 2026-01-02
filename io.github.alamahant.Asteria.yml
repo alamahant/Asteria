@@ -9,6 +9,7 @@ finish-args:
   - --socket=wayland
   - --device=dri
   - --share=network
+  - --filesystem=xdg-documents/Asteria:create
 modules:
   - name: Asteria
     buildsystem: cmake-ninja
@@ -18,7 +19,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/alamahant/Asteria.git
-        tag: v2.1.2
+        tag: v2.1.3
       - type: git
         url: https://github.com/aloistr/swisseph.git
         dest: swisseph_src

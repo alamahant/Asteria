@@ -4,6 +4,9 @@
 
 Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology. Calculate, visualize, and interpret natal charts with precision and insight.
 
+Available in Flathub:
+https://flathub.org/en/apps/search?q=alamahant
+
 ## Features
 
 - **Natal Chart Calculation**: Generate accurate birth charts with precise planetary positions

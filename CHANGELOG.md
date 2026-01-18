@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 2.1.4 (2026-01-18) – KDE Runtime Upgrade
+
+### Runtime & Platform
+- **KDE Platform Update**: Runtime upgraded to version '6.10' for improved functionality and future compatibility
+- **Aspectarian Widget Enhancement**: Increased font size and weight for headers, improving visibility and usability
+
+---
+
 ## Version 2.1.3 (2026-01-02) – Data Organization Update
 
 ### Data Management

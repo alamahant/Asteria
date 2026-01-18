@@ -4273,7 +4273,8 @@ void MainWindow::CalculateTransits() {
         //populate tab
         displayRawTransitData(transitData);
         QMessageBox::information(this, "Transit Data", "Transit data has been generated successfully.\n"
-                                                       "Please Navigate to the 'Raw Transit Data Table' to view the data.");
+                                                       "Please Navigate to the 'Raw Transit Data Table' to view the data.\n"
+                                                        "You may use 'Tools->Transit Filter' for advanced filtering.");
 
 
     } else {

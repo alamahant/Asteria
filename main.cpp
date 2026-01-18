@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("");  // Instead of "Your Organization"
     QCoreApplication::setApplicationName("Asteria");
     QDir().mkpath(GlobalFlags::appDir);
-    QCoreApplication::setApplicationVersion("2.1.3");
+    QCoreApplication::setApplicationVersion("2.1.4");
 
 
     MainWindow w;

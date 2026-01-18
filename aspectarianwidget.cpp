@@ -24,6 +24,9 @@ void AspectarianWidget::setupUi() {
 
     // Create table
     m_table = new QTableWidget(this);
+
+
+
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setSelectionBehavior(QAbstractItemView::SelectItems);
@@ -120,11 +123,11 @@ void AspectarianWidget::updateData(const ChartData &chartData)
 
     // Set fixed font size for headers instead of incrementing
     QFont headerFont = m_table->font();
-    headerFont.setPointSize(12); // Use a fixed size instead of incrementing
+    headerFont.setPointSize(14); // Use a fixed size instead of incrementing
     //headerFont.setBold(true);    // Make the font bold
 
     if (!g_astroFontFamily.isEmpty()) {
-        headerFont = QFont(g_astroFontFamily, 12);
+        headerFont = QFont(g_astroFontFamily, 14);
         //headerFont.setBold(true); // Make sure to set bold after creating the new font
 
     }
@@ -132,6 +135,22 @@ void AspectarianWidget::updateData(const ChartData &chartData)
 
     m_table->horizontalHeader()->setFont(headerFont);
     m_table->verticalHeader()->setFont(headerFont);
+
+
+    // ALSO apply font to each individual header item
+    for (int i = 0; i < numPlanets; i++) {
+        // Horizontal header items
+        QTableWidgetItem* hItem = m_table->horizontalHeaderItem(i);
+        if (hItem) {
+            hItem->setFont(headerFont);
+        }
+
+        // Vertical header items
+        QTableWidgetItem* vItem = m_table->verticalHeaderItem(i);
+        if (vItem) {
+            vItem->setFont(headerFont);
+        }
+    }
 
     // Set tooltips for headers
     for (int i = 0; i < numPlanets; i++) {

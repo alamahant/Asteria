@@ -1,5 +1,35 @@
 # Changelog
 
+## Version 2.4.5 (2026-03-02) – Multi-Provider AI Model Selector
+
+### Model Management
+- Added `ModelSelectorDialog` for managing multiple AI model configurations
+- Models store: endpoint, API key, model name, temperature, max tokens in `QSettings`
+- Add, edit, delete, and set active models via Settings menu
+
+### Multi-Provider Support
+- **Compatible providers**: Mistral, OpenAI (ChatGPT), Groq, Ollama (local)
+- Any OpenAI-compatible API (Together AI, DeepSeek, Perplexity, Fireworks AI)
+- Informational tooltip listing compatible/incompatible providers
+
+### API Improvements
+- Refactored `MistralAPI` to be provider-agnostic with dynamic config loading
+- Added `loadActiveModel()` to read settings on startup and when model changes
+- Removed deprecated API key management methods
+- Uses temperature/max tokens from model settings instead of hardcoded values
+
+### User Experience
+- "Check AI Model Status" menu option shows active model details
+- Color-coded API key status with warnings for cloud providers missing keys
+- Automatic model reload when active model changes
+- Graceful error handling when no model configured
+
+### New Files
+- `model.h`, `modelselectordialog.h`, `modelselectordialog.cpp`
+
+---
+
+
 ## Version 2.1.4 (2026-01-18) – KDE Runtime Upgrade
 
 ### Runtime & Platform

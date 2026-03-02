@@ -109,6 +109,7 @@ set(PROJECT_SOURCES
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
     qt_add_executable(Asteria
         MANUAL_FINALIZATION
@@ -119,6 +120,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         transitsearchdialog.h transitsearchdialog.cpp
         Globals.cpp
         donationdialog.h donationdialog.cpp
+        model.h
+        modelselectordialog.h modelselectordialog.cpp
     )
 else()
     if(ANDROID)
@@ -167,6 +170,7 @@ else()
         sweph
     )
 target_link_libraries(Asteria PRIVATE Qt6::Widgets)
+target_link_libraries(Asteria PRIVATE Qt6::Core)
 endif()
 
 # Set data directory definition

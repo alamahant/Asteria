@@ -11,8 +11,6 @@
 MistralAPI::MistralAPI(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
-    , m_apiEndpoint("https://api.mistral.ai/v1/chat/completions")
-    , m_model("mistral-medium")
     , m_requestInProgress(false)
 {
     // Connect network reply signal
@@ -20,74 +18,13 @@ MistralAPI::MistralAPI(QObject *parent)
             this, &MistralAPI::handleNetworkReply);
 
     // Try to load API key from settings
-    loadApiKey();
+    GlobalFlags::activeModelLoaded = loadActiveModel();
 }
 
 MistralAPI::~MistralAPI()
 {
     // QObject parent-child relationship will handle deletion
 }
-
-void MistralAPI::setApiKey(const QString &key)
-{
-    m_apiKey = key;
-}
-
-bool MistralAPI::saveApiKey(const QString &key) {
-    // Set the key in memory
-    m_apiKey = key;
-
-    // Save to settings using default path
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "Asteria", "Asteria");
-
-    settings.beginGroup("Authentication");
-    settings.setValue("MistralApiKey", m_apiKey);
-    settings.endGroup();
-
-    // Force write to disk
-    settings.sync();
-
-    return settings.status() == QSettings::NoError;
-}
-
-
-bool MistralAPI::loadApiKey() {
-    // Using default settings path since getSettingsPath() doesn't exist
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "Asteria", "Asteria");
-
-    settings.beginGroup("Authentication");
-    m_apiKey = settings.value("MistralApiKey").toString();
-    settings.endGroup();
-
-    return !m_apiKey.isEmpty();
-}
-
-bool MistralAPI::hasValidApiKey() const
-{
-    return !m_apiKey.isEmpty();
-}
-/*
-void MistralAPI::clearApiKey()
-{
-    m_apiKey.clear();
-
-    QSettings settings(getSettingsPath(), QSettings::IniFormat);
-    settings.beginGroup("Authentication");
-    settings.remove("MistralApiKey");
-    settings.endGroup();
-}
-*/
-
-void MistralAPI::clearApiKey() {
-    m_apiKey.clear();
-    // Use the same approach as saveApiKey and loadApiKey
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "Asteria", "Asteria");
-    settings.beginGroup("Authentication");
-    settings.remove("MistralApiKey");
-    settings.endGroup();
-}
-
-
 
 void MistralAPI::interpretChart(const QJsonObject &chartData)
 {
@@ -97,19 +34,11 @@ void MistralAPI::interpretChart(const QJsonObject &chartData)
         return;
     }
 
-    if (!hasValidApiKey()) {
-        m_lastError = "No API key set";
+    if (!GlobalFlags::activeModelLoaded) {
+        m_lastError = "No active AI model configured. Please configure one in Settings → Configure AI Models.";;
         emit error(m_lastError);
         return;
     }
-
-    /*
-    // Debug: Print the current chart type before making the request
-    qDebug() << "Interpretation requested for chart type:" << GlobalFlags::lastGeneratedChartType;
-
-    // For testing: stop here so you can check the output
-    return;
-    */
 
 
     // Create the prompt for Mistral
@@ -224,8 +153,8 @@ void MistralAPI::interpretTransits(const QJsonObject &transitData) {
         return;
     }
 
-    if (!hasValidApiKey()) {
-        m_lastError = "No API key set";
+    if (!GlobalFlags::activeModelLoaded) {
+        m_lastError = "No active AI model configured. Please configure one in Settings → Configure AI Models.";;
         emit error(m_lastError);
         return;
     }
@@ -260,54 +189,6 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
     QJsonObject systemMessage;
     systemMessage["role"] = "system";
 
-    /*
-    // Add language instruction if not English
-    if (m_language != "English") {
-        systemMessage["content"] = QString("You are an expert astrologer providing detailed and insightful "
-                                           "interpretations of %1 charts. Analyze the following chart data "
-                                           "and provide a comprehensive reading covering personality traits, "
-                                           "strengths, challenges, and life path insights. Be specific about "
-                                           "what each planet position, house placement, and major aspect means for "
-                                           "the individual. IMPORTANT: Your entire response must be in %2, using Markdown or plain text only. "
-                                           "Do NOT output JSON, XML, YAML, or any other structured data formats.")
-                                       .arg(GlobalFlags::lastGeneratedChartType)
-                                       .arg(m_language);
-    } else {
-        systemMessage["content"] = QString("You are an expert astrologer providing detailed and insightful "
-                                   "interpretations of %1 charts. Analyze the following chart data "
-                                   "and provide a comprehensive reading covering personality traits, "
-                                   "strengths, challenges, and life path insights. Be specific about "
-                                   "what each planet position, house placement, and major aspect means for the individual. "
-                                   "IMPORTANT: Your entire response must be in Markdown or plain text only. "
-                                   "Do NOT output JSON, XML, YAML, or any other structured data formats.")
-                                       .arg(GlobalFlags::lastGeneratedChartType);
-
-    }
-
-
-    if (GlobalFlags::lastGeneratedChartType == "Zodiac Signs") {
-        systemMessage["content"] = QString(
-            "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
-            "Analyze the following planetary chart data and provide detailed insights for each of the 12 zodiac signs (Aries through Pisces). "
-            "For each sign, treat it as the focal point:\n"
-            "- Consider which planets are currently in that sign.\n"
-            "- Consider which aspects involve the planet ruling that sign (e.g., Mars for Aries, Venus for Taurus, etc.).\n"
-            "- Describe how these planetary positions and aspects influence the sign's strengths, challenges, personality traits, life path, career/work, family and finances.\n"
-            "Make each sign’s narrative concise but detailed (about 12–15 sentences), like a magazine-style horoscope, with practical advice where appropriate.\n"
-            "IMPORTANT: Format the output in Markdown or plain text in %2, with each zodiac sign clearly separated as its own paragraph or section. "
-            "Do NOT output JSON, XML, YAML, or any other structured data formats."
-            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
-    } else {
-        // All other charts use the unified template
-        systemMessage["content"] = QString(
-            "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
-            "Analyze the following chart data and provide a comprehensive reading covering personality traits, "
-            "strengths, challenges, and life path insights. Be specific about what each planet position, house placement, "
-            "and major aspect means for the individual. IMPORTANT: Your entire response must be in %2, using Markdown or plain text only. "
-            "Do NOT output JSON, XML, YAML, or any other structured data formats."
-            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
-    }
-    */
 
     if (GlobalFlags::lastGeneratedChartType == "Zodiac Signs") {
         systemMessage["content"] = QString(
@@ -381,8 +262,8 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
     QJsonObject requestObj;
     requestObj["model"] = m_model;
     requestObj["messages"] = messages;
-    requestObj["temperature"] = 0.7;
-    requestObj["max_tokens"] = 8192;
+    requestObj["temperature"] = m_temperature;  // Use member variable
+    requestObj["max_tokens"] = m_maxTokens;     // Use member variable
 
     return requestObj;
 }
@@ -473,9 +354,36 @@ QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
     QJsonObject requestObj;
     requestObj["model"] = m_model;
     requestObj["messages"] = messages;
-    requestObj["temperature"] = 0.7;
-    requestObj["max_tokens"] = 8192;
+    requestObj["temperature"] = m_temperature;  // Use member variable
+    requestObj["max_tokens"] = m_maxTokens;     // Use member variable
 
     return requestObj;
 }
 
+bool MistralAPI::loadActiveModel()
+{
+    QSettings settings;
+    settings.beginGroup("Models");
+
+    // Get the active model name
+    QString activeModelName = settings.value("ActiveModel").toString();
+    if (activeModelName.isEmpty()) {
+        m_lastError = "No active model selected";
+        return false;
+    }
+
+    // Load only the active model's settings
+    settings.beginGroup(activeModelName);
+    m_apiEndpoint = settings.value("endpoint").toString();
+    m_apiKey = settings.value("apiKey").toString();
+    m_model = settings.value("modelName").toString();
+    m_temperature = settings.value("temperature", 0.7).toDouble();
+    m_maxTokens = settings.value("maxTokens", 8192).toInt();
+
+
+    
+    settings.endGroup();
+    settings.endGroup();
+
+    return !m_apiEndpoint.isEmpty() && !m_model.isEmpty();
+}

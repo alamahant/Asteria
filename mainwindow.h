@@ -58,6 +58,8 @@
 #include<QProgressDialog>
 #include<QPoint>
 #include"donationdialog.h"
+#include "model.h"
+#include "modelselectordialog.h"
 
 struct ParsedDate {
     int year;   // Astronomical year (negative for BCE, 0 for 1 BCE, etc.)
@@ -93,7 +95,6 @@ private slots:
     void showAboutDialog();
 
     // Settings
-    void configureApiKey();
 
     // Error handling
     void handleError(const QString &errorMessage);
@@ -316,7 +317,8 @@ private:
 private slots:
     void calculateZodiacSignsChart();
     void copySavePath();
+    void configureAIModels();
 private:
-
+     QVector<Model> allModels;
 };
 #endif // MAINWINDOW_H

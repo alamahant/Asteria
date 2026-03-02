@@ -36,10 +36,19 @@ int main(int argc, char *argv[])
         g_astroFontFamily = QFontDatabase::applicationFontFamilies(fontId).at(0);
     }
 
-    QCoreApplication::setOrganizationName("");  // Instead of "Your Organization"
+    //QCoreApplication::setOrganizationName("Alamahant");
+
+#ifdef FLATHUB_BUILD
+    QCoreApplication::setOrganizationName("");
+
+#else
+    QCoreApplication::setOrganizationName("Alamahant");
+
+#endif
+
     QCoreApplication::setApplicationName("Asteria");
     QDir().mkpath(GlobalFlags::appDir);
-    QCoreApplication::setApplicationVersion("2.1.4");
+    QCoreApplication::setApplicationVersion("2.1.5");
 
 
     MainWindow w;

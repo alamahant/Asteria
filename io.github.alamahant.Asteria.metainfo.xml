@@ -7,6 +7,9 @@
   <summary>AI Reads your Birthchart</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>AGPL-3.0-or-later</project_license>
+
+  <url type="vcs-browser">https://github.com/alamahant/Asteria</url>
+
   <description>
     <p>
       Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology.
@@ -87,6 +90,19 @@
 
   <releases>
 
+<release version="2.4.5" date="2026-03-02">
+  <description>
+    <p>Multi-Provider AI Model Selector:</p>
+    <ul>
+      <li>Added ModelSelectorDialog to add, edit, delete and set active AI models</li>
+      <li>Support for Mistral, OpenAI, Groq, Ollama and any OpenAI-compatible API</li>
+      <li>Model configurations (endpoint, API key, model name, temperature, max tokens) stored in QSettings</li>
+      <li>Refactored MistralAPI to be provider-agnostic with dynamic model loading</li>
+      <li>Added "Check AI Model Status" menu option showing active model details</li>
+      <li>Informational tooltip listing compatible and incompatible providers</li>
+    </ul>
+  </description>
+</release>
 
 <release version="2.1.4" date="2026-01-18">
   <description>

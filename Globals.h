@@ -10,6 +10,7 @@ namespace GlobalFlags {
 extern bool additionalBodiesEnabled;
 extern QString lastGeneratedChartType;
 extern QString appDir;
+extern bool activeModelLoaded;
 }
 
 // Global orb setting functions

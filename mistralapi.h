@@ -15,12 +15,7 @@ public:
     explicit MistralAPI(QObject *parent = nullptr);
     ~MistralAPI();
 
-    // API key management
-    void setApiKey(const QString &key);
-    bool saveApiKey(const QString &key);
-    bool loadApiKey();
-    bool hasValidApiKey() const;
-    void clearApiKey();
+
 
     // Chart interpretation
     void interpretChart(const QJsonObject &chartData);
@@ -54,7 +49,8 @@ private:
     QString m_apiKey;
     QString m_apiEndpoint;
     QString m_model;
-
+    int m_maxTokens;
+    double m_temperature;
     // State
     QString m_lastError;
     bool m_requestInProgress;
@@ -68,6 +64,8 @@ public slots:
     void setLanguage(const QString& language) {
         m_language = language;
     }
+    bool loadActiveModel();
+
 };
 
 #endif // MISTRALAPI_H

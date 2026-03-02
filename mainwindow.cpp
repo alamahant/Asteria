@@ -1002,8 +1002,75 @@ void MainWindow::setupMenus()
 
     // Settings menu
     QMenu *settingsMenu = menuBar()->addMenu("&Settings");
-    QAction *apiKeyAction = settingsMenu->addAction("Configure &API Key...", this, &MainWindow::configureApiKey);
-    apiKeyAction->setIcon(QIcon::fromTheme("dialog-password"));
+
+
+    QAction *aiModelsAction = settingsMenu->addAction("Configure AI &Models...", this, &MainWindow::configureAIModels);
+
+
+
+    QAction *checkModelAction = settingsMenu->addAction("Check AI Model &Status", this, [this]() {
+        if (!GlobalFlags::activeModelLoaded) {
+            m_mistralApi.loadActiveModel();
+            if (!GlobalFlags::activeModelLoaded) {
+
+                QMessageBox msgBox(this);
+                msgBox.setWindowTitle("AI Model Not Configured");
+                msgBox.setText("No active AI model found. You need to configure a model to get chart interpretations.");
+                msgBox.setInformativeText("Would you like to configure one now?\n\n"
+                                          "Note: If you've been using Mistral, you can add it as a provider with your API key.");
+
+                QPushButton *configureButton = msgBox.addButton("Configure Models", QMessageBox::ActionRole);
+                QPushButton *closeButton = msgBox.addButton(QMessageBox::Close);
+
+                msgBox.exec();
+
+                if (msgBox.clickedButton() == configureButton) {
+                    configureAIModels();
+                }
+            }
+        } else {
+            // Load the active model settings
+            QSettings settings;
+            settings.beginGroup("Models");
+            QString activeModelName = settings.value("ActiveModel").toString();
+            settings.beginGroup(activeModelName);
+
+            QString provider = settings.value("provider").toString();
+            QString endpoint = settings.value("endpoint").toString();
+            QString modelName = settings.value("modelName").toString();
+            QString apiKey = settings.value("apiKey").toString();
+            double temperature = settings.value("temperature", 0.7).toDouble();
+            int maxTokens = settings.value("maxTokens", 8192).toInt();
+
+            settings.endGroup();
+            settings.endGroup();
+
+            // Build status message
+            QString statusMessage = QString(
+                        "<b>Active Model:</b> %1<br><br>"
+                        "<b>Provider:</b> %2<br>"
+                        "<b>Model:</b> %3<br>"
+                        "<b>Endpoint:</b> %4<br>"
+                        "<b>Temperature:</b> %5<br>"
+                        "<b>Max Tokens:</b> %6<br>"
+                        "<b>API Key:</b> %7"
+                        ).arg(activeModelName)
+                    .arg(provider)
+                    .arg(modelName)
+                    .arg(endpoint)
+                    .arg(temperature)
+                    .arg(maxTokens)
+                    .arg(apiKey.isEmpty() ? "<font color='red'><b>MISSING</b></font>" : "<font color='green'><b>Configured</b></font>");
+
+            // Check if API key is missing for cloud providers (not local)
+            if (apiKey.isEmpty() && !endpoint.contains("localhost") && !endpoint.contains("127.0.0.1")) {
+                statusMessage += "<br><br><font color='red'><b>WARNING:</b> This appears to be a cloud provider but no API key is set. Interpretations will fail.</font>";
+            }
+
+            QMessageBox::information(this, "AI Model Status", statusMessage);
+        }
+    });
+    checkModelAction->setIcon(QIcon::fromTheme("dialog-information"));
 
     // Create an action for aspect settings
     QAction *aspectSettingsAction = new QAction("&Aspect Display Settings...", this);
@@ -1012,35 +1079,6 @@ void MainWindow::setupMenus()
     // Add the action to the settings menu
     settingsMenu->addAction(aspectSettingsAction);
     //
-
-    QAction *checkKeyAction = settingsMenu->addAction("Check Key &Status", this, [this]() {
-        if (!m_mistralApi.hasValidApiKey()) {
-            QMessageBox msgBox(this);
-            msgBox.setWindowTitle("API Key Required");
-            msgBox.setText("No Mistral API key found. You need to set an API key to get chart interpretations.");
-            msgBox.setInformativeText("Get your free key at Mistral AI website.");
-            QPushButton *openUrlButton = msgBox.addButton("Visit Mistral AI", QMessageBox::ActionRole);
-            QPushButton *closeButton = msgBox.addButton(QMessageBox::Close);
-            msgBox.exec();
-
-#ifdef FLATHUB_BUILD
-            if (msgBox.clickedButton() == openUrlButton) {
-                QMessageBox infoBox;
-                infoBox.setWindowTitle("Browser Opening Not Supported");
-                infoBox.setText("Opening an external browser is not supported in Flathub.");
-                infoBox.setInformativeText("Please manually navigate to https://mistral.ai");
-                infoBox.exec();
-            }
-#else
-            if (msgBox.clickedButton() == openUrlButton) {
-                QDesktopServices::openUrl(QUrl("https://mistral.ai"));
-            }
-#endif
-        } else {
-            QMessageBox::information(this, "API Key Status", "Mistral API key is configured and ready to use.");
-        }
-    });
-    checkKeyAction->setIcon(QIcon::fromTheme("dialog-information"));
 
     // Add the Julian/Gregorian checkbox
     useJulianForPre1582Action = new QAction(tr("Use Julian calendar for dates before 15 October 1582"), this);
@@ -1541,10 +1579,13 @@ void MainWindow::getInterpretation() {
         return;
     }
 
-    if (!m_mistralApi.hasValidApiKey()) {
-        configureApiKey();
-        if (!m_mistralApi.hasValidApiKey()) {
-            return;  // User canceled API key entry
+    if (!GlobalFlags::activeModelLoaded) {
+        m_mistralApi.loadActiveModel();
+        if (!GlobalFlags::activeModelLoaded) {
+
+            QMessageBox::information(this, "AI Model Not Configured",
+                                     "No active AI model found. Please go to Settings → Configure AI Models to set up a model.");
+            return;
         }
     }
 
@@ -1975,37 +2016,6 @@ void MainWindow::printChart() {
 
 
 
-void MainWindow::configureApiKey() {
-    QString currentKey = m_mistralApi.getApiKey();
-    bool ok;
-
-    // Create a masked version of the current key for display
-    QString maskedKey;
-    if (!currentKey.isEmpty()) {
-        // Show only first 4 and last 4 characters, mask the rest with asterisks
-        if (currentKey.length() > 8) {
-            maskedKey = currentKey.left(4) + QString(currentKey.length() - 8, '*') + currentKey.right(4);
-        } else {
-            maskedKey = QString(currentKey.length(), '*');
-        }
-    }
-
-    QString apiKey = QInputDialog::getText(this, "Mistral API Key",
-                                           "Enter your Mistral API key:",
-                                           QLineEdit::Password, maskedKey, &ok);
-    if (ok) {
-        if (apiKey.isEmpty()) {
-            QMessageBox::warning(this, "Warning", "No API key provided. "
-                                                  "Chart interpretation will not be available.");
-        } else if (apiKey == maskedKey) {
-            // User didn't change the masked key, keep using the current one
-            statusBar()->showMessage("API key unchanged", 3000);
-        } else {
-            m_mistralApi.saveApiKey(apiKey);
-            statusBar()->showMessage("API key saved", 3000);
-        }
-    }
-}
 
 /*
 void MainWindow::showAboutDialog()
@@ -2042,18 +2052,18 @@ void MainWindow::showAboutDialog()
 {
     QString version = QCoreApplication::applicationVersion();
     QMessageBox::about(
-        this,
-        "About Asteria",
-        QString("<h3>Asteria - Astrological Chart Analysis</h3>"
-                "<p>Version %1</p>"
-                "<p>A tool for calculating and interpreting astrological charts "
-                "with AI-powered analysis.</p>"
-                "<p>Available for Linux, Windows, Macos and Flatpak.</p>"
-                "<p><a href=\"https://github.com/alamahant/Asteria/releases/latest\">"
-                "https://github.com/alamahant/Asteria/releases/latest</a></p>"
-                "<p>© 2025 Alamahant</p>")
-            .arg(version)
-    );
+                this,
+                "About Asteria",
+                QString("<h3>Asteria - Astrological Chart Analysis</h3>"
+                        "<p>Version %1</p>"
+                        "<p>A tool for calculating and interpreting astrological charts "
+                        "with AI-powered analysis.</p>"
+                        "<p>Available for Linux, Windows, Macos and Flatpak.</p>"
+                        "<p><a href=\"https://github.com/alamahant/Asteria/releases/latest\">"
+                        "https://github.com/alamahant/Asteria/releases/latest</a></p>"
+                        "<p>© 2025 Alamahant</p>")
+                .arg(version)
+                );
 }
 
 
@@ -2068,7 +2078,7 @@ void MainWindow::handleError(const QString &errorMessage)
 
 QString MainWindow::getChartFilePath(bool forSaving)
 {
-   // QString directory = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    // QString directory = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     QString filePath;
 
     if (forSaving) {
@@ -2269,6 +2279,15 @@ void MainWindow::getPrediction() {
         QMessageBox::warning(this, "No Chart", "Please calculate a birth chart first.");
         return;
     }
+
+    if (!GlobalFlags::activeModelLoaded) {
+           m_mistralApi.loadActiveModel();  // Try to reload once
+           if (!GlobalFlags::activeModelLoaded) {
+               QMessageBox::information(this, "AI Model Not Configured",
+                   "No active AI model found. Please go to Settings → Configure AI Models to set up a model.");
+               return;
+           }
+       }
 
     // Get birth details
     QDate birthDate = getBirthDate();
@@ -4043,6 +4062,17 @@ void MainWindow::showChangelog(){
 
 <h1>Changelog</h1>
 
+<h2>Version 2.4.5 (2026-03-02) <span style='color:#27ae60;'>— Multi-Provider AI Model Selector</span></h2>
+<ul>
+  <li><b>Model Selector Dialog:</b> Add, edit, delete, and set active AI models via Settings menu</li>
+  <li><b>Multi-Provider Support:</b> Works with Mistral, OpenAI, Groq, Ollama, and any OpenAI-compatible API</li>
+  <li><b>Dynamic Configuration:</b> Endpoint, API key, model name, temperature, max tokens stored in QSettings</li>
+  <li><b>API Refactor:</b> MistralAPI now provider-agnostic with loadActiveModel() method</li>
+  <li><b>Status Check:</b> New "Check AI Model Status" option showing active model details with API key warnings</li>
+  <li><b>Incompatible Notice:</b> Claude and Gemini not supported (different API formats)</li>
+</ul>
+
+
 <h2>Version 2.1.3 (2026-01-02) <span style='color:#27ae60;'>&mdash; Data Management & Organization Update</span></h2>
 <ul>
   <li><b>Dedicated Documents Directory:</b> Created a dedicated <code>~/Documents/Asteria</code> directory where all charts and user data are now saved and loaded from for improved accessibility and organization.</li>
@@ -4274,7 +4304,7 @@ void MainWindow::CalculateTransits() {
         displayRawTransitData(transitData);
         QMessageBox::information(this, "Transit Data", "Transit data has been generated successfully.\n"
                                                        "Please Navigate to the 'Raw Transit Data Table' to view the data.\n"
-                                                        "You may use 'Tools->Transit Filter' for advanced filtering.");
+                                                       "You may use 'Tools->Transit Filter' for advanced filtering.");
 
 
     } else {
@@ -6068,6 +6098,44 @@ void MainWindow::showNewFeaturesDialog() {
         // Set the new features content
         QString featuresText = R"(
 
+<h1 style="color:#27ae60;">What's New in Version 2.4.5</h1>
+<p><i>March 2, 2026</i></p>
+
+<h2 style="color:#2980b9;">✨ Multi-Provider AI Model Selector</h2>
+<p>
+A complete overhaul of AI provider management! You can now configure and switch between multiple AI models directly from the Settings menu.
+</p>
+<ul>
+<li><b>Model Selector Dialog</b>: Add, edit, delete, and set active AI models with ease</li>
+<li><b>Persistent Storage</b>: All model configurations saved in <code>QSettings</code></li>
+<li><b>Provider Support</b>: Works with Mistral, OpenAI (ChatGPT), Groq, Ollama (local), and any OpenAI-compatible API</li>
+</ul>
+
+<h2 style="color:#2980b9;">🔧 API Improvements</h2>
+<ul>
+<li>Refactored <code>MistralAPI</code> to be provider-agnostic with dynamic configuration loading</li>
+<li>Temperature and max tokens now loaded from model settings instead of hardcoded values</li>
+<li>Removed deprecated API key management methods</li>
+</ul>
+
+<h2 style="color:#2980b9;">🖥️ Enhanced User Experience</h2>
+<ul>
+<li><b>Check AI Model Status</b>: New menu option showing active model details with color-coded API key status</li>
+<li><b>Smart Warnings</b>: Alerts when cloud providers are missing API keys</li>
+<li><b>Automatic Reload</b>: Model configuration updates instantly when changed</li>
+<li><b>Informational Tooltip</b>: Lists compatible providers (Mistral, OpenAI, Groq, Ollama) and incompatible ones (Claude, Gemini)</li>
+</ul>
+
+<h2 style="color:#2980b9;">📁 New Files Added</h2>
+<ul>
+<li><code>model.h</code> - Model struct definition</li>
+<li><code>modelselectordialog.h/.cpp</code> - Model management interface</li>
+</ul>
+
+<div style="background-color:#f8f9fa; border-left:4px solid #27ae60; padding:10px; margin-top:20px;">
+<p><b>Note:</b> If you've been using Mistral, you can continue with your existing API key or explore new providers like Groq (free tier) or Ollama (local models).</p>
+</div>
+
 <h1 style="color:#27ae60;">What’s New in Version 2.1.3</h1>
 <p>
 This update introduces a streamlined data management system with a dedicated documents directory, making your astrological charts and materials more accessible and easier to manage.
@@ -6627,15 +6695,15 @@ void MainWindow::calculateZodiacSignsChart()
     // Show info dialog before proceeding
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(
-        this,
-        "Zodiac Signs Chart",
-        "The Zodiac Signs Chart looks like a Birth chart but provides general astrological interpretations "
-        "for all 12 zodiac signs based on planetary positions at a chosen date, time, and location.\n\n"
-        "This chart's AI interpretations are not personal birth readings but give magazine-style forecasts. "
-        "Please make sure to populate the relevant date, time, and location fields before proceeding.\n\n"
-        "Do you want to continue?",
-        QMessageBox::Ok | QMessageBox::Cancel
-    );
+                this,
+                "Zodiac Signs Chart",
+                "The Zodiac Signs Chart looks like a Birth chart but provides general astrological interpretations "
+                "for all 12 zodiac signs based on planetary positions at a chosen date, time, and location.\n\n"
+                "This chart's AI interpretations are not personal birth readings but give magazine-style forecasts. "
+                "Please make sure to populate the relevant date, time, and location fields before proceeding.\n\n"
+                "Do you want to continue?",
+                QMessageBox::Ok | QMessageBox::Cancel
+                );
 
     if (reply == QMessageBox::Cancel) {
         return;
@@ -6712,7 +6780,29 @@ void MainWindow::copySavePath()
 #endif
 
     QApplication::clipboard()->setText(dataDirPath);
-        // Optional: Show a confirmation message
+    // Optional: Show a confirmation message
     QMessageBox::information(this, "Path Copied",
-            QString("Save location copied to clipboard:\n%1").arg(dataDirPath));
+                             QString("Save location copied to clipboard:\n%1").arg(dataDirPath));
+}
+
+void MainWindow::configureAIModels()
+{
+    ModelSelectorDialog dlg(this);
+
+    // Connect to activeModelChanged signal
+    connect(&dlg, &ModelSelectorDialog::activeModelChanged, this, [this](const QString &modelName) {
+        // When active model changes, reload it in MistralAPI
+        // This will update GlobalFlags::activeModelLoaded internally
+        m_mistralApi.loadActiveModel();
+
+        // Optional: Show status message
+        statusBar()->showMessage(tr("Active model changed to: %1").arg(modelName), 3000);
+    });
+
+    dlg.exec();  // Just show the dialog, no need to process results
+
+    m_mistralApi.loadActiveModel();
+
+    // The dialog saves changes to QSettings automatically
+    // The MistralAPI class will read the active model from QSettings when needed
 }

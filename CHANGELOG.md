@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 2.4.5 (2026-03-02) – Multi-Provider AI Model Selector
+## Version 2.1.5 (2026-03-02) – Multi-Provider AI Model Selector
 
 ### Model Management
 - Added `ModelSelectorDialog` for managing multiple AI model configurations

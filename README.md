@@ -4,8 +4,12 @@
 
 Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology. Calculate, visualize, and interpret natal charts with precision and insight.
 
-Available in Flathub:
-https://flathub.org/en/apps/search?q=alamahant
+## Download Options
+
+| Platform | Where to Get It |
+| :--- | :--- |
+| **Linux** | [Flathub](https://flathub.org/apps/io.github.alamahant.Asteria) |
+| **Windows** | [Buy on Gumroad](https://jnanadhakini.gumroad.com/l/kwcxvj) - Pre-compiled binary, no compilation needed |
 
 ## Features
 

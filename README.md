@@ -8,7 +8,7 @@ Asteria is a comprehensive astrological chart application that combines traditio
 
 | Platform | Where to Get It |
 | :--- | :--- |
-| **Linux** | [Flathub](https://flathub.org/apps/io.github.alamahant.Asteria) |
+| **Linux** | [Flathub](https://flathub.org/en/apps/search?q=alamahant) |
 | **Windows** | [Buy on Gumroad](https://jnanadhakini.gumroad.com/l/kwcxvj) - Pre-compiled binary, no compilation needed |
 
 ## Features

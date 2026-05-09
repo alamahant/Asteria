@@ -9,7 +9,7 @@ Asteria is a comprehensive astrological chart application that combines traditio
 | Platform | Where to Get It |
 | :--- | :--- |
 | **Linux** | [Flathub](https://flathub.org/en/apps/search?q=alamahant) |
-| **Windows** | [Buy on Gumroad](https://jnanadhakini.gumroad.com/l/kwcxvj) - Pre-compiled binary, no compilation needed |
+| **Windows and Mac** | [Buy on Gumroad](https://jnanadhakini.gumroad.com/) - Pre-compiled binary, no compilation needed |
 
 ## Features
 

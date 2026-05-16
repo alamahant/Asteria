@@ -90,7 +90,7 @@
 
   <releases>
 
-<release version="2.1.6" date="2026-05-16">
+<release version="2.4.6" date="2026-05-16">
   <description>
     <p>Major cleanup and size reduction:</p>
     <ul>

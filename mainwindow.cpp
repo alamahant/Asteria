@@ -625,7 +625,6 @@ void MainWindow::setupInputDock() {
     birthLayout->addRow("Location:", m_selectLocationButton);
 
     // After all widgets are added to the layout and the form is shown,
-    // you might need to call this in the showEvent or after setup:
     m_selectLocationButton->setMinimumWidth(locationSearchEdit->width());
 
 
@@ -827,7 +826,7 @@ void MainWindow::setupInterpretationDock() {
     clearTextButton->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
     // Connect using a lambda
     connect(clearTextButton, &QPushButton::clicked, this, [this]() {
-        m_currentInterpretation.clear();              // Clear your stored interpretations
+        m_currentInterpretation.clear();              // Clear stored interpretations
         m_interpretationtextEdit->clear();           // Clear the QTextEdit content
     });
 
@@ -2047,7 +2046,7 @@ void MainWindow::showAboutDialog()
     );
 }
 */
-
+/*
 void MainWindow::showAboutDialog()
 {
     QString version = QCoreApplication::applicationVersion();
@@ -2065,8 +2064,31 @@ void MainWindow::showAboutDialog()
                 .arg(version)
                 );
 }
+*/
 
 
+void MainWindow::showAboutDialog()
+{
+    QString version = QCoreApplication::applicationVersion();
+    QMessageBox::about(
+        this,
+        "About Asteria",
+        QString("<h3>Asteria - Astrological Chart Analysis</h3>"
+                "<p>Version %1</p>"
+                "<p>Free for Linux on Flathub.<br>"
+                "Pre‑compiled binaries for <b>Windows & macOS</b> are available here:</p>"
+                "<p><a href=\"https://jnanadhakini.gumroad.com/l/kwcxvj\">"
+                "➡️ https://jnanadhakini.gumroad.com/l/kwcxvj</a></p>"
+                "<p>View all Windows/macOS apps:<br>"
+                "<a href=\"https://jnanadhakini.gumroad.com\">"
+                "https://jnanadhakini.gumroad.com</a></p>"
+                "<p>Source code & Linux version:<br>"
+                "<a href=\"https://github.com/alamahant/Asteria\">"
+                "https://github.com/alamahant/Asteria</a></p>"
+                "<p>© 2025 Alamahant</p>")
+        .arg(version)
+    );
+}
 
 void MainWindow::handleError(const QString &errorMessage)
 {

@@ -1,5 +1,27 @@
 # Changelog
 
+## Version 2.1.6 (2026-05-16) – Major Cleanup & Size Reduction
+
+### Cleanup & Packaging
+- Major Flatpak cleanup reducing overall application size significantly
+- Removed unnecessary development files, headers, and build artifacts from runtime bundle
+- Cleaned up packaging structure for a more minimal and efficient deployment
+
+### Swiss Ephemeris
+- Confirmed static integration of Swiss Ephemeris engine
+- Runtime now only depends on `.se1` ephemeris data files
+- Removed unused ephemeris directories (`sat/`, `ep4/`) from final package
+
+### Build Improvements
+- Improved separation between build-time and runtime assets in CMake/Flatpak setup
+- More efficient and cleaner deployment process for Flathub builds
+
+### Stability
+- No functional changes to astrology calculations or AI features
+- Fully backward compatible with previous versions
+
+---
+
 ## Version 2.1.5 (2026-03-02) – Multi-Provider AI Model Selector
 
 ### Model Management

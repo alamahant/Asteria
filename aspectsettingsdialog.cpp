@@ -1,5 +1,5 @@
 #include "aspectsettingsdialog.h"
-#include "Globals.h" // Include your globals file with AspectSettings
+#include "Globals.h" // Include globals file with AspectSettings
 
 #include <QPushButton>
 #include <QLabel>

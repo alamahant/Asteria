@@ -64,7 +64,8 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
 
     //QLabel *infoLabel = new QLabel(tr("Note: Works best with Mistral, OpenAI (ChatGPT), and Ollama (local) models."));
     //infoLabel->setToolTip("");
-    QLabel *infoLabel = new QLabel(tr("Note: Works with any OpenAI-compatible API model.Hover for details"));
+    QLabel *infoLabel = new QLabel(tr("Note: Works with any OpenAI-compatible API model.Hover for details.\n"
+                                      "You MUST restart Asteria after configuring your first model."));
     infoLabel->setToolTip(tr(
         "<b>✅ Fully compatible (OpenAI format):</b><br>"
         "• Mistral<br>"
@@ -81,6 +82,7 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
         "• Gemini (Google)<br>"
         "• Cohere<br><br>"
         "For local models: Install Ollama, use endpoint http://localhost:11434/v1/chat/completions"
+
     ));
 
     mainLayout->addWidget(infoLabel);

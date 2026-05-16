@@ -48,7 +48,8 @@ int main(int argc, char *argv[])
 
     QCoreApplication::setApplicationName("Asteria");
     QDir().mkpath(GlobalFlags::appDir);
-    QCoreApplication::setApplicationVersion("2.1.5");
+    QCoreApplication::setApplicationVersion("2.1.6");
+
 
 
     MainWindow w;

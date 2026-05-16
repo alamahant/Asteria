@@ -90,7 +90,19 @@
 
   <releases>
 
-<release version="2.1.5" date="2026-03-02">
+<release version="2.1.6" date="2026-05-16">
+  <description>
+    <p>Major cleanup and size reduction:</p>
+    <ul>
+      <li>Reduced Flatpak size by removing build-time artifacts and unused files</li>
+      <li>Cleaned runtime bundle (headers, docs, metadata, and static leftovers)</li>
+      <li>Removed unused ephemeris directories sat and ep4</li>
+      <li>Improved packaging structure and build/runtime separation</li>
+    </ul>
+  </description>
+</release>
+
+<release version="2.4.5" date="2026-03-02">
   <description>
     <p>Multi-Provider AI Model Selector:</p>
     <ul>
@@ -104,16 +116,7 @@
   </description>
 </release>
 
-<release version="2.1.4" date="2026-01-18">
-  <description>
-    <p>KDE runtime upgrade:</p>
-    <ul>
-      <li>org.kde.Platform runtime has been updated to version '6.10' for improved functioning and future proofing</li>
-      <li>Increased and emboldened  Aspectarian widget header font, for better visibility and ease of use</li>
-    </ul>
 
-  </description>
-</release>
 
 <release version="2.1.4" date="2026-01-18">
   <description>

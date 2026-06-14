@@ -6,6 +6,8 @@
 #include <QString>
 #include"Globals.h"
 #include<QDir>
+#include<QPalette>
+#include<QStyleFactory>
 
 namespace {
 double g_orbMax = 8.0; // Default orb value
@@ -26,7 +28,26 @@ QString g_astroFontFamily;
 int main(int argc, char *argv[])
 {
 
+    QDir().mkpath(GlobalFlags::sharesDirPath);
+
     QApplication a(argc, argv);
+
+#ifndef FLATHUB_BUILD
+
+    a.setStyle(QStyleFactory::create("Fusion"));
+
+    QPalette lightPalette;
+    lightPalette.setColor(QPalette::Window, Qt::white);
+    lightPalette.setColor(QPalette::WindowText, Qt::black);
+    lightPalette.setColor(QPalette::Base, Qt::white);
+    lightPalette.setColor(QPalette::Text, Qt::black);
+    lightPalette.setColor(QPalette::Button, QColor(240, 240, 240));
+    lightPalette.setColor(QPalette::ButtonText, Qt::black);
+    lightPalette.setColor(QPalette::Highlight, QColor(0, 120, 215));
+    lightPalette.setColor(QPalette::HighlightedText, Qt::white);
+
+    a.setPalette(lightPalette);
+#endif
 
     // Load custom astronomical font
     int fontId = QFontDatabase::addApplicationFont(":/resources/AstromoonySans.ttf");
@@ -48,7 +69,7 @@ int main(int argc, char *argv[])
 
     QCoreApplication::setApplicationName("Asteria");
     QDir().mkpath(GlobalFlags::appDir);
-    QCoreApplication::setApplicationVersion("2.4.6");
+    QCoreApplication::setApplicationVersion("2.4.7");
 
 
 

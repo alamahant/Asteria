@@ -60,6 +60,7 @@
 #include"donationdialog.h"
 #include "model.h"
 #include "modelselectordialog.h"
+#include"socialshare.h"
 
 struct ParsedDate {
     int year;   // Astronomical year (negative for BCE, 0 for 1 BCE, etc.)
@@ -318,7 +319,14 @@ private slots:
     void calculateZodiacSignsChart();
     void copySavePath();
     void configureAIModels();
+    void onShareClicked();
+    void openFolder();
+    void createSymlink();
+
 private:
      QVector<Model> allModels;
+     //sharing
+     void setupShareButton();
+     SocialShare* m_socialShare;
 };
 #endif // MAINWINDOW_H

@@ -11,6 +11,7 @@ extern bool additionalBodiesEnabled;
 extern QString lastGeneratedChartType;
 extern QString appDir;
 extern bool activeModelLoaded;
+extern QString sharesDirPath;
 }
 
 // Global orb setting functions

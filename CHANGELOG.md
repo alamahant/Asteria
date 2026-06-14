@@ -1,5 +1,32 @@
 # Changelog
 
+## Version 2.4.7 (2026-06-14) – Share Features & MSA Language Support
+
+### New Features
+- **Chart Sharing**: Added share functionality to capture chart screenshots with watermark and copy to clipboard with social sharing dialog
+- **File Management**:
+  - `Open Folder` action to quickly access application data directory
+  - `Create Symlink` action with Flatpak permission handling to create convenient access links from home directory
+- **MSA Language Support**: Added Modern Standard Arabic (MSA) as supported language for AI interpretation of astrological charts
+
+### Improvements
+- Screenshot capture includes "Created with Asteria" watermark before sharing
+- Share dialog supports both text and image data via clipboard
+- Symlink creation includes Flatpak permission guidance for Flathub builds
+- Symlink feature handles existing files/links with overwrite confirmation
+
+### User Experience
+- Social share dialog opens non-modally, allowing continued work
+- Symlink creation provides clear error messages for permission or filesystem issues
+- Flatpak users receive instructions for granting home directory access when needed
+
+### Stability
+- Proper null checks and existence verification for file operations
+- Graceful handling of missing directories or symlink creation failures
+- No regression to existing chart calculations or AI features
+
+---
+
 ## Version 2.4.6 (2026-05-16) – Major Cleanup & Size Reduction
 
 ### Cleanup & Packaging

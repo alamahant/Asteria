@@ -29,7 +29,13 @@ void PlanetListWidget::setupUi()
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setShowGrid(true);
+
+#ifndef FLATHUB_BUILD
+    m_table->setAlternatingRowColors(false);
+#else
     m_table->setAlternatingRowColors(true);
+#endif
+
     m_table->verticalHeader()->setVisible(false);
     m_table->setSizeAdjustPolicy(QAbstractScrollArea::AdjustIgnored);
     m_table->setWordWrap(false);
@@ -239,7 +245,9 @@ QColor PlanetListWidget::getColorForSign(const QString &sign)
     if (sign == "Aries" || sign == "Leo" || sign == "Sagittarius") {
         return QColor(255, 200, 200);  // Light red for Fire
     } else if (sign == "Taurus" || sign == "Virgo" || sign == "Capricorn") {
-        return QColor(255, 255, 200);  // Light yellow for earth 255, 255, 200
+        //return QColor(255, 255, 200);  // Light yellow for earth 255, 255, 200
+        //return QColor(240, 220, 150);  // Warm golden earth tone
+        return QColor(255, 245, 160);  // Light golden
 
     } else if (sign == "Gemini" || sign == "Libra" || sign == "Aquarius") {
         return QColor(200, 255, 200);  // Light green for Air 200, 255, 200

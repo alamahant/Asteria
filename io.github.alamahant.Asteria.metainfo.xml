@@ -90,6 +90,17 @@
 
   <releases>
 
+<release version="2.4.7" date="2026-06-14">
+  <description>
+    <p>Share features and MSA language support:</p>
+    <ul>
+      <li>Added chart screenshot capture with watermark and share dialog</li>
+      <li>Added Open Folder and Create Symlink actions with Flatpak permission handling</li>
+      <li>Added Modern Standard Arabic (MSA) for AI chart interpretations</li>
+    </ul>
+  </description>
+</release>
+
 <release version="2.4.6" date="2026-05-16">
   <description>
     <p>Major cleanup and size reduction:</p>

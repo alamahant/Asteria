@@ -31,7 +31,7 @@
 #include<QScrollBar>
 #include"Globals.h"
 #include"aspectsettingsdialog.h"
-#include <QCheckBox>  // Add this include if still needed
+#include <QCheckBox>
 #include <QRegularExpression>
 #include<QClipboard>
 #include<QDrag>
@@ -41,6 +41,10 @@
 #include<QDropEvent>
 #include<QMimeData>
 #include<QProcess>
+#include"socialsharedialog.h"
+#include<QCoreApplication>
+#include<QDesktopServices>
+#include<QApplication>
 
 extern QString g_astroFontFamily;
 
@@ -55,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_chartCalculated(false)
     , m_transitDialog(nullptr)
     , m_dragStartPosition(0, 0) // Initialize drag start position
+    , m_socialShare(new SocialShare(this))
 {
     setAcceptDrops(true);
     preloadMapResources();
@@ -85,6 +90,8 @@ MainWindow::MainWindow(QWidget *parent)
     QTimer::singleShot(0, this, [this]() {
         this->resize(1200, 800);
     });
+
+    setupShareButton();
 }
 
 MainWindow::~MainWindow()
@@ -817,6 +824,8 @@ void MainWindow::setupInterpretationDock() {
     languageComboBox->addItem("Portuguese");
     languageComboBox->addItem("Hindi");
     languageComboBox->addItem("Chinese (Simplified)");
+    languageComboBox->addItem("Modern Standard Arabic");
+
     languageComboBox->setCurrentIndex(0);
     languageComboBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
 
@@ -964,6 +973,16 @@ void MainWindow::setupMenus()
     printAction->setShortcut(QKeySequence::Print);
     printAction->setIcon(QIcon::fromTheme("document-print"));
 
+    fileMenu->addSeparator();
+
+
+    QAction *openFolderAction = fileMenu->addAction("&Open Data Directory");
+    connect(openFolderAction, &QAction::triggered, this, &MainWindow::openFolder);
+    fileMenu->addSeparator();
+
+    fileMenu->addSeparator();
+    QAction *createSymlinkAction = fileMenu->addAction(QString("Create Shortcut to %1 Data").arg(QApplication::applicationName()));
+    connect(createSymlinkAction, &QAction::triggered, this, &MainWindow::createSymlink);
     fileMenu->addSeparator();
 
     // Exit
@@ -4084,6 +4103,25 @@ void MainWindow::showChangelog(){
 
 <h1>Changelog</h1>
 
+<h2>Version 2.4.7 (2026-06-14) <span style='color:#27ae60;'>— Chart Sharing & MSA Language Support</span></h2>
+<ul>
+  <li><b>Chart Sharing:</b> Capture chart screenshots with watermark and share via social dialog</li>
+  <li><b>File Management:</b> Open Folder and Create Symlink actions with Flatpak permission handling</li>
+  <li><b>MSA Support:</b> Added Modern Standard Arabic for AI chart interpretations</li>
+  <li><b>Clipboard Integration:</b> Copy both chart image and text description simultaneously</li>
+  <li><b>Symlink Creator:</b> Create home directory symlinks with overwrite confirmation and error handling</li>
+  <li><b>Non-modal Sharing:</b> Share dialog stays open while continuing work on charts</li>
+</ul>
+
+<h2>Version 2.4.6 (2026-05-16) <span style='color:#27ae60;'>— Major Cleanup & Size Reduction</span></h2>
+<ul>
+  <li><b>Cleanup & Packaging:</b> Major Flatpak cleanup reducing overall size; removed dev files, headers, and build artifacts from runtime bundle</li>
+  <li><b>Swiss Ephemeris:</b> Confirmed static integration; runtime now only depends on .se1 files</li>
+  <li><b>Removed Unused Files:</b> Cleaned up sat/ and ep4/ ephemeris directories from final package</li>
+  <li><b>Build Improvements:</b> Better separation between build-time and runtime assets in CMake/Flatpak</li>
+  <li><b>Stability:</b> No functional changes to astrology calculations or AI features; fully backward compatible</li>
+</ul>
+
 <h2>Version 2.4.5 (2026-03-02) <span style='color:#27ae60;'>— Multi-Provider AI Model Selector</span></h2>
 <ul>
   <li><b>Model Selector Dialog:</b> Add, edit, delete, and set active AI models via Settings menu</li>
@@ -6827,4 +6865,193 @@ void MainWindow::configureAIModels()
 
     // The dialog saves changes to QSettings automatically
     // The MistralAPI class will read the active model from QSettings when needed
+}
+
+// sharing socially
+
+void MainWindow::setupShareButton()
+{
+    // Create the share button
+    QPushButton *shareButton = new QPushButton(this);
+    shareButton->setIcon(QIcon(":/icons/share-2.svg"));
+    shareButton->setToolTip("Share this spread");
+    shareButton->setFlat(true);
+    shareButton->setFixedSize(32, 32);
+
+    /*
+    shareButton->setStyleSheet(R"(
+        QPushButton {
+            border: none;
+            border-radius: 4px;
+        }
+        QPushButton:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        QPushButton:pressed {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+    )");
+    */
+
+    // Add to menubar corner
+    /*
+    QMenuBar *menuBar = this->menuBar();
+    if (menuBar) {
+        menuBar->setCornerWidget(shareButton, Qt::TopRightCorner);
+    }
+*/
+
+    // Add to tab widget corner
+    if (m_centralTabWidget) {
+        m_centralTabWidget->setCornerWidget(shareButton, Qt::TopRightCorner);
+    }
+
+    connect(shareButton, &QPushButton::clicked, this, &MainWindow::onShareClicked);
+}
+
+void MainWindow::onShareClicked()
+{
+    // Capture the chart view
+    QPixmap screenshot = m_chartView->grab();
+
+    // Add watermark
+    QPainter watermarkPainter(&screenshot);
+    watermarkPainter.setPen(QPen(QColor(80, 80, 80, 200), 2));
+    watermarkPainter.setFont(QFont("Arial", 20, QFont::Bold));
+    watermarkPainter.drawText(screenshot.rect(), Qt::AlignBottom | Qt::AlignRight,
+                              "  Created with Asteria  ");
+    watermarkPainter.end();
+
+    // Build share text
+    QString shareText = QString("My %1 chart")
+                        .arg(GlobalFlags::lastGeneratedChartType);
+
+    // Copy to clipboard
+    QClipboard *clipboard = QApplication::clipboard();
+    QMimeData *mimeData = new QMimeData();
+    mimeData->setText(shareText);
+    mimeData->setImageData(screenshot);
+    clipboard->setMimeData(mimeData);
+
+    // Show share dialog
+    SocialShareDialog *dialog = new SocialShareDialog(shareText, screenshot, m_socialShare, this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setModal(false);
+    dialog->show();
+}
+
+void MainWindow::openFolder() {
+    // Optional: Check if the folder exists
+    QDir dir(GlobalFlags::appDir);
+    if (!dir.exists()) {
+        return;
+    }
+
+    // Convert local path to URL and open
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(GlobalFlags::appDir))) {
+    }
+}
+
+void MainWindow::createSymlink()
+{
+#ifdef FLATHUB_BUILD
+    QString msg = "";
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Flatpak Permission Required");
+    msgBox.setText(QString(
+                       "%1 is running as a Flatpak and may not have access to your home directory.\n\n"
+                       "To create a symlink, you may need to grant home directory access first.\n\n"
+                       "Option 1 - Terminal:\n"
+                       "  Grant access:\n"
+                       "    flatpak override --user --filesystem=home io.github.alamahant.%1\n\n"
+                       "  Revoke access later:\n"
+                       "    flatpak override --user --nofilesystem=home io.github.alamahant.%1\n\n"
+                       "Option 2 - Flatseal:\n"
+                       "  Install Flatseal from Flathub and grant 'Home' access to %1.\n\n"
+                       "If you have already granted permissions, you can continue."
+                       ).arg(QApplication::applicationName()));
+
+    msgBox.setIcon(QMessageBox::Information);
+
+    QPushButton *continueButton = msgBox.addButton("Continue", QMessageBox::AcceptRole);
+    QPushButton *cancelButton = msgBox.addButton("Cancel", QMessageBox::RejectRole);
+    msgBox.setDefaultButton(cancelButton);
+
+    msgBox.exec();
+
+    if (msgBox.clickedButton() != continueButton) {
+        return; // User cancelled
+    }
+
+#endif
+    // Open dialog to select destination folder
+    QString destinationDir = QFileDialog::getExistingDirectory(
+                this,
+                "Select Destination Folder for Symlink",
+                QDir::homePath(),
+                QFileDialog::ShowDirsOnly
+                );
+
+    if (destinationDir.isEmpty()) {
+        return; // User cancelled
+    }
+
+    // Create symlink path
+    QString symlinkPath = QDir(destinationDir).filePath(QApplication::applicationName());
+    // Check if symlink already exists
+    if (QFile::exists(symlinkPath) || QFileInfo(symlinkPath).isSymLink()) {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+                    this,
+                    "Symlink Exists",
+                    QString("A file or symlink already exists at:\n%1\n\nOverwrite?").arg(symlinkPath),
+                    QMessageBox::Yes | QMessageBox::No
+                    );
+
+        if (reply != QMessageBox::Yes) {
+            return;
+        }
+
+        // Remove existing file/symlink
+        if (!QFile::remove(symlinkPath)) {
+            QMessageBox::warning(this, "Error", "Could not remove existing file/symlink");
+            return;
+        }
+    }
+
+    // Create the symlink
+    QString targetPath = GlobalFlags::appDir;
+
+    if (!QFile::exists(targetPath)) {
+        QMessageBox::warning(this, "Error",
+                             QString("Target directory does not exist:\n%1").arg(targetPath));
+        return;
+    }
+
+    if (QFile::link(targetPath, symlinkPath)) {
+        QMessageBox::information(
+                    this,
+                    "Symlink Created",
+                    QString("Symlink created successfully!\n\n"
+                            "Name: %3\n"
+                            "Location: %1\n\n"
+                            "Now you can access Ermis data from:\n%2")
+                    .arg(destinationDir)
+                    .arg(symlinkPath)
+                    .arg(QApplication::applicationName())
+                    );
+    } else {
+        QMessageBox::warning(
+                    this,
+                    "Error",
+                    QString("Failed to create symlink.\n\n"
+                            "Destination: %1\n"
+                            "Target: %2\n\n"
+                            "Possible reasons:\n"
+                            "• Insufficient permissions\n"
+                            "• Invalid destination path\n"
+                            "• Filesystem doesn't support symlinks")
+                    .arg(symlinkPath)
+                    .arg(targetPath)
+                    );
+    }
 }

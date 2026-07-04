@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Asteria - Notifications and Hints</title>
+    <link>https://github.com/alamahant/Asteria/blob/master/asteria-feed.xml</link>
+    <description>Notification, Hints and Tips</description>
+    <language>en</language>
+
+    <item>
+      <title>About This Feed</title>
+      <description>Notifications,  hints and tips  about BinauralPlayer usage and features will appear here. Check back regularly or enable RSS in the app settings.</description>
+      <link>https://github.com/alamahant/Asteria/blob/master/asteria-feed.xml</link>
+      <pubDate>2026-07-04 12:00:00</pubDate>
+    </item>
+
+  </channel>
+</rss>

@@ -13,5 +13,12 @@
       <pubDate>2026-07-04 12:00:00</pubDate>
     </item>
 
+<item>
+      <title>Tesing</title>
+      <description>Notifications,  hints and tips  about Asteria usage and features will appear here. Check back regularly or enable RSS in the app settings.</description>
+      <link>https://github.com/alamahant/Asteria/blob/master/asteria-feed.xml</link>
+      <pubDate>2026-07-05 12:00:00</pubDate>
+    </item>
+
   </channel>
 </rss>

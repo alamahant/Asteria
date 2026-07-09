@@ -41,6 +41,9 @@
 #include<QDropEvent>
 #include<QMimeData>
 #include<QProcess>
+#include <QActionGroup>
+#include <QLocale>
+#include <QEvent>
 #include"socialsharedialog.h"
 #include<QCoreApplication>
 #include<QDesktopServices>
@@ -60,11 +63,12 @@ MainWindow::MainWindow(QWidget *parent)
     , m_transitDialog(nullptr)
     , m_dragStartPosition(0, 0) // Initialize drag start position
     , m_socialShare(new SocialShare(this))
+    , m_currentLanguageCode(QSettings().value("app/language", "en").toString())
 {
     setAcceptDrops(true);
     preloadMapResources();
     // Set window title and size
-    setWindowTitle("Asteria - Astrological Chart Analysis");
+    setWindowTitle(tr("Asteria - Astrological Chart Analysis"));
     setWindowIcon(QIcon(":/icons/asteria-icon-512.png"));
     // Setup UI components
     setupUi();
@@ -76,6 +80,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(languageComboBox, &QComboBox::currentTextChanged,
             &m_mistralApi, &MistralAPI::setLanguage);
+    retranslateUi();
 
     m_symbolsDialog = nullptr;
     m_howToUseDialog = nullptr;
@@ -128,6 +133,67 @@ MainWindow::~MainWindow()
         delete m_transitSearchDialog;
         m_transitSearchDialog = nullptr;
     }
+}
+
+void MainWindow::applyLanguageSelection(const QString &languageCode, bool restartApp)
+{
+    QString normalized = languageCode.toLower();
+    if (normalized.startsWith("es")) {
+        normalized = "es";
+    } else {
+        normalized = "en";
+    }
+
+    m_currentLanguageCode = normalized;
+    QSettings settings;
+    settings.setValue("app/language", normalized);
+
+    if (m_languageEnglishAction) {
+        m_languageEnglishAction->setChecked(normalized == "en");
+    }
+    if (m_languageSpanishAction) {
+        m_languageSpanishAction->setChecked(normalized == "es");
+    }
+    if (m_languageSystemAction) {
+        m_languageSystemAction->setChecked(normalized != "es" && normalized != "en");
+    }
+
+    if (restartApp && isVisible()) {
+        QString executable = QApplication::applicationFilePath();
+        QStringList arguments = QCoreApplication::arguments();
+        int langIndex = arguments.indexOf("--lang");
+        if (langIndex >= 0 && langIndex + 1 < arguments.size()) {
+            arguments[langIndex + 1] = normalized;
+        } else {
+            arguments << "--lang" << normalized;
+        }
+        QProcess::startDetached(executable, arguments);
+        close();
+    } else {
+        retranslateUi();
+    }
+}
+
+void MainWindow::retranslateUi()
+{
+    setWindowTitle(tr("Asteria - Astrological Chart Analysis"));
+    if (m_interpretationDock) {
+        m_interpretationDock->setWindowTitle(tr("Chart Interpretation"));
+    }
+    if (m_getInterpretationButton) {
+        m_getInterpretationButton->setText(tr("Get Chart Interpretation From AI"));
+    }
+    if (m_interpretationtextEdit) {
+        m_interpretationtextEdit->setPlaceholderText(tr("AI interpretation will appear here after you click the 'Get Chart Interpretation From AI' button."));
+    }
+}
+
+void MainWindow::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QMainWindow::changeEvent(event);
 }
 
 void MainWindow::setupUi()
@@ -790,7 +856,7 @@ void MainWindow::setupInputDock() {
 
 void MainWindow::setupInterpretationDock() {
     // Create interpretation dock widget
-    m_interpretationDock = new QDockWidget("Chart Interpretation", this);
+    m_interpretationDock = new QDockWidget(tr("Chart Interpretation"), this);
     m_interpretationDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     m_interpretationDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetClosable);
     //m_inputDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
@@ -799,7 +865,7 @@ void MainWindow::setupInterpretationDock() {
     QVBoxLayout *interpretationLayout = new QVBoxLayout(interpretationWidget);
 
     // Get interpretation button
-    m_getInterpretationButton = new QPushButton("Get Chart Interpretation From AI", interpretationWidget);
+    m_getInterpretationButton = new QPushButton(tr("Get Chart Interpretation From AI"), interpretationWidget);
     m_getInterpretationButton->setIcon(QIcon::fromTheme("system-search"));
     m_getInterpretationButton->setEnabled(false);
 
@@ -807,31 +873,31 @@ void MainWindow::setupInterpretationDock() {
     m_interpretationtextEdit = new QTextEdit(interpretationWidget);
     m_interpretationtextEdit->setAcceptRichText(true);
     m_interpretationtextEdit->setReadOnly(true);
-    m_interpretationtextEdit->setPlaceholderText("AI interpretation will appear here after you click the 'Get Chart Interpretation From AI' button.");
+    m_interpretationtextEdit->setPlaceholderText(tr("AI interpretation will appear here after you click the 'Get Chart Interpretation From AI' button."));
 
     // Add Language Button
     QHBoxLayout* languageLayout = new QHBoxLayout();
     //QLabel* languageLabel = new QLabel("Language:", interpretationWidget);
     languageComboBox = new QComboBox(interpretationWidget);
-    languageComboBox->setToolTip("Select AI Response Language");
-    languageComboBox->addItem("English");
-    languageComboBox->addItem("Spanish");
-    languageComboBox->addItem("French");
-    languageComboBox->addItem("German");
-    languageComboBox->addItem("Italian");
-    languageComboBox->addItem("Russian");
-    languageComboBox->addItem("Greek");
-    languageComboBox->addItem("Portuguese");
-    languageComboBox->addItem("Hindi");
-    languageComboBox->addItem("Chinese (Simplified)");
-    languageComboBox->addItem("Modern Standard Arabic");
+    languageComboBox->setToolTip(tr("Select AI Response Language"));
+    languageComboBox->addItem(tr("English"));
+    languageComboBox->addItem(tr("Spanish"));
+    languageComboBox->addItem(tr("French"));
+    languageComboBox->addItem(tr("German"));
+    languageComboBox->addItem(tr("Italian"));
+    languageComboBox->addItem(tr("Russian"));
+    languageComboBox->addItem(tr("Greek"));
+    languageComboBox->addItem(tr("Portuguese"));
+    languageComboBox->addItem(tr("Hindi"));
+    languageComboBox->addItem(tr("Chinese (Simplified)"));
+    languageComboBox->addItem(tr("Modern Standard Arabic"));
 
     languageComboBox->setCurrentIndex(0);
     languageComboBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
 
     //add clear button
-    QPushButton *clearTextButton = new QPushButton("ClearText", this);
-    clearTextButton->setToolTip("Clear AI Interpretation Text Area");
+    QPushButton *clearTextButton = new QPushButton(tr("Clear Text"), this);
+    clearTextButton->setToolTip(tr("Clear AI Interpretation Text Area"));
     clearTextButton->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
     // Connect using a lambda
     connect(clearTextButton, &QPushButton::clicked, this, [this]() {
@@ -1019,25 +1085,60 @@ void MainWindow::setupMenus()
 
 
     // Settings menu
-    QMenu *settingsMenu = menuBar()->addMenu("&Settings");
+    QMenu *settingsMenu = menuBar()->addMenu(tr("&Settings"));
+
+    QMenu *languageMenu = settingsMenu->addMenu(tr("Language"));
+    m_languageSystemAction = languageMenu->addAction(tr("System"));
+    m_languageSystemAction->setCheckable(true);
+    m_languageEnglishAction = languageMenu->addAction(tr("English"));
+    m_languageEnglishAction->setCheckable(true);
+    m_languageSpanishAction = languageMenu->addAction(tr("Español"));
+    m_languageSpanishAction->setCheckable(true);
+
+    QActionGroup *languageGroup = new QActionGroup(this);
+    languageGroup->setExclusive(true);
+    languageGroup->addAction(m_languageSystemAction);
+    languageGroup->addAction(m_languageEnglishAction);
+    languageGroup->addAction(m_languageSpanishAction);
+
+    connect(languageGroup, &QActionGroup::triggered, this, [this](QAction *action) {
+        QString languageCode = "en";
+        if (action == m_languageSpanishAction) {
+            languageCode = "es";
+        } else if (action == m_languageEnglishAction) {
+            languageCode = "en";
+        } else {
+            languageCode = QLocale::system().name().left(2);
+            if (languageCode != "es" && languageCode != "en") {
+                languageCode = "en";
+            }
+        }
+        applyLanguageSelection(languageCode, true);
+    });
+
+    if (m_currentLanguageCode == "es") {
+        m_languageSpanishAction->setChecked(true);
+    } else if (m_currentLanguageCode == "en") {
+        m_languageEnglishAction->setChecked(true);
+    } else {
+        m_languageSystemAction->setChecked(true);
+    }
+
+    QAction *aiModelsAction = settingsMenu->addAction(tr("Configure AI &Models..."), this, &MainWindow::configureAIModels);
 
 
-    QAction *aiModelsAction = settingsMenu->addAction("Configure AI &Models...", this, &MainWindow::configureAIModels);
 
-
-
-    QAction *checkModelAction = settingsMenu->addAction("Check AI Model &Status", this, [this]() {
+    QAction *checkModelAction = settingsMenu->addAction(tr("Check AI Model &Status"), this, [this]() {
         if (!GlobalFlags::activeModelLoaded) {
             m_mistralApi.loadActiveModel();
             if (!GlobalFlags::activeModelLoaded) {
 
                 QMessageBox msgBox(this);
-                msgBox.setWindowTitle("AI Model Not Configured");
-                msgBox.setText("No active AI model found. You need to configure a model to get chart interpretations.");
-                msgBox.setInformativeText("Would you like to configure one now?\n\n"
-                                          "Note: If you've been using Mistral, you can add it as a provider with your API key.");
+                msgBox.setWindowTitle(tr("AI Model Not Configured"));
+                msgBox.setText(tr("No active AI model found. You need to configure a model to get chart interpretations."));
+                msgBox.setInformativeText(tr("Would you like to configure one now?\n\nNote: If you've been using Mistral, you can add it as a provider with your API key."));
 
-                QPushButton *configureButton = msgBox.addButton("Configure Models", QMessageBox::ActionRole);
+                QPushButton *configureButton = msgBox.addButton(tr("Configure Models"), QMessageBox::ActionRole);
                 QPushButton *closeButton = msgBox.addButton(QMessageBox::Close);
 
                 msgBox.exec();
@@ -1085,13 +1186,13 @@ void MainWindow::setupMenus()
                 statusMessage += "<br><br><font color='red'><b>WARNING:</b> This appears to be a cloud provider but no API key is set. Interpretations will fail.</font>";
             }
 
-            QMessageBox::information(this, "AI Model Status", statusMessage);
+            QMessageBox::information(this, tr("AI Model Status"), statusMessage);
         }
     });
     checkModelAction->setIcon(QIcon::fromTheme("dialog-information"));
 
     // Create an action for aspect settings
-    QAction *aspectSettingsAction = new QAction("&Aspect Display Settings...", this);
+    QAction *aspectSettingsAction = new QAction(tr("&Aspect Display Settings..."), this);
     // Connect the action to a slot that will open the dialog
     connect(aspectSettingsAction, &QAction::triggered, this, &MainWindow::showAspectSettings);
     // Add the action to the settings menu
@@ -1116,15 +1217,15 @@ void MainWindow::setupMenus()
         settings.setValue("useJulianForPre1582", checked);
     });
     // Create Tools menu
-    QMenu *toolsMenu = menuBar()->addMenu("Tools");
+    QMenu *toolsMenu = menuBar()->addMenu(tr("Tools"));
 
     // Create Relationship Charts submenu
-    QMenu *relationshipMenu = toolsMenu->addMenu("Relationship Charts");
+    QMenu *relationshipMenu = toolsMenu->addMenu(tr("Relationship Charts"));
 
     // Create actions for relationship chart types
-    QAction *compositeAction = new QAction("Composite Chart (exp)", this);
-    QAction *davisonAction = new QAction("Davison Relationship Chart", this);
-    QAction *synastryAction = new QAction("Synastry Chart", this);
+    QAction *compositeAction = new QAction(tr("Composite Chart (exp)"), this);
+    QAction *davisonAction = new QAction(tr("Davison Relationship Chart"), this);
+    QAction *synastryAction = new QAction(tr("Synastry Chart"), this);
 
     // Add actions to the relationship menu
     relationshipMenu->addAction(compositeAction);
@@ -1167,16 +1268,16 @@ void MainWindow::setupMenus()
         dialog.exec();
     });
 
-    QAction *transitFilterAction = new QAction("Transit Filter", this);
-    transitFilterAction->setToolTip("Filter transit data by date, planets and aspects");
-    transitFilterAction->setStatusTip("Open transit filter dialog");
+    QAction *transitFilterAction = new QAction(tr("Transit Filter"), this);
+    transitFilterAction->setToolTip(tr("Filter transit data by date, planets and aspects"));
+    transitFilterAction->setStatusTip(tr("Open transit filter dialog"));
     transitFilterAction->setShortcut(QKeySequence("Ctrl+T"));
     connect(transitFilterAction, &QAction::triggered, this, &MainWindow::openTransitFilter);
     toolsMenu->addAction(transitFilterAction);
 
-    QAction *eclipseCalcAction = new QAction("Calculate Eclipses", this);
-    eclipseCalcAction->setToolTip("Calculate solar and lunar eclipses in the selected date range");
-    eclipseCalcAction->setStatusTip("Calculate eclipses for the current chart and date range");
+    QAction *eclipseCalcAction = new QAction(tr("Calculate Eclipses"), this);
+    eclipseCalcAction->setToolTip(tr("Calculate solar and lunar eclipses in the selected date range"));
+    eclipseCalcAction->setStatusTip(tr("Calculate eclipses for the current chart and date range"));
     eclipseCalcAction->setShortcut(QKeySequence("Ctrl+Shift+E"));
 
     connect(eclipseCalcAction, &QAction::triggered, this, &MainWindow::CalculateEclipses);
@@ -1186,95 +1287,95 @@ void MainWindow::setupMenus()
     // Add Return Charts submenu
     QMenu *returnChartsMenu = toolsMenu->addMenu(tr("Return Charts"));
 
-    QAction *solarReturnCalcAction = new QAction("Calculate Solar Return", this);
-    solarReturnCalcAction->setToolTip("Calculate the solar return chart for a selected year");
-    solarReturnCalcAction->setStatusTip("Calculate the solar return chart for the current birth data and chosen year");
+    QAction *solarReturnCalcAction = new QAction(tr("Calculate Solar Return"), this);
+    solarReturnCalcAction->setToolTip(tr("Calculate the solar return chart for a selected year"));
+    solarReturnCalcAction->setStatusTip(tr("Calculate the solar return chart for the current birth data and chosen year"));
     solarReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+H"));
 
     connect(solarReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateSolarReturn);
 
     returnChartsMenu->addAction(solarReturnCalcAction);
 
-    QAction *lunarReturnCalcAction = new QAction("Calculate Lunar Return", this);
-    lunarReturnCalcAction->setToolTip("Calculate the lunar return chart for a selected month and year");
-    lunarReturnCalcAction->setStatusTip("Calculate the lunar return chart for the current birth data and chosen month/year");
+    QAction *lunarReturnCalcAction = new QAction(tr("Calculate Lunar Return"), this);
+    lunarReturnCalcAction->setToolTip(tr("Calculate the lunar return chart for a selected month and year"));
+    lunarReturnCalcAction->setStatusTip(tr("Calculate the lunar return chart for the current birth data and chosen month/year"));
     lunarReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+L"));
 
     connect(lunarReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateLunarReturn);
 
     returnChartsMenu->addAction(lunarReturnCalcAction);
 
-    QAction *saturnReturnCalcAction = new QAction("Calculate Saturn Return", this);
-    saturnReturnCalcAction->setToolTip("Calculate the Saturn return chart for a selected return number");
-    saturnReturnCalcAction->setStatusTip("Calculate the Saturn return chart for the current birth data and chosen return number");
+    QAction *saturnReturnCalcAction = new QAction(tr("Calculate Saturn Return"), this);
+    saturnReturnCalcAction->setToolTip(tr("Calculate the Saturn return chart for a selected return number"));
+    saturnReturnCalcAction->setStatusTip(tr("Calculate the Saturn return chart for the current birth data and chosen return number"));
     saturnReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+S")); // Choose a shortcut that doesn't conflict
     connect(saturnReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateSaturnReturn);
 
     returnChartsMenu->addAction(saturnReturnCalcAction);
 
-    QAction *jupiterReturnCalcAction = new QAction("Calculate Jupiter Return", this);
-    jupiterReturnCalcAction->setToolTip("Calculate the Jupiter return chart for a selected return number");
-    jupiterReturnCalcAction->setStatusTip("Calculate the Jupiter return chart for the current birth data and chosen return number");
+    QAction *jupiterReturnCalcAction = new QAction(tr("Calculate Jupiter Return"), this);
+    jupiterReturnCalcAction->setToolTip(tr("Calculate the Jupiter return chart for a selected return number"));
+    jupiterReturnCalcAction->setStatusTip(tr("Calculate the Jupiter return chart for the current birth data and chosen return number"));
     jupiterReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+J"));
     connect(jupiterReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateJupiterReturn);
     returnChartsMenu->addAction(jupiterReturnCalcAction);
 
     // Venus Return
-    QAction *venusReturnCalcAction = new QAction("Calculate Venus Return", this);
-    venusReturnCalcAction->setToolTip("Calculate the Venus return chart for a selected return number");
-    venusReturnCalcAction->setStatusTip("Calculate the Venus return chart for the current birth data and chosen return number");
+    QAction *venusReturnCalcAction = new QAction(tr("Calculate Venus Return"), this);
+    venusReturnCalcAction->setToolTip(tr("Calculate the Venus return chart for a selected return number"));
+    venusReturnCalcAction->setStatusTip(tr("Calculate the Venus return chart for the current birth data and chosen return number"));
     venusReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+V"));
     connect(venusReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateVenusReturn);
     returnChartsMenu->addAction(venusReturnCalcAction);
 
     // Mars Return
-    QAction *marsReturnCalcAction = new QAction("Calculate Mars Return", this);
-    marsReturnCalcAction->setToolTip("Calculate the Mars return chart for a selected return number");
-    marsReturnCalcAction->setStatusTip("Calculate the Mars return chart for the current birth data and chosen return number");
+    QAction *marsReturnCalcAction = new QAction(tr("Calculate Mars Return"), this);
+    marsReturnCalcAction->setToolTip(tr("Calculate the Mars return chart for a selected return number"));
+    marsReturnCalcAction->setStatusTip(tr("Calculate the Mars return chart for the current birth data and chosen return number"));
     marsReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+R"));
     connect(marsReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateMarsReturn);
     returnChartsMenu->addAction(marsReturnCalcAction);
 
     // Mercury Return
-    QAction *mercuryReturnCalcAction = new QAction("Calculate Mercury Return", this);
-    mercuryReturnCalcAction->setToolTip("Calculate the Mercury return chart for a selected return number");
-    mercuryReturnCalcAction->setStatusTip("Calculate the Mercury return chart for the current birth data and chosen return number");
+    QAction *mercuryReturnCalcAction = new QAction(tr("Calculate Mercury Return"), this);
+    mercuryReturnCalcAction->setToolTip(tr("Calculate the Mercury return chart for a selected return number"));
+    mercuryReturnCalcAction->setStatusTip(tr("Calculate the Mercury return chart for the current birth data and chosen return number"));
     mercuryReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+M"));
     connect(mercuryReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateMercuryReturn);
     returnChartsMenu->addAction(mercuryReturnCalcAction);
 
-    QAction *uranusReturnCalcAction = new QAction("Calculate Uranus Return", this);
-    uranusReturnCalcAction->setToolTip("Calculate the Uranus return chart for a selected return number");
-    uranusReturnCalcAction->setStatusTip("Calculate the Uranus return chart for the current birth data and chosen return number");
+    QAction *uranusReturnCalcAction = new QAction(tr("Calculate Uranus Return"), this);
+    uranusReturnCalcAction->setToolTip(tr("Calculate the Uranus return chart for a selected return number"));
+    uranusReturnCalcAction->setStatusTip(tr("Calculate the Uranus return chart for the current birth data and chosen return number"));
     uranusReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+U"));
     connect(uranusReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateUranusReturn);
     returnChartsMenu->addAction(uranusReturnCalcAction);
 
-    QAction *neptuneReturnCalcAction = new QAction("Calculate Neptune Return", this);
-    neptuneReturnCalcAction->setToolTip("Calculate the Neptune return chart for a selected return number");
-    neptuneReturnCalcAction->setStatusTip("Calculate the Neptune return chart for the current birth data and chosen return number");
+    QAction *neptuneReturnCalcAction = new QAction(tr("Calculate Neptune Return"), this);
+    neptuneReturnCalcAction->setToolTip(tr("Calculate the Neptune return chart for a selected return number"));
+    neptuneReturnCalcAction->setStatusTip(tr("Calculate the Neptune return chart for the current birth data and chosen return number"));
     neptuneReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+N"));
     connect(neptuneReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateNeptuneReturn);
     returnChartsMenu->addAction(neptuneReturnCalcAction);
 
-    QAction *plutoReturnCalcAction = new QAction("Calculate Pluto Return", this);
-    plutoReturnCalcAction->setToolTip("Calculate the Pluto return chart for a selected return number");
-    plutoReturnCalcAction->setStatusTip("Calculate the Pluto return chart for the current birth data and chosen return number");
+    QAction *plutoReturnCalcAction = new QAction(tr("Calculate Pluto Return"), this);
+    plutoReturnCalcAction->setToolTip(tr("Calculate the Pluto return chart for a selected return number"));
+    plutoReturnCalcAction->setStatusTip(tr("Calculate the Pluto return chart for the current birth data and chosen return number"));
     plutoReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+P"));
     connect(plutoReturnCalcAction, &QAction::triggered, this, &MainWindow::calculatePlutoReturn);
     returnChartsMenu->addAction(plutoReturnCalcAction);
 
     //Secondary Progression Chart
-    QAction *secondaryProgressionAction = new QAction("Calculate Secondary Progression Chart", this);
-    secondaryProgressionAction->setToolTip("Calculate a secondary progression chart for a selected year of life");
-    secondaryProgressionAction->setStatusTip("Calculate the secondary progression chart for the current birth data and chosen progression year");
+    QAction *secondaryProgressionAction = new QAction(tr("Calculate Secondary Progression Chart"), this);
+    secondaryProgressionAction->setToolTip(tr("Calculate a secondary progression chart for a selected year of life"));
+    secondaryProgressionAction->setStatusTip(tr("Calculate the secondary progression chart for the current birth data and chosen progression year"));
     secondaryProgressionAction->setShortcut(QKeySequence("Ctrl+G")); // Choose a shortcut that doesn't conflict
     connect(secondaryProgressionAction, &QAction::triggered, this, &MainWindow::calculateSecondaryProgression);
     toolsMenu->insertAction(nullptr, secondaryProgressionAction); // Add at the top of Tools menu
 
     // Current Chart
-    QAction *zodiacChartAction = new QAction("Calculate Zodiac Chart", this);
-    zodiacChartAction->setToolTip("Calculate a chart for all Zodiac Signs");
+    QAction *zodiacChartAction = new QAction(tr("Calculate Zodiac Chart"), this);
+    zodiacChartAction->setToolTip(tr("Calculate a chart for all Zodiac Signs"));
     //zodiacChartAction->setStatusTip("Calculate the current chart using the current date/time and entered location");
     zodiacChartAction->setShortcut(QKeySequence("Ctrl+H")); // Choose a shortcut that doesn't conflict
     connect(zodiacChartAction, &QAction::triggered, this, &MainWindow::calculateZodiacSignsChart);

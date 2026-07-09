@@ -11,10 +11,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(FLATHUB_BUILD "Build for Flathub" OFF)
 
 ##### Swiss Ephemeris setup
+set(SWISSEPH_DIR "/home/dharma/ssd/cpp/swisseph" CACHE PATH "Local Swiss Ephemeris source directory")
+set(SWISSEPH_SRC_DIR "${CMAKE_SOURCE_DIR}/swisseph_src" CACHE PATH "Swiss Ephemeris source directory for Flatpak builds")
+
 if(FLATHUB_BUILD)
     # For Flatpak builds, build Swiss Ephemeris from source
     set(SWISSEPH_DATA_DIR "/app/share/swisseph")  # Runtime path in Flatpak
-    set(SWISSEPH_SRC_DIR "${CMAKE_SOURCE_DIR}/swisseph_src")
 
     # Check if source directory exists
     if(NOT EXISTS ${SWISSEPH_SRC_DIR})
@@ -51,8 +53,15 @@ if(FLATHUB_BUILD)
 
     include_directories(${SWISSEPH_INCLUDE_DIR})
 else()
-    # For local builds, use the local Swiss Ephemeris
-    set(SWISSEPH_DIR "/home/dharma/ssd/cpp/swisseph")
+    # For local builds, use the local Swiss Ephemeris or fallback to swisseph_src
+    if(NOT EXISTS ${SWISSEPH_DIR} AND EXISTS ${SWISSEPH_SRC_DIR})
+        set(SWISSEPH_DIR ${SWISSEPH_SRC_DIR})
+    endif()
+
+    if(NOT EXISTS ${SWISSEPH_DIR})
+        message(FATAL_ERROR "Swiss Ephemeris source directory not found at ${SWISSEPH_DIR}.\nEither create it, clone https://github.com/aloistr/swisseph into it, or run cmake with -DSWISSEPH_DIR=/path/to/swisseph.")
+    endif()
+
     set(SWISSEPH_INCLUDE_DIR "${SWISSEPH_DIR}")
     set(SWISSEPH_DATA_DIR "${SWISSEPH_DIR}/ephe")
     include_directories(${SWISSEPH_INCLUDE_DIR})
@@ -243,6 +252,10 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-256.png"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
         DESTINATION "share/icons/hicolor/512x512/apps"
         RENAME "io.github.alamahant.Asteria.png")
+install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/translations/asteria_es.qm"
+        "${CMAKE_CURRENT_SOURCE_DIR}/translations/asteria_en.qm"
+        DESTINATION "share/Asteria/translations")
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(Asteria)

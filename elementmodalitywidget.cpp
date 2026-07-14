@@ -16,7 +16,7 @@ void ElementModalityWidget::setupUi()
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // Title label
-    m_titleLabel = new QLabel("Elements & Modalities", this);
+    m_titleLabel = new QLabel(tr("Elements & Modalities"), this);
     QFont titleFont = m_titleLabel->font();
     titleFont.setBold(true);
     titleFont.setPointSize(titleFont.pointSize() + 2);
@@ -30,15 +30,15 @@ void ElementModalityWidget::setupUi()
 
     // Create header labels
     QLabel *headerElement = new QLabel("", this);
-    QLabel *headerFire = new QLabel("Fire", this);
-    QLabel *headerEarth = new QLabel("Earth", this);
-    QLabel *headerAir = new QLabel("Air", this);
-    QLabel *headerWater = new QLabel("Water", this);
-    QLabel *headerTotal = new QLabel("Total", this);
+    QLabel *headerFire = new QLabel(tr("Fire"), this);
+    QLabel *headerEarth = new QLabel(tr("Earth"), this);
+    QLabel *headerAir = new QLabel(tr("Air"), this);
+    QLabel *headerWater = new QLabel(tr("Water"), this);
+    QLabel *headerTotal = new QLabel(tr("Total"), this);
 
-    QLabel *headerCardinal = new QLabel("Cardinal", this);
-    QLabel *headerFixed = new QLabel("Fixed", this);
-    QLabel *headerMutable = new QLabel("Mutable", this);
+    QLabel *headerCardinal = new QLabel(tr("Cardinal"), this);
+    QLabel *headerFixed = new QLabel(tr("Fixed"), this);
+    QLabel *headerMutable = new QLabel(tr("Mutable"), this);
 
     // Set header styles
     QFont headerFont;
@@ -183,7 +183,7 @@ void ElementModalityWidget::setupUi()
     m_gridLayout->addWidget(m_mutableTotal, 3, 5);
 
     // Add a grand total label
-    QLabel *grandTotalLabel = new QLabel("Total", this);
+    QLabel *grandTotalLabel = new QLabel(tr("Total"), this);
     QLabel *grandTotal = new QLabel("0", this);
     grandTotalLabel->setFont(headerFont);
     grandTotal->setFont(totalFont);

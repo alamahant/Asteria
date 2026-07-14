@@ -7,7 +7,7 @@
 SymbolsDialog::SymbolsDialog(QWidget *parent, const QString &astroFontFamily)
     : QDialog(parent), m_astroFontFamily(astroFontFamily)
 {
-    setWindowTitle("Astrological Symbols Reference");
+    setWindowTitle(tr("Astrological Symbols Reference"));
     setMinimumSize(400, 500);
     setupUI();
 }
@@ -25,24 +25,24 @@ void SymbolsDialog::setupUI()
 
     // Create tables
     m_aspectTable = new QTableWidget(0, 4, this);  // Now 4 columns instead of 3
-    m_aspectTable->setHorizontalHeaderLabels({"Aspect", "Abbr.", "Symbol", "Color"});
+    m_aspectTable->setHorizontalHeaderLabels({tr("Aspect"), tr("Abbr."), tr("Symbol"), tr("Color")});
     m_aspectTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_aspectTable->verticalHeader()->setVisible(false);
 
     m_planetTable = new QTableWidget(0, 2, this);
-    m_planetTable->setHorizontalHeaderLabels({"Planet", "Symbol"});
+    m_planetTable->setHorizontalHeaderLabels({tr("Planet"), tr("Symbol")});
     m_planetTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_planetTable->verticalHeader()->setVisible(false);
 
     m_signTable = new QTableWidget(0, 2, this);
-    m_signTable->setHorizontalHeaderLabels({"Sign", "Symbol"});
+    m_signTable->setHorizontalHeaderLabels({tr("Sign"), tr("Symbol")});
     m_signTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_signTable->verticalHeader()->setVisible(false);
 
     // Add tables to tabs
-    m_tabWidget->addTab(m_aspectTable, "Aspects");
-    m_tabWidget->addTab(m_planetTable, "Planets");
-    m_tabWidget->addTab(m_signTable, "Signs");
+    m_tabWidget->addTab(m_aspectTable, tr("Aspects"));
+    m_tabWidget->addTab(m_planetTable, tr("Planets"));
+    m_tabWidget->addTab(m_signTable, tr("Signs"));
 
     mainLayout->addWidget(m_tabWidget);
 

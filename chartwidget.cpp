@@ -42,7 +42,7 @@ void ChartWidget::paintEvent(QPaintEvent *event)
 
     // If no chart data, draw placeholder
     if (!m_hasData) {
-        painter.drawText(rect(), Qt::AlignCenter, "No chart data available");
+        painter.drawText(rect(), Qt::AlignCenter, tr("No chart data available"));
         return;
     }
 

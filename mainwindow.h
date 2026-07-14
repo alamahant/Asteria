@@ -108,6 +108,8 @@ private:
     void setupInterpretationDock();
     void setupCentralWidget();
     void setupConnections();
+    void applyLanguageSelection(const QString &languageCode, bool restartApp = false);
+    void retranslateUi();
 
     // Helper methods
     void saveSettings();
@@ -153,6 +155,7 @@ private:
 protected:
     void resizeEvent(QResizeEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
+    void changeEvent(QEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dragMoveEvent(QDragMoveEvent *event) override;
     void dropEvent(QDropEvent *event) override;
@@ -194,7 +197,11 @@ private:
     //void drawPage0(QPainter &painter, QPdfWriter &writer);
 
     QString getFilepath(const QString& format);
-    QComboBox* languageComboBox;
+    QComboBox* languageComboBox = nullptr;
+    QAction *m_languageEnglishAction = nullptr;
+    QAction *m_languageSpanishAction = nullptr;
+    QAction *m_languageSystemAction = nullptr;
+    QString m_currentLanguageCode;
     void searchLocationCoordinates(const QString& location);
     QLineEdit* locationSearchEdit;
     SymbolsDialog *m_symbolsDialog;

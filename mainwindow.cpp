@@ -41,6 +41,9 @@
 #include<QDropEvent>
 #include<QMimeData>
 #include<QProcess>
+#include <QActionGroup>
+#include <QLocale>
+#include <QEvent>
 #include"socialsharedialog.h"
 #include<QCoreApplication>
 #include<QDesktopServices>
@@ -60,11 +63,12 @@ MainWindow::MainWindow(QWidget *parent)
     , m_transitDialog(nullptr)
     , m_dragStartPosition(0, 0) // Initialize drag start position
     , m_socialShare(new SocialShare(this))
+    , m_currentLanguageCode(QSettings().value("app/language", "en").toString())
 {
     setAcceptDrops(true);
     preloadMapResources();
     // Set window title and size
-    setWindowTitle("Asteria - Astrological Chart Analysis");
+    setWindowTitle(tr("Asteria - Astrological Chart Analysis"));
     setWindowIcon(QIcon(":/icons/asteria-icon-512.png"));
     // Setup UI components
     setupUi();
@@ -76,6 +80,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(languageComboBox, &QComboBox::currentTextChanged,
             &m_mistralApi, &MistralAPI::setLanguage);
+    // Synchronize the AI response language with the combo box's default
+    // (which was set to match the UI language in setupUi()). The connect above
+    // happened after setCurrentIndex, so the initial value must be applied here.
+    m_mistralApi.setLanguage(languageComboBox->currentText());
+    retranslateUi();
 
     m_symbolsDialog = nullptr;
     m_howToUseDialog = nullptr;
@@ -128,6 +137,67 @@ MainWindow::~MainWindow()
         delete m_transitSearchDialog;
         m_transitSearchDialog = nullptr;
     }
+}
+
+void MainWindow::applyLanguageSelection(const QString &languageCode, bool restartApp)
+{
+    QString normalized = languageCode.toLower();
+    if (normalized.startsWith("es")) {
+        normalized = "es";
+    } else {
+        normalized = "en";
+    }
+
+    m_currentLanguageCode = normalized;
+    QSettings settings;
+    settings.setValue("app/language", normalized);
+
+    if (m_languageEnglishAction) {
+        m_languageEnglishAction->setChecked(normalized == "en");
+    }
+    if (m_languageSpanishAction) {
+        m_languageSpanishAction->setChecked(normalized == "es");
+    }
+    if (m_languageSystemAction) {
+        m_languageSystemAction->setChecked(normalized != "es" && normalized != "en");
+    }
+
+    if (restartApp && isVisible()) {
+        QString executable = QApplication::applicationFilePath();
+        QStringList arguments = QCoreApplication::arguments();
+        int langIndex = arguments.indexOf("--lang");
+        if (langIndex >= 0 && langIndex + 1 < arguments.size()) {
+            arguments[langIndex + 1] = normalized;
+        } else {
+            arguments << "--lang" << normalized;
+        }
+        QProcess::startDetached(executable, arguments);
+        close();
+    } else {
+        retranslateUi();
+    }
+}
+
+void MainWindow::retranslateUi()
+{
+    setWindowTitle(tr("Asteria - Astrological Chart Analysis"));
+    if (m_interpretationDock) {
+        m_interpretationDock->setWindowTitle(tr("Chart Interpretation"));
+    }
+    if (m_getInterpretationButton) {
+        m_getInterpretationButton->setText(tr("Get Chart Interpretation From AI"));
+    }
+    if (m_interpretationtextEdit) {
+        m_interpretationtextEdit->setPlaceholderText(tr("AI interpretation will appear here after you click the 'Get Chart Interpretation From AI' button."));
+    }
+}
+
+void MainWindow::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QMainWindow::changeEvent(event);
 }
 
 void MainWindow::setupUi()
@@ -191,11 +261,11 @@ void MainWindow::setupCentralWidget() {
 
 
     // Create labels for chart information
-    m_nameLabel = new QLabel("Name",chartInfoOverlay);
-    m_surnameLabel = new QLabel("Surname",chartInfoOverlay);
-    m_birthDateLabel = new QLabel("Birth Date",chartInfoOverlay);
-    m_birthTimeLabel = new QLabel("Birth Time",chartInfoOverlay);
-    m_locationLabel = new QLabel("Birth Place",chartInfoOverlay);
+    m_nameLabel = new QLabel(tr("Name"),chartInfoOverlay);
+    m_surnameLabel = new QLabel(tr("Surname"),chartInfoOverlay);
+    m_birthDateLabel = new QLabel(tr("Birth Date"),chartInfoOverlay);
+    m_birthTimeLabel = new QLabel(tr("Birth Time"),chartInfoOverlay);
+    m_locationLabel = new QLabel(tr("Birth Place"),chartInfoOverlay);
     m_sunSignLabel = new QLabel(chartInfoOverlay);
     m_ascendantLabel = new QLabel(chartInfoOverlay);
     m_housesystemLabel = new QLabel(chartInfoOverlay);
@@ -268,40 +338,40 @@ void MainWindow::setupCentralWidget() {
     // Planets table
     QTableWidget *planetsTable = new QTableWidget(0, 4, detailsTabs);
     planetsTable->setObjectName("Planets");
-    planetsTable->setHorizontalHeaderLabels({"Planet", "Sign", "Degree", "House"});
+    planetsTable->setHorizontalHeaderLabels({tr("Planet"), tr("Sign"), tr("Degree"), tr("House")});
     planetsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     // Angles table
     QTableWidget *anglesTable = new QTableWidget(0, 3, detailsTabs);
     anglesTable->setObjectName("Angles");
-    anglesTable->setHorizontalHeaderLabels({"Angle", "Sign", "Raw Degrees in Dec"});
+    anglesTable->setHorizontalHeaderLabels({tr("Angle"), tr("Sign"), tr("Raw Degrees in Dec")});
     anglesTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
 
     // Houses table
     QTableWidget *housesTable = new QTableWidget(0, 3, detailsTabs);
     housesTable->setObjectName("Houses");
-    housesTable->setHorizontalHeaderLabels({"House", "Sign", "Raw Degrees in Dec"});
+    housesTable->setHorizontalHeaderLabels({tr("House"), tr("Sign"), tr("Raw Degrees in Dec")});
     housesTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     // Aspects table
     QTableWidget *aspectsTable = new QTableWidget(0, 4, detailsTabs);
     aspectsTable->setObjectName("Aspects");
-    aspectsTable->setHorizontalHeaderLabels({"Planet 1", "Aspect", "Planet 2", "Orb"});
+    aspectsTable->setHorizontalHeaderLabels({tr("Planet 1"), tr("Aspect"), tr("Planet 2"), tr("Orb")});
     aspectsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     //////////Prediction Data
     // Create a new tab for raw prediction data
     rawTransitTable = new QTableWidget(0, 4, detailsTabs);
     rawTransitTable->setObjectName("RawTransits");
-    rawTransitTable->setHorizontalHeaderLabels({"Date", "Transit Planet", "Aspect", "Natal Planet (Orb)"});
+    rawTransitTable->setHorizontalHeaderLabels({tr("Date"), tr("Transit Planet"), tr("Aspect"), tr("Natal Planet (Orb)")});
     rawTransitTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
 
     // Eclipse Data table
     QTableWidget *eclipseTable = new QTableWidget(0, 6, detailsTabs);
     eclipseTable->setObjectName("Eclipses");
-    eclipseTable->setHorizontalHeaderLabels({"Date", "Time", "Type", "Magnitude", "Latitude", "Longitude"});
+    eclipseTable->setHorizontalHeaderLabels({tr("Date"), tr("Time"), tr("Type"), tr("Magnitude"), tr("Latitude"), tr("Longitude")});
     eclipseTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     // make all tables copiable
     QList<QTableWidget*> tables = {planetsTable, anglesTable, housesTable, aspectsTable, rawTransitTable, eclipseTable};
@@ -312,7 +382,7 @@ void MainWindow::setupCentralWidget() {
         table->setEditTriggers(QAbstractItemView::NoEditTriggers);
         table->setContextMenuPolicy(Qt::ActionsContextMenu);
 
-        QAction *copyAction = new QAction("Copy", table);
+        QAction *copyAction = new QAction(tr("Copy"), table);
         copyAction->setShortcut(QKeySequence::Copy);
         table->addAction(copyAction);
 
@@ -352,18 +422,18 @@ void MainWindow::setupCentralWidget() {
     }
 
     // Add tables to tabs
-    detailsTabs->addTab(planetsTable, "Planets");
-    detailsTabs->addTab(anglesTable, "Angles");
-    detailsTabs->addTab(housesTable, "Houses");
-    detailsTabs->addTab(aspectsTable, "Aspects");
-    detailsTabs->addTab(rawTransitTable, "Raw Transit Data");
-    detailsTabs->addTab(eclipseTable, "Eclipses");
+    detailsTabs->addTab(planetsTable, tr("Planets"));
+    detailsTabs->addTab(anglesTable, tr("Angles"));
+    detailsTabs->addTab(housesTable, tr("Houses"));
+    detailsTabs->addTab(aspectsTable, tr("Aspects"));
+    detailsTabs->addTab(rawTransitTable, tr("Raw Transit Data"));
+    detailsTabs->addTab(eclipseTable, tr("Eclipses"));
 
     detailsLayout->addWidget(detailsTabs);
 
     // Add widgets to central tab widget
-    m_centralTabWidget->addTab(chartContainer, "Chart Wheel");
-    m_centralTabWidget->addTab(m_chartDetailsWidget, "Chart Details");
+    m_centralTabWidget->addTab(chartContainer, tr("Chart Wheel"));
+    m_centralTabWidget->addTab(m_chartDetailsWidget, tr("Chart Details"));
 
     setCentralWidget(m_centralTabWidget);
 }
@@ -377,7 +447,7 @@ void MainWindow::setupInputDock() {
 
     m_inputDock = new QDockWidget(this);
     m_inputDock->setObjectName("Birth Chart Input");
-    m_inputDock->setWindowTitle("Birth Chart Input");
+    m_inputDock->setWindowTitle(tr("Birth Chart Input"));
     m_inputDock->setTitleBarWidget(titleLabel);
     m_inputDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     m_inputDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetClosable);
@@ -388,16 +458,16 @@ void MainWindow::setupInputDock() {
     QVBoxLayout *inputLayout = new QVBoxLayout(inputWidget);
 
     // Birth information group
-    QGroupBox *birthGroup = new QGroupBox("Birth Details", inputWidget);
+    QGroupBox *birthGroup = new QGroupBox(tr("Birth Details"), inputWidget);
 
     QFormLayout *birthLayout = new QFormLayout(birthGroup);
 
     // Date input as QLineEdit with regex validation
     m_birthDateEdit = new QLineEdit(birthGroup);
-    m_birthDateEdit->setToolTip("To set new date, highlight and delete the existing date and set desired with proper format.\n"
-                                "Allowed range 0001-3000. Allowed format 'dd/MM/yyyy' Year MUST be in four digit yyyy format.");
+    m_birthDateEdit->setToolTip(tr("To set new date, highlight and delete the existing date and set desired with proper format.\n"
+                                "Allowed range 0001-3000. Allowed format 'dd/MM/yyyy' Year MUST be in four digit yyyy format."));
 
-    m_birthDateEdit->setPlaceholderText("DD/MM/YYYY");
+    m_birthDateEdit->setPlaceholderText(tr("DD/MM/YYYY"));
     // Create a validator for the date format. dateRegex is defined at the top of the class
     QValidator *dateValidator = new QRegularExpressionValidator(dateRegex, this);
     m_birthDateEdit->setValidator(dateValidator);
@@ -408,10 +478,10 @@ void MainWindow::setupInputDock() {
 
     // Time input as QLineEdit with regex validation
     m_birthTimeEdit = new QLineEdit(birthGroup);
-    m_birthTimeEdit->setToolTip("To set new time, highlight and delete the existing time and set desired with proper format.\n"
-                                "Allowed format 'HH:mm'");
+    m_birthTimeEdit->setToolTip(tr("To set new time, highlight and delete the existing time and set desired with proper format.\n"
+                                "Allowed format 'HH:mm'"));
 
-    m_birthTimeEdit->setPlaceholderText("HH:MM (24-hour format)");
+    m_birthTimeEdit->setPlaceholderText(tr("HH:MM (24-hour format)"));
     // Create a validator for the time format
     QRegularExpression timeRegex("^([01]\\d|2[0-3]):([0-5]\\d)$");
     QValidator *timeValidator = new QRegularExpressionValidator(timeRegex, this);
@@ -424,7 +494,7 @@ void MainWindow::setupInputDock() {
     m_latitudeEdit = new QLineEdit(birthGroup);
     m_latitudeEdit->setReadOnly(true);
     //m_latitudeEdit->setPlaceholderText("e.g: 40N42 (0-90 degrees)");
-    m_latitudeEdit->setToolTip("Please prefer the 'From Google' field or the 'Select on Map' button.");
+    m_latitudeEdit->setToolTip(tr("Please prefer the 'From Google' field or the 'Select on Map' button."));
 
     // Create a validator for latitude format: degrees(0-90) + N/S + minutes(0-59)
     //QRegularExpression latRegex("^([0-8]\\d|90)([NSns])([0-5]\\d)$");
@@ -436,7 +506,7 @@ void MainWindow::setupInputDock() {
     m_longitudeEdit->setReadOnly(true);
     //m_longitudeEdit->setPlaceholderText("e.g: 074W00 (0-180 degrees)");
     //m_longitudeEdit->setToolTip("e.g:, 074W00 (0-180 degrees). Please prefer the 'From Google' field");
-    m_longitudeEdit->setToolTip("Please prefer the 'From Google' field or the 'Select on Map' button.");
+    m_longitudeEdit->setToolTip(tr("Please prefer the 'From Google' field or the 'Select on Map' button."));
 
     // Create a validator for longitude format: degrees(0-180) + E/W + minutes(0-59)
     //QRegularExpression longRegex("^(0\\d\\d|1[0-7]\\d|180)([EWew])([0-5]\\d)$");
@@ -445,8 +515,8 @@ void MainWindow::setupInputDock() {
 
     // Google coordinates input
     m_googleCoordsEdit = new QLineEdit(birthGroup);
-    m_googleCoordsEdit->setPlaceholderText("e.g: 51.5072° N, 0.1276° W");
-    m_googleCoordsEdit->setToolTip("Search for a location on Google, copy the coordinates, and paste them here");
+    m_googleCoordsEdit->setPlaceholderText(tr("e.g: 51.5072° N, 0.1276° W"));
+    m_googleCoordsEdit->setToolTip(tr("Search for a location on Google, copy the coordinates, and paste them here"));
 
     m_googleCoordsEdit->setStyleSheet(
                 "QLineEdit {"
@@ -513,7 +583,7 @@ void MainWindow::setupInputDock() {
                     m_longitudeEdit->setText(QString::number(longDecimal, 'f', 6));
 
                     // Show a status message
-                    statusBar()->showMessage("Coordinates converted successfully", 3000);
+                    statusBar()->showMessage(tr("Coordinates converted successfully"), 3000);
                 }
             }
         }
@@ -521,8 +591,8 @@ void MainWindow::setupInputDock() {
 
     // Google search Location coordinates
     locationSearchEdit = new QLineEdit(this);
-    locationSearchEdit->setPlaceholderText("Enter location and press Enter to search coordinates");
-    locationSearchEdit->setToolTip("Enter location, for example 'Athens Greece', and press Enter to search coordinates");
+    locationSearchEdit->setPlaceholderText(tr("Enter location and press Enter to search coordinates"));
+    locationSearchEdit->setToolTip(tr("Enter location, for example 'Athens Greece', and press Enter to search coordinates"));
 
     // Connect Enter key press to the search function
     connect(locationSearchEdit, &QLineEdit::returnPressed, this, [this]() {
@@ -584,30 +654,30 @@ void MainWindow::setupInputDock() {
     }
 
     m_utcOffsetCombo->setCurrentText("+00:00");
-    m_utcOffsetCombo->setToolTip("Select the UTC offset for the birth location.\n"
+    m_utcOffsetCombo->setToolTip(tr("Select the UTC offset for the birth location.\n"
                                  "Remember to account for Daylight Saving Time if applicable.\n"
                                  "For accurate charts, you need to determine if DST was in effect\n"
-                                 "at the time and location of birth.");
+                                 "at the time and location of birth."));
 
 
 
     // House system combo
     m_houseSystemCombo = new QComboBox(birthGroup);
-    m_houseSystemCombo->addItems({"Placidus", "Koch", "Porphyrius", "Regiomontanus", "Campanus", "Equal", "Whole Sign"});
+    m_houseSystemCombo->addItems({tr("Placidus"), tr("Koch"), tr("Porphyrius"), tr("Regiomontanus"), tr("Campanus"), tr("Equal"), tr("Whole Sign")});
 
     // Add widgets to form layout
     first_name = new QLineEdit(birthGroup);
-    first_name->setPlaceholderText("optional");
+    first_name->setPlaceholderText(tr("optional"));
     last_name = new QLineEdit(birthGroup);
-    last_name->setPlaceholderText("optional");
-    birthLayout->addRow("First Name:", first_name);
-    birthLayout->addRow("Last Name:", last_name);
-    birthLayout->addRow("Birth Date:", m_birthDateEdit);
-    birthLayout->addRow("Birth Time:", m_birthTimeEdit);
-    birthLayout->addRow("Latitude:", m_latitudeEdit);
-    birthLayout->addRow("Longitude:", m_longitudeEdit);
-    birthLayout->addRow("Paste from Google:", m_googleCoordsEdit);
-    birthLayout->addRow("Search Google",locationSearchEdit);
+    last_name->setPlaceholderText(tr("optional"));
+    birthLayout->addRow(tr("First Name:"), first_name);
+    birthLayout->addRow(tr("Last Name:"), last_name);
+    birthLayout->addRow(tr("Birth Date:"), m_birthDateEdit);
+    birthLayout->addRow(tr("Birth Time:"), m_birthTimeEdit);
+    birthLayout->addRow(tr("Latitude:"), m_latitudeEdit);
+    birthLayout->addRow(tr("Longitude:"), m_longitudeEdit);
+    birthLayout->addRow(tr("Paste from Google:"), m_googleCoordsEdit);
+    birthLayout->addRow(tr("Search Google"),locationSearchEdit);
 
 
 
@@ -618,7 +688,7 @@ void MainWindow::setupInputDock() {
     //connect(m_selectLocationButton, &QPushButton::clicked, this, &MainWindow::onOpenMapClicked);
     //birthLayout->addRow(m_selectLocationButton);
 
-    m_selectLocationButton = new QPushButton("Select on Map", birthGroup);
+    m_selectLocationButton = new QPushButton(tr("Select on Map"), birthGroup);
     m_selectLocationButton->setIcon(QIcon::fromTheme("view-refresh"));
     connect(m_selectLocationButton, &QPushButton::clicked, this, &MainWindow::onOpenMapClicked);
 
@@ -629,14 +699,14 @@ void MainWindow::setupInputDock() {
     m_selectLocationButton->setMinimumWidth(200);  // Set a reasonable minimum width
 
     // Add to form layout
-    birthLayout->addRow("Location:", m_selectLocationButton);
+    birthLayout->addRow(tr("Location:"), m_selectLocationButton);
 
     // After all widgets are added to the layout and the form is shown,
     m_selectLocationButton->setMinimumWidth(locationSearchEdit->width());
 
 
-    birthLayout->addRow("UTC Offset:", m_utcOffsetCombo);
-    birthLayout->addRow("House System:", m_houseSystemCombo);
+    birthLayout->addRow(tr("UTC Offset:"), m_utcOffsetCombo);
+    birthLayout->addRow(tr("House System:"), m_houseSystemCombo);
     //orbmax slider
     QWidget *orbContainer = new QWidget(inputWidget);
     QVBoxLayout *orbLayout = new QVBoxLayout(orbContainer);
@@ -679,12 +749,12 @@ void MainWindow::setupInputDock() {
     });
 
     // Add the container to the form layout
-    birthLayout->addRow("Aspect Orbs:", orbContainer);
+    birthLayout->addRow(tr("Aspect Orbs:"), orbContainer);
 
     //add additionalbodies checkbox
 
-    m_additionalBodiesCB = new QCheckBox("Include Additional Bodies", this);
-    m_additionalBodiesCB->setToolTip("Include Lilith, Ceres, Pallas, Juno, Vesta, Vertex, East Point and Part of Spirit");
+    m_additionalBodiesCB = new QCheckBox(tr("Include Additional Bodies"), this);
+    m_additionalBodiesCB->setToolTip(tr("Include Lilith, Ceres, Pallas, Juno, Vesta, Vertex, East Point and Part of Spirit"));
     connect(m_additionalBodiesCB, &QCheckBox::toggled, this, [this](bool checked) {
 
         GlobalFlags::additionalBodiesEnabled = checked;
@@ -702,18 +772,18 @@ void MainWindow::setupInputDock() {
     //birthLayout->addRow(m_clearAllButton);
 
     // Calculate button
-    m_calculateButton = new QPushButton("Calculate Chart", inputWidget);
+    m_calculateButton = new QPushButton(tr("Calculate Chart"), inputWidget);
     m_calculateButton->setIcon(QIcon::fromTheme("view-refresh"));
 
 
     // Add Predictive Astrology section
-    QGroupBox *predictiveGroup = new QGroupBox("Predictive Astrology", inputWidget);
+    QGroupBox *predictiveGroup = new QGroupBox(tr("Predictive Astrology"), inputWidget);
     QFormLayout *predictiveLayout = new QFormLayout(predictiveGroup);
 
     // From date input
     m_predictiveFromEdit = new QLineEdit(predictiveGroup);
-    m_predictiveFromEdit->setPlaceholderText("DD/MM/YYYY");
-    m_predictiveFromEdit->setToolTip("To set new date, highlight and delete the existing date and set desired with proper format");
+    m_predictiveFromEdit->setPlaceholderText(tr("DD/MM/YYYY"));
+    m_predictiveFromEdit->setToolTip(tr("To set new date, highlight and delete the existing date and set desired with proper format"));
 
     m_predictiveFromEdit->setValidator(dateValidator); // Reuse the same validator
     // Set current date as default
@@ -721,8 +791,8 @@ void MainWindow::setupInputDock() {
 
     // To date input
     m_predictiveToEdit = new QLineEdit(predictiveGroup);
-    m_predictiveToEdit->setPlaceholderText("DD/MM/YYYY");
-    m_predictiveToEdit->setToolTip("To set new date, highlight and delete the existing date and set desired with proper format");
+    m_predictiveToEdit->setPlaceholderText(tr("DD/MM/YYYY"));
+    m_predictiveToEdit->setToolTip(tr("To set new date, highlight and delete the existing date and set desired with proper format"));
 
     m_predictiveToEdit->setValidator(dateValidator); // Reuse the same validator
     // Set default to current date + 30 days
@@ -731,8 +801,8 @@ void MainWindow::setupInputDock() {
     m_predictiveToEdit->setText(defaultFutureDate.toString("dd/MM/yyyy"));
 
     // Add to form layout
-    predictiveLayout->addRow("From:", m_predictiveFromEdit);
-    predictiveLayout->addRow("Up to:", m_predictiveToEdit);
+    predictiveLayout->addRow(tr("From:"), m_predictiveFromEdit);
+    predictiveLayout->addRow(tr("Up to:"), m_predictiveToEdit);
     //Prediction Button
     /*
     getPredictionButton = new QPushButton("Get AI Prediction", predictiveGroup);
@@ -746,19 +816,19 @@ void MainWindow::setupInputDock() {
     QHBoxLayout* buttonLayout = new QHBoxLayout();
 
     // Prediction Button
-    getPredictionButton = new QPushButton("Get AI Prediction", predictiveGroup);
-    getPredictionButton->setToolTip("This operation generates a huge ammount of data that is sent to AI for interpretation.\n"
-                                    "Therefore it may be costly tokenwise.\n To mitigate this please reduce the number of days and/or use smaller orb.");
+    getPredictionButton = new QPushButton(tr("Get AI Prediction"), predictiveGroup);
+    getPredictionButton->setToolTip(tr("This operation generates a huge ammount of data that is sent to AI for interpretation.\n"
+                                    "Therefore it may be costly tokenwise.\n To mitigate this please reduce the number of days and/or use smaller orb."));
     getPredictionButton->setEnabled(false);
     getPredictionButton->setIcon(QIcon::fromTheme("view-refresh"));
-    getPredictionButton->setStatusTip("The AI prediction will be appended at the end of any existing text. Scroll down and be patient!");
+    getPredictionButton->setStatusTip(tr("The AI prediction will be appended at the end of any existing text. Scroll down and be patient!"));
 
     // Transit Chart Button
-    getTransitsButton = new QPushButton("Calculate Transits", predictiveGroup);
-    getTransitsButton->setToolTip("Calculate transits for the selected period");
+    getTransitsButton = new QPushButton(tr("Calculate Transits"), predictiveGroup);
+    getTransitsButton->setToolTip(tr("Calculate transits for the selected period"));
     getTransitsButton->setEnabled(false);
     getTransitsButton->setIcon(QIcon::fromTheme("view-chart"));
-    getTransitsButton->setStatusTip("Calculate transits for the selected period");
+    getTransitsButton->setStatusTip(tr("Calculate transits for the selected period"));
 
     // Add buttons to horizontal layout
     buttonLayout->addWidget(getPredictionButton);
@@ -790,7 +860,7 @@ void MainWindow::setupInputDock() {
 
 void MainWindow::setupInterpretationDock() {
     // Create interpretation dock widget
-    m_interpretationDock = new QDockWidget("Chart Interpretation", this);
+    m_interpretationDock = new QDockWidget(tr("Chart Interpretation"), this);
     m_interpretationDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     m_interpretationDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetClosable);
     //m_inputDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
@@ -799,7 +869,7 @@ void MainWindow::setupInterpretationDock() {
     QVBoxLayout *interpretationLayout = new QVBoxLayout(interpretationWidget);
 
     // Get interpretation button
-    m_getInterpretationButton = new QPushButton("Get Chart Interpretation From AI", interpretationWidget);
+    m_getInterpretationButton = new QPushButton(tr("Get Chart Interpretation From AI"), interpretationWidget);
     m_getInterpretationButton->setIcon(QIcon::fromTheme("system-search"));
     m_getInterpretationButton->setEnabled(false);
 
@@ -807,31 +877,36 @@ void MainWindow::setupInterpretationDock() {
     m_interpretationtextEdit = new QTextEdit(interpretationWidget);
     m_interpretationtextEdit->setAcceptRichText(true);
     m_interpretationtextEdit->setReadOnly(true);
-    m_interpretationtextEdit->setPlaceholderText("AI interpretation will appear here after you click the 'Get Chart Interpretation From AI' button.");
+    m_interpretationtextEdit->setPlaceholderText(tr("AI interpretation will appear here after you click the 'Get Chart Interpretation From AI' button."));
 
     // Add Language Button
     QHBoxLayout* languageLayout = new QHBoxLayout();
     //QLabel* languageLabel = new QLabel("Language:", interpretationWidget);
     languageComboBox = new QComboBox(interpretationWidget);
-    languageComboBox->setToolTip("Select AI Response Language");
-    languageComboBox->addItem("English");
-    languageComboBox->addItem("Spanish");
-    languageComboBox->addItem("French");
-    languageComboBox->addItem("German");
-    languageComboBox->addItem("Italian");
-    languageComboBox->addItem("Russian");
-    languageComboBox->addItem("Greek");
-    languageComboBox->addItem("Portuguese");
-    languageComboBox->addItem("Hindi");
-    languageComboBox->addItem("Chinese (Simplified)");
-    languageComboBox->addItem("Modern Standard Arabic");
+    languageComboBox->setToolTip(tr("Select AI Response Language"));
+    languageComboBox->addItem(tr("English"));
+    languageComboBox->addItem(tr("Spanish"));
+    languageComboBox->addItem(tr("French"));
+    languageComboBox->addItem(tr("German"));
+    languageComboBox->addItem(tr("Italian"));
+    languageComboBox->addItem(tr("Russian"));
+    languageComboBox->addItem(tr("Greek"));
+    languageComboBox->addItem(tr("Portuguese"));
+    languageComboBox->addItem(tr("Hindi"));
+    languageComboBox->addItem(tr("Chinese (Simplified)"));
+    languageComboBox->addItem(tr("Modern Standard Arabic"));
 
-    languageComboBox->setCurrentIndex(0);
+    // Default the AI response language to match the active UI language.
+    if (m_currentLanguageCode == "es") {
+        languageComboBox->setCurrentIndex(1); // Spanish
+    } else {
+        languageComboBox->setCurrentIndex(0); // English
+    }
     languageComboBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
 
     //add clear button
-    QPushButton *clearTextButton = new QPushButton("ClearText", this);
-    clearTextButton->setToolTip("Clear AI Interpretation Text Area");
+    QPushButton *clearTextButton = new QPushButton(tr("Clear Text"), this);
+    clearTextButton->setToolTip(tr("Clear AI Interpretation Text Area"));
     clearTextButton->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
     // Connect using a lambda
     connect(clearTextButton, &QPushButton::clicked, this, [this]() {
@@ -859,14 +934,14 @@ void MainWindow::setupMenus()
 {
 
     // File menu
-    QMenu *fileMenu = menuBar()->addMenu("&File");
+    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
     // Open new app window
 
     // New Window action
-    QAction *newWindowAction = fileMenu->addAction("New &Window in New Process");
+    QAction *newWindowAction = fileMenu->addAction(tr("New &Window in New Process"));
     newWindowAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
     newWindowAction->setIcon(QIcon::fromTheme("window-new"));
-    newWindowAction->setStatusTip("Open a new application window");
+    newWindowAction->setStatusTip(tr("Open a new application window"));
 
     // Connect using lambda
     connect(newWindowAction, &QAction::triggered, this, [this]() {
@@ -878,10 +953,10 @@ void MainWindow::setupMenus()
 
 
     // open window in current process
-    QAction *newSameProcessAction = fileMenu->addAction("New &Window");
+    QAction *newSameProcessAction = fileMenu->addAction(tr("New &Window"));
     newSameProcessAction->setShortcut(QKeySequence("Ctrl+Shift+W"));
     newSameProcessAction->setIcon(QIcon::fromTheme("window-new"));
-    newSameProcessAction->setStatusTip("Open a new window within current application");
+    newSameProcessAction->setStatusTip(tr("Open a new window within current application"));
 
     connect(newSameProcessAction, &QAction::triggered, this, [this]() {
         MainWindow *newWindow = new MainWindow();
@@ -891,14 +966,14 @@ void MainWindow::setupMenus()
     fileMenu->addSeparator();
 
     //open existing chart in new window- same as drag-drop
-    QAction *openChartInNewWindowAction = fileMenu->addAction("Open Chart in New &Window");
+    QAction *openChartInNewWindowAction = fileMenu->addAction(tr("Open Chart in New &Window"));
     openChartInNewWindowAction->setShortcut(QKeySequence("Ctrl+Alt+O"));
     openChartInNewWindowAction->setIcon(QIcon::fromTheme("window-duplicate"));
-    openChartInNewWindowAction->setStatusTip("Open current chart with all data in a new window");
+    openChartInNewWindowAction->setStatusTip(tr("Open current chart with all data in a new window"));
 
     connect(openChartInNewWindowAction, &QAction::triggered, this, [this]() {
         if (!m_chartCalculated) {
-            QMessageBox::information(this, "No Chart", "Please calculate a chart first.");
+            QMessageBox::information(this, tr("No Chart"), tr("Please calculate a chart first."));
             return;
         }
 
@@ -925,43 +1000,43 @@ void MainWindow::setupMenus()
         newWindow->importChartInputData(chartData);
         newWindow->show();
 
-        statusBar()->showMessage("Chart opened in new window", 3000);
+        statusBar()->showMessage(tr("Chart opened in new window"), 3000);
     });
     fileMenu->addSeparator();
 
     // New/Open/Save group
-    QAction *newAction = fileMenu->addAction("&New Chart", this, &MainWindow::newChart);
+    QAction *newAction = fileMenu->addAction(tr("&New Chart"), this, &MainWindow::newChart);
     newAction->setShortcut(QKeySequence::New);
     newAction->setIcon(QIcon::fromTheme("document-new"));
 
-    QAction *openAction = fileMenu->addAction("&Open Chart...", this, &MainWindow::loadChart);
+    QAction *openAction = fileMenu->addAction(tr("&Open Chart..."), this, &MainWindow::loadChart);
     openAction->setShortcut(QKeySequence::Open);
     openAction->setIcon(QIcon::fromTheme("document-open"));
 
-    QAction *saveAction = fileMenu->addAction("&Save Chart...", this, &MainWindow::saveChart);
+    QAction *saveAction = fileMenu->addAction(tr("&Save Chart..."), this, &MainWindow::saveChart);
     saveAction->setShortcut(QKeySequence::Save);
     saveAction->setIcon(QIcon::fromTheme("document-save"));
 
     fileMenu->addSeparator();
 
     // Export group
-    QAction *exportChartAction = fileMenu->addAction("Export Chart as &Image...", this, &MainWindow::exportChartImage);
+    QAction *exportChartAction = fileMenu->addAction(tr("Export Chart as &Image..."), this, &MainWindow::exportChartImage);
     exportChartAction->setIcon(QIcon::fromTheme("image-x-generic"));
 
-    QAction *exportSvgAction = fileMenu->addAction("Export as &SVG...", this, &MainWindow::exportAsSvg);
+    QAction *exportSvgAction = fileMenu->addAction(tr("Export as &SVG..."), this, &MainWindow::exportAsSvg);
     exportSvgAction->setIcon(QIcon::fromTheme("image-svg+xml"));
 
-    QAction *exportPdfAction = fileMenu->addAction("Export as &PDF...", this, &MainWindow::exportAsPdf);
+    QAction *exportPdfAction = fileMenu->addAction(tr("Export as &PDF..."), this, &MainWindow::exportAsPdf);
     exportPdfAction->setIcon(QIcon::fromTheme("application-pdf"));
 
-    QAction *exportTextAction = fileMenu->addAction("Export &Interpretation as Text...", this, &MainWindow::exportInterpretation);
+    QAction *exportTextAction = fileMenu->addAction(tr("Export &Interpretation as Text..."), this, &MainWindow::exportInterpretation);
     exportTextAction->setIcon(QIcon::fromTheme("text-x-generic"));
 
-    QAction *exportDataAction = fileMenu->addAction("Export Chart &Data as Text...", this, &MainWindow::exportChartData);
+    QAction *exportDataAction = fileMenu->addAction(tr("Export Chart &Data as Text..."), this, &MainWindow::exportChartData);
     exportDataAction->setIcon(QIcon::fromTheme("text-x-generic"));
     fileMenu->addSeparator();
 
-    QAction *getDataDirAction = fileMenu->addAction("Copy Save Location...", this, &MainWindow::copySavePath);
+    QAction *getDataDirAction = fileMenu->addAction(tr("Copy Save Location..."), this, &MainWindow::copySavePath);
     getDataDirAction->setShortcut(QKeySequence("Ctrl+C"));
     getDataDirAction->setIcon(QIcon::fromTheme("edit-copy"));
 
@@ -969,41 +1044,41 @@ void MainWindow::setupMenus()
 
 
     // Print group
-    QAction *printAction = fileMenu->addAction("&Print...", this, &MainWindow::printChart);
+    QAction *printAction = fileMenu->addAction(tr("&Print..."), this, &MainWindow::printChart);
     printAction->setShortcut(QKeySequence::Print);
     printAction->setIcon(QIcon::fromTheme("document-print"));
 
     fileMenu->addSeparator();
 
 
-    QAction *openFolderAction = fileMenu->addAction("&Open Data Directory");
+    QAction *openFolderAction = fileMenu->addAction(tr("&Open Data Directory"));
     connect(openFolderAction, &QAction::triggered, this, &MainWindow::openFolder);
     fileMenu->addSeparator();
 
     fileMenu->addSeparator();
-    QAction *createSymlinkAction = fileMenu->addAction(QString("Create Shortcut to %1 Data").arg(QApplication::applicationName()));
+    QAction *createSymlinkAction = fileMenu->addAction(tr("Create Shortcut to %1 Data").arg(QApplication::applicationName()));
     connect(createSymlinkAction, &QAction::triggered, this, &MainWindow::createSymlink);
     fileMenu->addSeparator();
 
     // Exit
-    QAction *exitAction = fileMenu->addAction("E&xit", this, &QWidget::close);
+    QAction *exitAction = fileMenu->addAction(tr("E&xit"), this, &QWidget::close);
     exitAction->setShortcut(QKeySequence::Quit);
     exitAction->setIcon(QIcon::fromTheme("application-exit"));
 
     // View menu
-    QMenu *viewMenu = menuBar()->addMenu("&View");
+    QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(m_inputDock->toggleViewAction());
     viewMenu->addAction(m_interpretationDock->toggleViewAction());
 
     // Add "Chart Only" toggle action
-    m_chartOnlyAction = new QAction("&View Chart Only", this);
+    m_chartOnlyAction = new QAction(tr("&View Chart Only"), this);
     m_chartOnlyAction->setCheckable(true);
     m_chartOnlyAction->setChecked(false); // Default to not checked
     connect(m_chartOnlyAction, &QAction::toggled, this, &MainWindow::toggleChartOnlyView);
     // show infooverlay action
     viewMenu->addAction(m_chartOnlyAction);
 
-    showOverlayAction = new QAction("Show &Info Overlay", this);
+    showOverlayAction = new QAction(tr("Show &Info Overlay"), this);
     showOverlayAction->setCheckable(true);
     showOverlayAction->setChecked(false); // Default to not checked (hidden)
 
@@ -1019,25 +1094,60 @@ void MainWindow::setupMenus()
 
 
     // Settings menu
-    QMenu *settingsMenu = menuBar()->addMenu("&Settings");
+    QMenu *settingsMenu = menuBar()->addMenu(tr("&Settings"));
+
+    QMenu *languageMenu = settingsMenu->addMenu(tr("Language"));
+    m_languageSystemAction = languageMenu->addAction(tr("System"));
+    m_languageSystemAction->setCheckable(true);
+    m_languageEnglishAction = languageMenu->addAction(tr("English"));
+    m_languageEnglishAction->setCheckable(true);
+    m_languageSpanishAction = languageMenu->addAction(tr("Español"));
+    m_languageSpanishAction->setCheckable(true);
+
+    QActionGroup *languageGroup = new QActionGroup(this);
+    languageGroup->setExclusive(true);
+    languageGroup->addAction(m_languageSystemAction);
+    languageGroup->addAction(m_languageEnglishAction);
+    languageGroup->addAction(m_languageSpanishAction);
+
+    connect(languageGroup, &QActionGroup::triggered, this, [this](QAction *action) {
+        QString languageCode = "en";
+        if (action == m_languageSpanishAction) {
+            languageCode = "es";
+        } else if (action == m_languageEnglishAction) {
+            languageCode = "en";
+        } else {
+            languageCode = QLocale::system().name().left(2);
+            if (languageCode != "es" && languageCode != "en") {
+                languageCode = "en";
+            }
+        }
+        applyLanguageSelection(languageCode, true);
+    });
+
+    if (m_currentLanguageCode == "es") {
+        m_languageSpanishAction->setChecked(true);
+    } else if (m_currentLanguageCode == "en") {
+        m_languageEnglishAction->setChecked(true);
+    } else {
+        m_languageSystemAction->setChecked(true);
+    }
+
+    QAction *aiModelsAction = settingsMenu->addAction(tr("Configure AI &Models..."), this, &MainWindow::configureAIModels);
 
 
-    QAction *aiModelsAction = settingsMenu->addAction("Configure AI &Models...", this, &MainWindow::configureAIModels);
 
-
-
-    QAction *checkModelAction = settingsMenu->addAction("Check AI Model &Status", this, [this]() {
+    QAction *checkModelAction = settingsMenu->addAction(tr("Check AI Model &Status"), this, [this]() {
         if (!GlobalFlags::activeModelLoaded) {
             m_mistralApi.loadActiveModel();
             if (!GlobalFlags::activeModelLoaded) {
 
                 QMessageBox msgBox(this);
-                msgBox.setWindowTitle("AI Model Not Configured");
-                msgBox.setText("No active AI model found. You need to configure a model to get chart interpretations.");
-                msgBox.setInformativeText("Would you like to configure one now?\n\n"
-                                          "Note: If you've been using Mistral, you can add it as a provider with your API key.");
+                msgBox.setWindowTitle(tr("AI Model Not Configured"));
+                msgBox.setText(tr("No active AI model found. You need to configure a model to get chart interpretations."));
+                msgBox.setInformativeText(tr("Would you like to configure one now?\n\nNote: If you've been using Mistral, you can add it as a provider with your API key."));
 
-                QPushButton *configureButton = msgBox.addButton("Configure Models", QMessageBox::ActionRole);
+                QPushButton *configureButton = msgBox.addButton(tr("Configure Models"), QMessageBox::ActionRole);
                 QPushButton *closeButton = msgBox.addButton(QMessageBox::Close);
 
                 msgBox.exec();
@@ -1085,13 +1195,13 @@ void MainWindow::setupMenus()
                 statusMessage += "<br><br><font color='red'><b>WARNING:</b> This appears to be a cloud provider but no API key is set. Interpretations will fail.</font>";
             }
 
-            QMessageBox::information(this, "AI Model Status", statusMessage);
+            QMessageBox::information(this, tr("AI Model Status"), statusMessage);
         }
     });
     checkModelAction->setIcon(QIcon::fromTheme("dialog-information"));
 
     // Create an action for aspect settings
-    QAction *aspectSettingsAction = new QAction("&Aspect Display Settings...", this);
+    QAction *aspectSettingsAction = new QAction(tr("&Aspect Display Settings..."), this);
     // Connect the action to a slot that will open the dialog
     connect(aspectSettingsAction, &QAction::triggered, this, &MainWindow::showAspectSettings);
     // Add the action to the settings menu
@@ -1116,15 +1226,15 @@ void MainWindow::setupMenus()
         settings.setValue("useJulianForPre1582", checked);
     });
     // Create Tools menu
-    QMenu *toolsMenu = menuBar()->addMenu("Tools");
+    QMenu *toolsMenu = menuBar()->addMenu(tr("Tools"));
 
     // Create Relationship Charts submenu
-    QMenu *relationshipMenu = toolsMenu->addMenu("Relationship Charts");
+    QMenu *relationshipMenu = toolsMenu->addMenu(tr("Relationship Charts"));
 
     // Create actions for relationship chart types
-    QAction *compositeAction = new QAction("Composite Chart (exp)", this);
-    QAction *davisonAction = new QAction("Davison Relationship Chart", this);
-    QAction *synastryAction = new QAction("Synastry Chart", this);
+    QAction *compositeAction = new QAction(tr("Composite Chart (exp)"), this);
+    QAction *davisonAction = new QAction(tr("Davison Relationship Chart"), this);
+    QAction *synastryAction = new QAction(tr("Synastry Chart"), this);
 
     // Add actions to the relationship menu
     relationshipMenu->addAction(compositeAction);
@@ -1141,8 +1251,8 @@ void MainWindow::setupMenus()
 
 
     // Help menu
-    QMenu *helpMenu = menuBar()->addMenu("&Help");
-    QAction *aboutAction = helpMenu->addAction("&About...", this, &MainWindow::showAboutDialog);
+    QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
+    QAction *aboutAction = helpMenu->addAction(tr("&About..."), this, &MainWindow::showAboutDialog);
     aboutAction->setIcon(QIcon::fromTheme("help-about"));
 
     QAction *symbolsAction = helpMenu->addAction(tr("Astrological &Symbols"));
@@ -1167,16 +1277,16 @@ void MainWindow::setupMenus()
         dialog.exec();
     });
 
-    QAction *transitFilterAction = new QAction("Transit Filter", this);
-    transitFilterAction->setToolTip("Filter transit data by date, planets and aspects");
-    transitFilterAction->setStatusTip("Open transit filter dialog");
+    QAction *transitFilterAction = new QAction(tr("Transit Filter"), this);
+    transitFilterAction->setToolTip(tr("Filter transit data by date, planets and aspects"));
+    transitFilterAction->setStatusTip(tr("Open transit filter dialog"));
     transitFilterAction->setShortcut(QKeySequence("Ctrl+T"));
     connect(transitFilterAction, &QAction::triggered, this, &MainWindow::openTransitFilter);
     toolsMenu->addAction(transitFilterAction);
 
-    QAction *eclipseCalcAction = new QAction("Calculate Eclipses", this);
-    eclipseCalcAction->setToolTip("Calculate solar and lunar eclipses in the selected date range");
-    eclipseCalcAction->setStatusTip("Calculate eclipses for the current chart and date range");
+    QAction *eclipseCalcAction = new QAction(tr("Calculate Eclipses"), this);
+    eclipseCalcAction->setToolTip(tr("Calculate solar and lunar eclipses in the selected date range"));
+    eclipseCalcAction->setStatusTip(tr("Calculate eclipses for the current chart and date range"));
     eclipseCalcAction->setShortcut(QKeySequence("Ctrl+Shift+E"));
 
     connect(eclipseCalcAction, &QAction::triggered, this, &MainWindow::CalculateEclipses);
@@ -1186,95 +1296,95 @@ void MainWindow::setupMenus()
     // Add Return Charts submenu
     QMenu *returnChartsMenu = toolsMenu->addMenu(tr("Return Charts"));
 
-    QAction *solarReturnCalcAction = new QAction("Calculate Solar Return", this);
-    solarReturnCalcAction->setToolTip("Calculate the solar return chart for a selected year");
-    solarReturnCalcAction->setStatusTip("Calculate the solar return chart for the current birth data and chosen year");
+    QAction *solarReturnCalcAction = new QAction(tr("Calculate Solar Return"), this);
+    solarReturnCalcAction->setToolTip(tr("Calculate the solar return chart for a selected year"));
+    solarReturnCalcAction->setStatusTip(tr("Calculate the solar return chart for the current birth data and chosen year"));
     solarReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+H"));
 
     connect(solarReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateSolarReturn);
 
     returnChartsMenu->addAction(solarReturnCalcAction);
 
-    QAction *lunarReturnCalcAction = new QAction("Calculate Lunar Return", this);
-    lunarReturnCalcAction->setToolTip("Calculate the lunar return chart for a selected month and year");
-    lunarReturnCalcAction->setStatusTip("Calculate the lunar return chart for the current birth data and chosen month/year");
+    QAction *lunarReturnCalcAction = new QAction(tr("Calculate Lunar Return"), this);
+    lunarReturnCalcAction->setToolTip(tr("Calculate the lunar return chart for a selected month and year"));
+    lunarReturnCalcAction->setStatusTip(tr("Calculate the lunar return chart for the current birth data and chosen month/year"));
     lunarReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+L"));
 
     connect(lunarReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateLunarReturn);
 
     returnChartsMenu->addAction(lunarReturnCalcAction);
 
-    QAction *saturnReturnCalcAction = new QAction("Calculate Saturn Return", this);
-    saturnReturnCalcAction->setToolTip("Calculate the Saturn return chart for a selected return number");
-    saturnReturnCalcAction->setStatusTip("Calculate the Saturn return chart for the current birth data and chosen return number");
+    QAction *saturnReturnCalcAction = new QAction(tr("Calculate Saturn Return"), this);
+    saturnReturnCalcAction->setToolTip(tr("Calculate the Saturn return chart for a selected return number"));
+    saturnReturnCalcAction->setStatusTip(tr("Calculate the Saturn return chart for the current birth data and chosen return number"));
     saturnReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+S")); // Choose a shortcut that doesn't conflict
     connect(saturnReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateSaturnReturn);
 
     returnChartsMenu->addAction(saturnReturnCalcAction);
 
-    QAction *jupiterReturnCalcAction = new QAction("Calculate Jupiter Return", this);
-    jupiterReturnCalcAction->setToolTip("Calculate the Jupiter return chart for a selected return number");
-    jupiterReturnCalcAction->setStatusTip("Calculate the Jupiter return chart for the current birth data and chosen return number");
+    QAction *jupiterReturnCalcAction = new QAction(tr("Calculate Jupiter Return"), this);
+    jupiterReturnCalcAction->setToolTip(tr("Calculate the Jupiter return chart for a selected return number"));
+    jupiterReturnCalcAction->setStatusTip(tr("Calculate the Jupiter return chart for the current birth data and chosen return number"));
     jupiterReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+J"));
     connect(jupiterReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateJupiterReturn);
     returnChartsMenu->addAction(jupiterReturnCalcAction);
 
     // Venus Return
-    QAction *venusReturnCalcAction = new QAction("Calculate Venus Return", this);
-    venusReturnCalcAction->setToolTip("Calculate the Venus return chart for a selected return number");
-    venusReturnCalcAction->setStatusTip("Calculate the Venus return chart for the current birth data and chosen return number");
+    QAction *venusReturnCalcAction = new QAction(tr("Calculate Venus Return"), this);
+    venusReturnCalcAction->setToolTip(tr("Calculate the Venus return chart for a selected return number"));
+    venusReturnCalcAction->setStatusTip(tr("Calculate the Venus return chart for the current birth data and chosen return number"));
     venusReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+V"));
     connect(venusReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateVenusReturn);
     returnChartsMenu->addAction(venusReturnCalcAction);
 
     // Mars Return
-    QAction *marsReturnCalcAction = new QAction("Calculate Mars Return", this);
-    marsReturnCalcAction->setToolTip("Calculate the Mars return chart for a selected return number");
-    marsReturnCalcAction->setStatusTip("Calculate the Mars return chart for the current birth data and chosen return number");
+    QAction *marsReturnCalcAction = new QAction(tr("Calculate Mars Return"), this);
+    marsReturnCalcAction->setToolTip(tr("Calculate the Mars return chart for a selected return number"));
+    marsReturnCalcAction->setStatusTip(tr("Calculate the Mars return chart for the current birth data and chosen return number"));
     marsReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+R"));
     connect(marsReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateMarsReturn);
     returnChartsMenu->addAction(marsReturnCalcAction);
 
     // Mercury Return
-    QAction *mercuryReturnCalcAction = new QAction("Calculate Mercury Return", this);
-    mercuryReturnCalcAction->setToolTip("Calculate the Mercury return chart for a selected return number");
-    mercuryReturnCalcAction->setStatusTip("Calculate the Mercury return chart for the current birth data and chosen return number");
+    QAction *mercuryReturnCalcAction = new QAction(tr("Calculate Mercury Return"), this);
+    mercuryReturnCalcAction->setToolTip(tr("Calculate the Mercury return chart for a selected return number"));
+    mercuryReturnCalcAction->setStatusTip(tr("Calculate the Mercury return chart for the current birth data and chosen return number"));
     mercuryReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+M"));
     connect(mercuryReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateMercuryReturn);
     returnChartsMenu->addAction(mercuryReturnCalcAction);
 
-    QAction *uranusReturnCalcAction = new QAction("Calculate Uranus Return", this);
-    uranusReturnCalcAction->setToolTip("Calculate the Uranus return chart for a selected return number");
-    uranusReturnCalcAction->setStatusTip("Calculate the Uranus return chart for the current birth data and chosen return number");
+    QAction *uranusReturnCalcAction = new QAction(tr("Calculate Uranus Return"), this);
+    uranusReturnCalcAction->setToolTip(tr("Calculate the Uranus return chart for a selected return number"));
+    uranusReturnCalcAction->setStatusTip(tr("Calculate the Uranus return chart for the current birth data and chosen return number"));
     uranusReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+U"));
     connect(uranusReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateUranusReturn);
     returnChartsMenu->addAction(uranusReturnCalcAction);
 
-    QAction *neptuneReturnCalcAction = new QAction("Calculate Neptune Return", this);
-    neptuneReturnCalcAction->setToolTip("Calculate the Neptune return chart for a selected return number");
-    neptuneReturnCalcAction->setStatusTip("Calculate the Neptune return chart for the current birth data and chosen return number");
+    QAction *neptuneReturnCalcAction = new QAction(tr("Calculate Neptune Return"), this);
+    neptuneReturnCalcAction->setToolTip(tr("Calculate the Neptune return chart for a selected return number"));
+    neptuneReturnCalcAction->setStatusTip(tr("Calculate the Neptune return chart for the current birth data and chosen return number"));
     neptuneReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+N"));
     connect(neptuneReturnCalcAction, &QAction::triggered, this, &MainWindow::calculateNeptuneReturn);
     returnChartsMenu->addAction(neptuneReturnCalcAction);
 
-    QAction *plutoReturnCalcAction = new QAction("Calculate Pluto Return", this);
-    plutoReturnCalcAction->setToolTip("Calculate the Pluto return chart for a selected return number");
-    plutoReturnCalcAction->setStatusTip("Calculate the Pluto return chart for the current birth data and chosen return number");
+    QAction *plutoReturnCalcAction = new QAction(tr("Calculate Pluto Return"), this);
+    plutoReturnCalcAction->setToolTip(tr("Calculate the Pluto return chart for a selected return number"));
+    plutoReturnCalcAction->setStatusTip(tr("Calculate the Pluto return chart for the current birth data and chosen return number"));
     plutoReturnCalcAction->setShortcut(QKeySequence("Ctrl+Alt+P"));
     connect(plutoReturnCalcAction, &QAction::triggered, this, &MainWindow::calculatePlutoReturn);
     returnChartsMenu->addAction(plutoReturnCalcAction);
 
     //Secondary Progression Chart
-    QAction *secondaryProgressionAction = new QAction("Calculate Secondary Progression Chart", this);
-    secondaryProgressionAction->setToolTip("Calculate a secondary progression chart for a selected year of life");
-    secondaryProgressionAction->setStatusTip("Calculate the secondary progression chart for the current birth data and chosen progression year");
+    QAction *secondaryProgressionAction = new QAction(tr("Calculate Secondary Progression Chart"), this);
+    secondaryProgressionAction->setToolTip(tr("Calculate a secondary progression chart for a selected year of life"));
+    secondaryProgressionAction->setStatusTip(tr("Calculate the secondary progression chart for the current birth data and chosen progression year"));
     secondaryProgressionAction->setShortcut(QKeySequence("Ctrl+G")); // Choose a shortcut that doesn't conflict
     connect(secondaryProgressionAction, &QAction::triggered, this, &MainWindow::calculateSecondaryProgression);
     toolsMenu->insertAction(nullptr, secondaryProgressionAction); // Add at the top of Tools menu
 
     // Current Chart
-    QAction *zodiacChartAction = new QAction("Calculate Zodiac Chart", this);
-    zodiacChartAction->setToolTip("Calculate a chart for all Zodiac Signs");
+    QAction *zodiacChartAction = new QAction(tr("Calculate Zodiac Chart"), this);
+    zodiacChartAction->setToolTip(tr("Calculate a chart for all Zodiac Signs"));
     //zodiacChartAction->setStatusTip("Calculate the current chart using the current date/time and entered location");
     zodiacChartAction->setShortcut(QKeySequence("Ctrl+H")); // Choose a shortcut that doesn't conflict
     connect(zodiacChartAction, &QAction::triggered, this, &MainWindow::calculateZodiacSignsChart);
@@ -1320,7 +1430,7 @@ void MainWindow::calculateChart()
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -1353,9 +1463,9 @@ void MainWindow::calculateChart()
         //m_currentInterpretation.clear();
         //m_interpretationtextEdit->clear();
         //m_interpretationtextEdit->setPlaceholderText("Click 'Get AI Interpretation' to analyze this chart.");
-        statusBar()->showMessage("Chart calculated successfully", 3000);
+        statusBar()->showMessage(tr("Chart calculated successfully"), 3000);
     } else {
-        handleError("Chart calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Chart calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -1593,7 +1703,7 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
 
 void MainWindow::getInterpretation() {
     if (!m_chartCalculated) {
-        QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
+        QMessageBox::warning(this, tr("No Chart"), tr("Please calculate a chart first."));
         return;
     }
 
@@ -1601,8 +1711,8 @@ void MainWindow::getInterpretation() {
         m_mistralApi.loadActiveModel();
         if (!GlobalFlags::activeModelLoaded) {
 
-            QMessageBox::information(this, "AI Model Not Configured",
-                                     "No active AI model found. Please go to Settings → Configure AI Models to set up a model.");
+            QMessageBox::information(this, tr("AI Model Not Configured"),
+                                     tr("No active AI model found. Please go to Settings → Configure AI Models to set up a model."));
             return;
         }
     }
@@ -1648,9 +1758,9 @@ void MainWindow::getInterpretation() {
     }
 
     // Show loading message
-    m_interpretationtextEdit->append("Requesting interpretation from AI...\n");
+    m_interpretationtextEdit->append(tr("Requesting interpretation from AI...\n"));
     m_getInterpretationButton->setEnabled(false);
-    statusBar()->showMessage("Requesting interpretation...");
+    statusBar()->showMessage(tr("Requesting interpretation..."));
 
     // Request interpretation with filtered data
     m_mistralApi.interpretChart(dataToSend);
@@ -1691,7 +1801,7 @@ void MainWindow::displayInterpretation(const QString &interpretation)
 
     // Build the new header as HTML
     QString header = QString(
-                "<p><b>Chart reading for %1 %2</b> born on %3 at %4 in location %5</p>"
+                tr("<p><b>Chart reading for %1 %2</b> born on %3 at %4 in location %5</p>")
                 ).arg(
                 first_name->text(),
                 last_name->text(),
@@ -1702,14 +1812,14 @@ void MainWindow::displayInterpretation(const QString &interpretation)
 
     // Combine everything into full HTML
     QString fullHtml = existingHtml + "\n" + header + "\n" + htmlInterpretation + "\n" +
-            "<p><i>Received interpretation from AI...</i></p>";
+            tr("<p><i>Received interpretation from AI...</i></p>");
 
     // Set the complete HTML content
     m_interpretationtextEdit->setAcceptRichText(true);
     m_interpretationtextEdit->setHtml(fullHtml);
 
     m_getInterpretationButton->setEnabled(true);
-    statusBar()->showMessage("Interpretation received", 3000);
+    statusBar()->showMessage(tr("Interpretation received"), 3000);
 }
 
 // Helper function to convert plain text to basic HTML
@@ -1744,11 +1854,11 @@ void MainWindow::newChart() {
     m_sunSignLabel->clear();
     m_ascendantLabel->clear();
     m_housesystemLabel->clear();
-    m_predictiveFromEdit->setPlaceholderText("DD/MM/YYYY");
+    m_predictiveFromEdit->setPlaceholderText(tr("DD/MM/YYYY"));
     // Set current date as default
     m_predictiveFromEdit->setText(QDate::currentDate().toString("dd/MM/yyyy"));
     // To date input
-    m_predictiveToEdit->setPlaceholderText("DD/MM/YYYY");
+    m_predictiveToEdit->setPlaceholderText(tr("DD/MM/YYYY"));
     // Set default to current date + 1 days
     QDate defaultFutureDate = QDate::currentDate().addDays(1); // Just a default starting point
     m_predictiveToEdit->setText(defaultFutureDate.toString("dd/MM/yyyy"));
@@ -1764,7 +1874,7 @@ void MainWindow::newChart() {
 
     // Clear interpretation text
     m_interpretationtextEdit->clear();
-    m_interpretationtextEdit->setPlaceholderText("Calculate a chart and click 'Get AI Interpretation'");
+    m_interpretationtextEdit->setPlaceholderText(tr("Calculate a chart and click 'Get AI Interpretation'"));
     m_getInterpretationButton->setEnabled(false);
 
     // Clear sidebar widgets with empty data
@@ -1790,14 +1900,14 @@ void MainWindow::newChart() {
         if (aspectsTable) aspectsTable->setRowCount(0);
     }
 
-    statusBar()->showMessage("New chart", 3000);
-    this->setWindowTitle("Asteria - Astrological Chart Analysis");
+    statusBar()->showMessage(tr("New chart"), 3000);
+    this->setWindowTitle(tr("Asteria - Astrological Chart Analysis"));
 }
 
 
 void MainWindow::saveChart() {
     if (!m_chartCalculated) {
-        QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
+        QMessageBox::warning(this, tr("No Chart"), tr("Please calculate a chart first."));
         return;
     }
 
@@ -1840,9 +1950,9 @@ void MainWindow::saveChart() {
         QJsonDocument doc(saveData);
         file.write(doc.toJson());
         file.close();
-        statusBar()->showMessage("Chart saved to " + filePath, 3000);
+        statusBar()->showMessage(tr("Chart saved to %1").arg(filePath), 3000);
     } else {
-        QMessageBox::critical(this, "Save Error", "Could not save chart to " + filePath);
+        QMessageBox::critical(this, tr("Save Error"), tr("Could not save chart to %1").arg(filePath));
     }
 }
 
@@ -1869,7 +1979,7 @@ void MainWindow::loadChart() {
         dir.mkpath(appDir);
 
     // Open file dialog starting in the app directory
-    QString filePath = QFileDialog::getOpenFileName(this, "Load Chart",
+    QString filePath = QFileDialog::getOpenFileName(this, tr("Load Chart"),
                                                     appDir,
                                                     "Astrological Chart (*.astr)");
     if (filePath.isEmpty()) {
@@ -1945,8 +2055,8 @@ void MainWindow::loadChart() {
 
                 // Set window title based on relationship info
                 if (m_currentRelationshipInfo.contains("displayName")) {
-                    setWindowTitle("Asteria - Astrological Chart Analysis - " +
-                                   m_currentRelationshipInfo["displayName"].toString());
+                    setWindowTitle(tr("Asteria - Astrological Chart Analysis - %1").arg(
+                                   m_currentRelationshipInfo["displayName"].toString()));
                 }
             } else {
                 // Clear any existing relationship info
@@ -1956,19 +2066,19 @@ void MainWindow::loadChart() {
                 QString name = first_name->text();
                 QString surname = last_name->text();
                 if (!name.isEmpty() || !surname.isEmpty()) {
-                    setWindowTitle("Asteria - Astrological Chart Analysis - " + name + " " + surname);
+                    setWindowTitle(tr("Asteria - Astrological Chart Analysis - %1 %2").arg(name, surname));
                 } else {
-                    setWindowTitle("Asteria - Astrological Chart Analysis - Birth Chart");
+                    setWindowTitle(tr("Asteria - Astrological Chart Analysis - Birth Chart"));
                 }
             }
 
             populateInfoOverlay();
-            statusBar()->showMessage("Chart loaded from " + filePath, 3000);
+            statusBar()->showMessage(tr("Chart loaded from %1").arg(filePath), 3000);
         } else {
-            QMessageBox::critical(this, "Load Error", "Invalid chart file format");
+            QMessageBox::critical(this, tr("Load Error"), tr("Invalid chart file format"));
         }
     } else {
-        QMessageBox::critical(this, "Load Error", "Could not open chart file " + filePath);
+        QMessageBox::critical(this, tr("Load Error"), tr("Could not open chart file %1").arg(filePath));
     }
 }
 
@@ -1978,7 +2088,7 @@ void MainWindow::loadChart() {
 void MainWindow::exportInterpretation()
 {
     if (m_currentInterpretation.isEmpty()) {
-        QMessageBox::warning(this, "No Interpretation", "Please get an interpretation first.");
+        QMessageBox::warning(this, tr("No Interpretation"), tr("Please get an interpretation first."));
         return;
     }
 
@@ -1991,9 +2101,9 @@ void MainWindow::exportInterpretation()
         QTextStream stream(&file);
         stream << m_currentInterpretation;
         file.close();
-        statusBar()->showMessage("Interpretation exported to " + filePath, 3000);
+        statusBar()->showMessage(tr("Interpretation exported to %1").arg(filePath), 3000);
     } else {
-        QMessageBox::critical(this, "Export Error", "Could not save interpretation to " + filePath);
+        QMessageBox::critical(this, tr("Export Error"), tr("Could not save interpretation to %1").arg(filePath));
     }
 }
 
@@ -2008,15 +2118,15 @@ void MainWindow::printChart() {
     return;
 #else
     if (!m_chartCalculated) {
-        QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
+        QMessageBox::warning(this, tr("No Chart"), tr("Please calculate a chart first."));
         return;
     }
 
     QList<QPrinterInfo> printers = QPrinterInfo::availablePrinters();
     if (printers.isEmpty()) {
-        QMessageBox::warning(this, "No Printer Found",
-                             "No active printer is available.\nPlease connect a printer or select 'Export as PDF' "
-                             "from File menu and print the exported PDF manually at a later time");
+        QMessageBox::warning(this, tr("No Printer Found"),
+                             tr("No active printer is available.\nPlease connect a printer or select 'Export as PDF' "
+                             "from File menu and print the exported PDF manually at a later time"));
         return;
     }
 
@@ -2091,8 +2201,8 @@ void MainWindow::showAboutDialog()
     QString version = QCoreApplication::applicationVersion();
     QMessageBox::about(
         this,
-        "About Asteria",
-        QString("<h3>Asteria - Astrological Chart Analysis</h3>"
+        tr("About Asteria"),
+        QString(tr("<h3>Asteria - Astrological Chart Analysis</h3>"
                 "<p>Version %1</p>"
                 "<p>Free for Linux on Flathub.<br>"
                 "Pre‑compiled binaries for <b>Windows & macOS</b> are available here:</p>"
@@ -2104,15 +2214,15 @@ void MainWindow::showAboutDialog()
                 "<p>Source code & Linux version:<br>"
                 "<a href=\"https://github.com/alamahant/Asteria\">"
                 "https://github.com/alamahant/Asteria</a></p>"
-                "<p>© 2025 Alamahant</p>")
+                "<p>© 2025 Alamahant</p>"))
         .arg(version)
     );
 }
 
 void MainWindow::handleError(const QString &errorMessage)
 {
-    QMessageBox::critical(this, "Error", errorMessage);
-    statusBar()->showMessage("Error: " + errorMessage, 5000);
+    QMessageBox::critical(this, tr("Error"), errorMessage);
+    statusBar()->showMessage(tr("Error: %1").arg(errorMessage), 5000);
     getPredictionButton->setEnabled(true);
     m_getInterpretationButton->setEnabled(true);
 }
@@ -2123,10 +2233,10 @@ QString MainWindow::getChartFilePath(bool forSaving)
     QString filePath;
 
     if (forSaving) {
-        filePath = QFileDialog::getSaveFileName(this, "Save Chart",
+        filePath = QFileDialog::getSaveFileName(this, tr("Save Chart"),
                                                 GlobalFlags::appDir, "Chart Files (*.chart)");
     } else {
-        filePath = QFileDialog::getOpenFileName(this, "Open Chart",
+        filePath = QFileDialog::getOpenFileName(this, tr("Open Chart"),
                                                 GlobalFlags::appDir, "Chart Files (*.chart)");
     }
 
@@ -2317,15 +2427,15 @@ ChartData MainWindow::convertJsonToChartData(const QJsonObject &jsonData)
 void MainWindow::getPrediction() {
     // Only proceed if we have a calculated chart
     if (!m_chartCalculated) {
-        QMessageBox::warning(this, "No Chart", "Please calculate a birth chart first.");
+        QMessageBox::warning(this, tr("No Chart"), tr("Please calculate a birth chart first."));
         return;
     }
 
     if (!GlobalFlags::activeModelLoaded) {
            m_mistralApi.loadActiveModel();  // Try to reload once
            if (!GlobalFlags::activeModelLoaded) {
-               QMessageBox::information(this, "AI Model Not Configured",
-                   "No active AI model found. Please go to Settings → Configure AI Models to set up a model.");
+               QMessageBox::information(this, tr("AI Model Not Configured"),
+                   tr("No active AI model found. Please go to Settings → Configure AI Models to set up a model."));
                return;
            }
        }
@@ -2343,12 +2453,12 @@ void MainWindow::getPrediction() {
 
     // Validate dates
     if (!fromDate.isValid() || !toDate.isValid()) {
-        QMessageBox::warning(this, "Input Error", "Please enter valid dates for prediction range.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter valid dates for prediction range."));
         return;
     }
 
     if (fromDate > toDate) {
-        QMessageBox::warning(this, "Input Error", "From date must be before To date.");
+        QMessageBox::warning(this, tr("Input Error"), tr("From date must be before To date."));
         return;
     }
 
@@ -2356,17 +2466,17 @@ void MainWindow::getPrediction() {
     int transitDays = fromDate.daysTo(toDate) + 1;
 
     if (transitDays <= 0 || transitDays > 30) {
-        QMessageBox::warning(this, "Input Error", "Prediction period must be between 1 and 30 days.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Prediction period must be between 1 and 30 days."));
         return;
     }
 
     // Clear previous interpretation
     //m_interpretationtextEdit->clear();
-    m_interpretationtextEdit->setPlaceholderText("Calculating transits...");
+    m_interpretationtextEdit->setPlaceholderText(tr("Calculating transits..."));
     getPredictionButton->setEnabled(false);
 
     // Update status
-    statusBar()->showMessage(QString("Calculating transits for %1 to %2...")
+    statusBar()->showMessage(tr("Calculating transits for %1 to %2...")
                              .arg(fromDate.toString("yyyy-MM-dd"))
                              .arg(toDate.toString("yyyy-MM-dd")));
 
@@ -2381,7 +2491,7 @@ void MainWindow::getPrediction() {
         // Send to API for interpretation
         m_mistralApi.interpretTransits(transitData);
     } else {
-        handleError("Transit calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Transit calculation error: ") + m_chartDataManager.getLastError());
         getPredictionButton->setEnabled(true);
 
     }
@@ -2420,8 +2530,8 @@ void MainWindow::displayTransitInterpretation(const QString &interpretation) {
 
     // Build the header as HTML
     QString header = QString(
-                "<p><b>Astrological Prediction reading for %1 %2</b> born on %3 at %4 "
-                "in location %5 for the period from %6 to %7</p>"
+                tr("<p><b>Astrological Prediction reading for %1 %2</b> born on %3 at %4 "
+                "in location %5 for the period from %6 to %7</p>")
                 ).arg(
                 first_name->text(),
                 last_name->text(),
@@ -2434,12 +2544,12 @@ void MainWindow::displayTransitInterpretation(const QString &interpretation) {
 
     // Combine everything into a single HTML string
     QString fullHtml = existingHtml + "\n" + header + "\n" + htmlInterpretation + "\n" +
-            "<p><i>Transit interpretation received</i></p>";
+            tr("<p><i>Transit interpretation received</i></p>");
 
     m_interpretationtextEdit->setAcceptRichText(true);
     m_interpretationtextEdit->setHtml(fullHtml);
 
-    statusBar()->showMessage("Transit interpretation complete", 3000);
+    statusBar()->showMessage(tr("Transit interpretation complete"), 3000);
     getPredictionButton->setEnabled(true);
 }
 
@@ -2465,7 +2575,7 @@ void MainWindow::populateInfoOverlay() {
                     QString sunSign = planet["sign"].toString();
                     double sunDegree = planet["longitude"].toDouble();
                     //m_sunSignLabel->setText(QString("Sun: %1 %2°").arg(sunSign).arg(sunDegree, 0, 'f', 1));
-                    m_sunSignLabel->setText(QString("Sun: %1").arg(sunSign));
+                    m_sunSignLabel->setText(tr("Sun: %1").arg(sunSign));
 
                     break;
                 }
@@ -2484,7 +2594,7 @@ void MainWindow::populateInfoOverlay() {
                     QString ascSign = angle["sign"].toString();
                     double ascDegree = angle["longitude"].toDouble();
                     //m_ascendantLabel->setText(QString("Asc: %1 %2°").arg(ascSign).arg(ascDegree, 0, 'f', 1));
-                    m_ascendantLabel->setText(QString("Asc: %1").arg(ascSign));
+                    m_ascendantLabel->setText(tr("Asc: %1").arg(ascSign));
 
                     break;
                 }
@@ -2566,7 +2676,7 @@ void MainWindow::displayRawTransitData(const QJsonObject &transitData) {
 void MainWindow::exportChartImage()
 {
     if (!m_chartCalculated) {
-        QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
+        QMessageBox::warning(this, tr("No Chart"), tr("Please calculate a chart first."));
         return;
     }
 
@@ -2589,9 +2699,9 @@ void MainWindow::exportChartImage()
 
     // Save image
     if (pixmap.save(filePath)) {
-        statusBar()->showMessage("Chart image exported to " + filePath, 3000);
+        statusBar()->showMessage(tr("Chart image exported to %1").arg(filePath), 3000);
     } else {
-        QMessageBox::critical(this, "Export Error", "Could not save image to " + filePath);
+        QMessageBox::critical(this, tr("Export Error"), tr("Could not save image to %1").arg(filePath));
     }
 }
 
@@ -2605,10 +2715,10 @@ void MainWindow::exportAsPdf() {
     return;
 #else
     if (!m_chartCalculated) {
-        QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
+        QMessageBox::warning(this, tr("No Chart"), tr("Please calculate a chart first."));
         return;
     }
-    
+
     QString filePath = getFilepath("pdf");
     if (filePath.isEmpty())
         return;
@@ -2626,10 +2736,10 @@ void MainWindow::exportAsPdf() {
     // Save debug image
     const QString debugImagePath = QDir::tempPath() + "/chart_debug_render.png";
     if (!pixmap.save(debugImagePath)) {
-        QMessageBox::critical(this, "Error", "Failed to save debug image. Check rendering.");
+        QMessageBox::critical(this, tr("Error"), tr("Failed to save debug image. Check rendering."));
         return;
     }
-    
+
     // PDF setup
     QPdfWriter pdfWriter(filePath);
     pdfWriter.setPageSize(QPageSize(QPageSize::A4));
@@ -2637,7 +2747,7 @@ void MainWindow::exportAsPdf() {
     pdfWriter.setTitle("Astrological Chart");
     QPainter pdfPainter(&pdfWriter);
     if (!pdfPainter.isActive()) {
-        QMessageBox::critical(this, "Error", "PDF painter failed to initialize.");
+        QMessageBox::critical(this, tr("Error"), tr("PDF painter failed to initialize."));
         return;
     }
     
@@ -2674,15 +2784,15 @@ void MainWindow::exportAsPdf() {
     
     // Title
     pdfPainter.setFont(titleFont);
-    pdfPainter.drawText(QRect(0, margin, pageWidth, 70), Qt::AlignCenter, "Planets");
-    
+    pdfPainter.drawText(QRect(0, margin, pageWidth, 70), Qt::AlignCenter, tr("Planets"));
+
     // Table headers
     pdfPainter.setPen(QPen(Qt::black, 2.0));
     pdfPainter.drawLine(tableX, tableY, tableX + tableWidth, tableY);
-    drawTableText(0, currentY, "Planet", headerFont);
-    drawTableText(1, currentY, "Sign", headerFont);
-    drawTableText(2, currentY, "Degree", headerFont);
-    drawTableText(3, currentY, "House", headerFont);
+    drawTableText(0, currentY, tr("Planet"), headerFont);
+    drawTableText(1, currentY, tr("Sign"), headerFont);
+    drawTableText(2, currentY, tr("Degree"), headerFont);
+    drawTableText(3, currentY, tr("House"), headerFont);
     currentY += rowHeight;
     pdfPainter.drawLine(tableX, currentY, tableX + tableWidth, currentY);
     
@@ -2708,14 +2818,14 @@ void MainWindow::exportAsPdf() {
     // ------- PAGE 3: HOUSE CUSPS -------
     pdfWriter.newPage();
     pdfPainter.setFont(titleFont);
-    pdfPainter.drawText(QRect(0, margin, pageWidth, 70), Qt::AlignCenter, "House Cusps");
+    pdfPainter.drawText(QRect(0, margin, pageWidth, 70), Qt::AlignCenter, tr("House Cusps"));
     tableY = margin + 130;
     currentY = tableY;
     pdfPainter.setPen(QPen(Qt::black, 2.0));
     pdfPainter.drawLine(tableX, tableY, tableX + tableWidth, tableY);
-    drawTableText(0, currentY, "House", headerFont);
-    drawTableText(1, currentY, "Sign", headerFont);
-    drawTableText(2, currentY, "Degree", headerFont);
+    drawTableText(0, currentY, tr("House"), headerFont);
+    drawTableText(1, currentY, tr("Sign"), headerFont);
+    drawTableText(2, currentY, tr("Degree"), headerFont);
     currentY += rowHeight;
     pdfPainter.drawLine(tableX, currentY, tableX + tableWidth, currentY);
     
@@ -2743,14 +2853,14 @@ void MainWindow::exportAsPdf() {
     // ------- PAGE 4+: ASPECTS -------
     pdfWriter.newPage();
     pdfPainter.setFont(titleFont);
-    pdfPainter.drawText(QRect(0, margin, pageWidth, 70), Qt::AlignCenter, "Aspects");
+    pdfPainter.drawText(QRect(0, margin, pageWidth, 70), Qt::AlignCenter, tr("Aspects"));
     tableY = margin + 130;
     currentY = tableY;
     pdfPainter.setFont(headerFont);
-    drawTableText(0, currentY, "Planet 1", headerFont);
-    drawTableText(1, currentY, "Aspect", headerFont);
-    drawTableText(2, currentY, "Planet 2", headerFont);
-    drawTableText(3, currentY, "Orb", headerFont);
+    drawTableText(0, currentY, tr("Planet 1"), headerFont);
+    drawTableText(1, currentY, tr("Aspect"), headerFont);
+    drawTableText(2, currentY, tr("Planet 2"), headerFont);
+    drawTableText(3, currentY, tr("Orb"), headerFont);
     currentY += rowHeight;
     pdfPainter.drawLine(tableX, currentY, tableX + tableWidth, currentY);
     pdfPainter.setFont(textFont);
@@ -2761,10 +2871,10 @@ void MainWindow::exportAsPdf() {
             pdfWriter.newPage();
             currentY = tableY;
             pdfPainter.setFont(headerFont);
-            drawTableText(0, currentY, "Planet 1", headerFont);
-            drawTableText(1, currentY, "Aspect", headerFont);
-            drawTableText(2, currentY, "Planet 2", headerFont);
-            drawTableText(3, currentY, "Orb", headerFont);
+            drawTableText(0, currentY, tr("Planet 1"), headerFont);
+            drawTableText(1, currentY, tr("Aspect"), headerFont);
+            drawTableText(2, currentY, tr("Planet 2"), headerFont);
+            drawTableText(3, currentY, tr("Orb"), headerFont);
             currentY += rowHeight;
             pdfPainter.drawLine(tableX, currentY, tableX + tableWidth, currentY);
             pdfPainter.setFont(textFont);
@@ -2787,7 +2897,7 @@ void MainWindow::exportAsPdf() {
         pdfWriter.newPage();
         titleFont.setPointSize(22);
         pdfPainter.setFont(titleFont);
-        pdfPainter.drawText(QRect(0, margin, pageWidth, 70), Qt::AlignCenter, "Interpretation");
+        pdfPainter.drawText(QRect(0, margin, pageWidth, 70), Qt::AlignCenter, tr("Interpretation"));
         
         QTextDocument doc;
         textFont.setPointSize(16);
@@ -2805,7 +2915,7 @@ void MainWindow::exportAsPdf() {
                 pdfWriter.newPage();
                 pdfPainter.setFont(titleFont);
                 pdfPainter.drawText(QRect(0, margin, pageWidth, 70),
-                                    Qt::AlignCenter, "Interpretation (cont.)");
+                                    Qt::AlignCenter, tr("Interpretation (cont.)"));
             }
             
             qreal pageSpace = pageHeight - margin - (yOffset > 0 ? 100 : 200);
@@ -2838,7 +2948,7 @@ void MainWindow::exportAsPdf() {
 void MainWindow::exportAsSvg() {
 
     if (!m_chartCalculated) {
-        QMessageBox::warning(this, "No Chart", "Please calculate a chart first.");
+        QMessageBox::warning(this, tr("No Chart"), tr("Please calculate a chart first."));
         return;
     }
 
@@ -2881,7 +2991,7 @@ void MainWindow::exportAsSvg() {
     // Restore the original transform
     m_chartView->setTransform(originalTransform);
 
-    statusBar()->showMessage("Chart exported to " + filePath, 3000);
+    statusBar()->showMessage(tr("Chart exported to %1").arg(filePath), 3000);
 }
 
 QString MainWindow::getFilepath(const QString &format)
@@ -2890,7 +3000,7 @@ QString MainWindow::getFilepath(const QString &format)
     QString surname = last_name->text().simplified();
 
     if (name.isEmpty() || surname.isEmpty()) {
-        QMessageBox::warning(this, "Missing Information", "Please enter both first name and last name to save the chart.");
+        QMessageBox::warning(this, tr("Missing Information"), tr("Please enter both first name and last name to save the chart."));
         return QString();
     }
 
@@ -2933,7 +3043,7 @@ QString MainWindow::getFilepath(const QString &format)
         filter = "All Files (*)";
     }
 
-    QString filePath = QFileDialog::getSaveFileName(this, "Export Chart", defaultPath, filter);
+    QString filePath = QFileDialog::getSaveFileName(this, tr("Export Chart"), defaultPath, filter);
 
     if (filePath.isEmpty())
         return QString();
@@ -2961,7 +3071,7 @@ void MainWindow::printPdfFromPath(const QString& filePath) {
     {
         qWarning() << "PDF failed to load with status:" << pdf.status();
         qWarning() << "File path was:" << filePath;
-        QMessageBox::critical(this, "Error", "Failed to load the exported PDF for printing.");
+        QMessageBox::critical(this, tr("Error"), tr("Failed to load the exported PDF for printing."));
     }
     QPrinter printer(QPrinter::HighResolution);
     QPrintDialog dialog(&printer, this);
@@ -2969,7 +3079,7 @@ void MainWindow::printPdfFromPath(const QString& filePath) {
         return;
     QPainter painter;
     if (!painter.begin(&printer)) {
-        QMessageBox::critical(this, "Error", "Failed to start printing.");
+        QMessageBox::critical(this, tr("Error"), tr("Failed to start printing."));
         return;
     }
     for (int i = 0; i < pdf.pageCount(); ++i) {
@@ -2980,7 +3090,7 @@ void MainWindow::printPdfFromPath(const QString& filePath) {
         painter.drawImage(QPoint(0, 0), image);
     }
     painter.end();
-    statusBar()->showMessage("Chart printed successfully", 3000);
+    statusBar()->showMessage(tr("Chart printed successfully"), 3000);
 #endif
 }
 
@@ -2994,7 +3104,7 @@ void MainWindow::drawPage0(QPainter &painter, QPdfWriter &writer) {
     QFont titleFont("Times", 20, QFont::Bold);
     painter.setFont(titleFont);
     painter.setPen(Qt::black);
-    QString title = "Asteria - Astrological Chart Generation and Analysis Tool";
+    QString title = tr("Asteria - Astrological Chart Generation and Analysis Tool");
     QRect titleRect(margin, margin, pageWidth - 2 * margin, 60);
     painter.drawText(titleRect, Qt::AlignCenter, title);
     // Copyright (more vertical space and padding)
@@ -3002,7 +3112,7 @@ void MainWindow::drawPage0(QPainter &painter, QPdfWriter &writer) {
     painter.setFont(copyrightFont);
     int copyrightTop = margin + 100;
     QRect copyrightRect(margin, copyrightTop, pageWidth - 2 * margin, 30); // taller rect
-    painter.drawText(copyrightRect, Qt::AlignCenter, "© 2025 Alamahant");
+    painter.drawText(copyrightRect, Qt::AlignCenter, tr("© 2025 Alamahant"));
     // Star Banner
     int starTop = copyrightTop + 60;
     QRect starRect(pageWidth / 2 - 50, starTop, 100, 100);
@@ -3012,14 +3122,14 @@ void MainWindow::drawPage0(QPainter &painter, QPdfWriter &writer) {
     painter.setFont(labelFont);
     painter.setPen(Qt::darkBlue);
     QStringList labelTexts = {
-        "Name: " + first_name->text(),
-        "Surname: " + last_name->text(),
-        "Birth Date: " + m_birthDateEdit->text(),
-        "Birth Time: " + m_birthTimeEdit->text(),
-        "Location: " + m_googleCoordsEdit->text(),
-        "Sun Sign: " + m_sunSignLabel->text(),
-        "Ascendant: " + m_ascendantLabel->text(),
-        "House System: " + m_housesystemLabel->text()
+        tr("Name: ") + first_name->text(),
+        tr("Surname: ") + last_name->text(),
+        tr("Birth Date: ") + m_birthDateEdit->text(),
+        tr("Birth Time: ") + m_birthTimeEdit->text(),
+        tr("Location: ") + m_googleCoordsEdit->text(),
+        tr("Sun Sign: ") + m_sunSignLabel->text(),
+        tr("Ascendant: ") + m_ascendantLabel->text(),
+        tr("House System: ") + m_housesystemLabel->text()
     };
     // Start Y further down, aligned horizontally with star/copyright center
     int startY = starTop + 140;
@@ -3115,7 +3225,7 @@ void MainWindow::showHowToUseDialog() {
     // Create the dialog only if it doesn't exist yet
     if (!m_howToUseDialog) {
         m_howToUseDialog = new QDialog(this);
-        m_howToUseDialog->setWindowTitle("How to Use Asteria");
+        m_howToUseDialog->setWindowTitle(tr("How to Use Asteria"));
         m_howToUseDialog->setMinimumSize(500, 400);
         // Create layout
         QVBoxLayout *layout = new QVBoxLayout(m_howToUseDialog);
@@ -3189,7 +3299,7 @@ void MainWindow::showHowToUseDialog() {
         layout->addWidget(textBrowser);
         // Add a close button at the bottom
         QHBoxLayout *buttonLayout = new QHBoxLayout();
-        QPushButton *closeButton = new QPushButton("Close", m_howToUseDialog);
+        QPushButton *closeButton = new QPushButton(tr("Close"), m_howToUseDialog);
         buttonLayout->addStretch();
         buttonLayout->addWidget(closeButton);
         layout->addLayout(buttonLayout);
@@ -3232,13 +3342,13 @@ void MainWindow::onOpenMapClicked()
 
 QString MainWindow::getOrbDescription(double orb) {
     if (orb <= 7.0)
-        return "Conservative/Tight";
+        return tr("Conservative/Tight");
     else if (orb <= 9.0)
-        return "Moderate";
+        return tr("Moderate");
     else if (orb <= 10.5)
-        return "Standard";
+        return tr("Standard");
     else
-        return "Liberal/Wide";
+        return tr("Liberal/Wide");
 }
 
 
@@ -3272,8 +3382,8 @@ void MainWindow::showAspectSettings()
 
 void MainWindow::createCompositeChart() {
     // Show info message
-    QMessageBox::information(this, "Select Charts",
-                             "Please select two natal charts to create a composite chart.");
+    QMessageBox::information(this, tr("Select Charts"),
+                             tr("Please select two natal charts to create a composite chart."));
     // Get app directory for file dialog
     QString appName = QApplication::applicationName();
     QString appDir = GlobalFlags::appDir;
@@ -3291,12 +3401,12 @@ void MainWindow::createCompositeChart() {
 
     // Open file dialog for selecting two charts
     QStringList filePaths = QFileDialog::getOpenFileNames(
-                this, "Select Two Charts", appDir, "Astrological Chart (*.astr)");
+                this, tr("Select Two Charts"), appDir, "Astrological Chart (*.astr)");
 
     // Validate selection
     if (filePaths.size() != 2) {
-        QMessageBox::warning(this, "Invalid Selection",
-                             "You must select exactly two charts.");
+        QMessageBox::warning(this, tr("Invalid Selection"),
+                             tr("You must select exactly two charts."));
         return;
     }
 
@@ -3312,11 +3422,11 @@ void MainWindow::createCompositeChart() {
         if (doc.isObject()) {
             saveData1 = doc.object();
         } else {
-            QMessageBox::critical(this, "Load Error", "Invalid chart file format: " + filePaths[0]);
+            QMessageBox::critical(this, tr("Load Error"), tr("Invalid chart file format: %1").arg(filePaths[0]));
             return;
         }
     } else {
-        QMessageBox::critical(this, "Load Error", "Could not open chart file " + filePaths[0]);
+        QMessageBox::critical(this, tr("Load Error"), tr("Could not open chart file %1").arg(filePaths[0]));
         return;
     }
 
@@ -3329,11 +3439,11 @@ void MainWindow::createCompositeChart() {
         if (doc.isObject()) {
             saveData2 = doc.object();
         } else {
-            QMessageBox::critical(this, "Load Error", "Invalid chart file format: " + filePaths[1]);
+            QMessageBox::critical(this, tr("Load Error"), tr("Invalid chart file format: %1").arg(filePaths[1]));
             return;
         }
     } else {
-        QMessageBox::critical(this, "Load Error", "Could not open chart file " + filePaths[1]);
+        QMessageBox::critical(this, tr("Load Error"), tr("Could not open chart file %1").arg(filePaths[1]));
         return;
     }
 
@@ -3697,21 +3807,21 @@ void MainWindow::createCompositeChart() {
         QJsonDocument doc(compositeSaveData);
         outputFile.write(doc.toJson(QJsonDocument::Indented));
         outputFile.close();
-        QMessageBox::information(this, "Chart Saved", "Composite chart saved to:\n" + outputFilePath);
+        QMessageBox::information(this, tr("Chart Saved"), tr("Composite chart saved to:\n%1").arg(outputFilePath));
     } else {
-        QMessageBox::warning(this, "Save Failed", "Could not save Composite chart to:\n" + outputFilePath);
+        QMessageBox::warning(this, tr("Save Failed"), tr("Could not save Composite chart to:\n%1").arg(outputFilePath));
     }
 
     // Update window title
-    setWindowTitle("Asteria - Astrological Chart Analysis - " + relationshipInfo["displayName"].toString());
+    setWindowTitle(tr("Asteria - Astrological Chart Analysis - %1").arg(relationshipInfo["displayName"].toString()));
 }
 
 
 
 
 void MainWindow::createDavisonChart() {
-    QMessageBox::information(this, "Select Charts",
-                             "Please select two natal charts to create a Davison chart.");
+    QMessageBox::information(this, tr("Select Charts"),
+                             tr("Please select two natal charts to create a Davison chart."));
     QString appName = QApplication::applicationName();
     QString appDir = GlobalFlags::appDir;
 #ifdef FLATHUB_BUILD
@@ -3724,11 +3834,11 @@ void MainWindow::createDavisonChart() {
         dir.mkpath(appDir);
 
     QStringList filePaths = QFileDialog::getOpenFileNames(
-                this, "Select Two Charts", appDir, "Astrological Chart (*.astr)");
+                this, tr("Select Two Charts"), appDir, "Astrological Chart (*.astr)");
 
     if (filePaths.size() != 2) {
-        QMessageBox::warning(this, "Invalid Selection",
-                             "You must select exactly two charts.");
+        QMessageBox::warning(this, tr("Invalid Selection"),
+                             tr("You must select exactly two charts."));
         return;
     }
 
@@ -3740,11 +3850,11 @@ void MainWindow::createDavisonChart() {
         if (doc.isObject()) {
             saveData1 = doc.object();
         } else {
-            QMessageBox::critical(this, "Load Error", "Invalid chart file format: " + filePaths[0]);
+            QMessageBox::critical(this, tr("Load Error"), tr("Invalid chart file format: %1").arg(filePaths[0]));
             return;
         }
     } else {
-        QMessageBox::critical(this, "Load Error", "Could not open chart file " + filePaths[0]);
+        QMessageBox::critical(this, tr("Load Error"), tr("Could not open chart file %1").arg(filePaths[0]));
         return;
     }
 
@@ -3755,11 +3865,11 @@ void MainWindow::createDavisonChart() {
         if (doc.isObject()) {
             saveData2 = doc.object();
         } else {
-            QMessageBox::critical(this, "Load Error", "Invalid chart file format: " + filePaths[1]);
+            QMessageBox::critical(this, tr("Load Error"), tr("Invalid chart file format: %1").arg(filePaths[1]));
             return;
         }
     } else {
-        QMessageBox::critical(this, "Load Error", "Could not open chart file " + filePaths[1]);
+        QMessageBox::critical(this, tr("Load Error"), tr("Could not open chart file %1").arg(filePaths[1]));
         return;
     }
 
@@ -3944,9 +4054,9 @@ void MainWindow::createDavisonChart() {
         QJsonDocument doc(saveData);
         outputFile.write(doc.toJson(QJsonDocument::Indented));
         outputFile.close();
-        QMessageBox::information(this, "Chart Saved", "Davison chart saved to:\n" + outputFilePath);
+        QMessageBox::information(this, tr("Chart Saved"), tr("Davison chart saved to:\n%1").arg(outputFilePath));
     } else {
-        QMessageBox::warning(this, "Save Failed", "Could not save Davison chart to:\n" + outputFilePath);
+        QMessageBox::warning(this, tr("Save Failed"), tr("Could not save Davison chart to:\n%1").arg(outputFilePath));
     }
 
     displayChart(m_currentChartData);
@@ -3954,7 +4064,7 @@ void MainWindow::createDavisonChart() {
     GlobalFlags::lastGeneratedChartType = "Davison Relationship";
 
     populateInfoOverlay();
-    setWindowTitle("Asteria - Astrological Chart Analysis - " + relationshipInfo["displayName"].toString());
+    setWindowTitle(tr("Asteria - Astrological Chart Analysis - %1").arg(relationshipInfo["displayName"].toString()));
 }
 
 
@@ -3970,7 +4080,7 @@ void MainWindow::showRelationshipChartsDialog()
     // Create the dialog only if it doesn't exist yet
     if (!m_relationshipChartsDialog) {
         m_relationshipChartsDialog = new QDialog(this);
-        m_relationshipChartsDialog->setWindowTitle("About Relationship Charts");
+        m_relationshipChartsDialog->setWindowTitle(tr("About Relationship Charts"));
         m_relationshipChartsDialog->setMinimumSize(500, 400);
 
         // Create layout
@@ -4036,7 +4146,7 @@ void MainWindow::showRelationshipChartsDialog()
 
         // Add a close button at the bottom
         QHBoxLayout *buttonLayout = new QHBoxLayout();
-        QPushButton *closeButton = new QPushButton("Close", m_relationshipChartsDialog);
+        QPushButton *closeButton = new QPushButton(tr("Close"), m_relationshipChartsDialog);
         buttonLayout->addStretch();
         buttonLayout->addWidget(closeButton);
         layout->addLayout(buttonLayout);
@@ -4088,7 +4198,7 @@ void MainWindow::showChangelog(){
     // Create the dialog only if it doesn't exist yet
     if (!m_showChangelogDialog) {
         m_showChangelogDialog = new QDialog(this);
-        m_showChangelogDialog->setWindowTitle("Changelog");
+        m_showChangelogDialog->setWindowTitle(tr("Changelog"));
         m_showChangelogDialog->setMinimumSize(600, 500);
 
         // Create layout
@@ -4258,7 +4368,7 @@ cp -a ~/.var/app/io.github.alamahant.Asteria/data/Asteria/* ~/Documents/Asteria/
 
         // Add a close button at the bottom
         QHBoxLayout *buttonLayout = new QHBoxLayout();
-        QPushButton *closeButton = new QPushButton("Close", m_showChangelogDialog);
+        QPushButton *closeButton = new QPushButton(tr("Close"), m_showChangelogDialog);
         buttonLayout->addStretch();
         buttonLayout->addWidget(closeButton);
         layout->addLayout(buttonLayout);
@@ -4285,7 +4395,7 @@ void MainWindow::CalculateTransits() {
 
     // Only proceed if we have a calculated chart
     if (!m_chartCalculated) {
-        QMessageBox::warning(this, "No Chart", "Please calculate a birth chart first.");
+        QMessageBox::warning(this, tr("No Chart"), tr("Please calculate a birth chart first."));
         return;
     }
 
@@ -4317,12 +4427,12 @@ void MainWindow::CalculateTransits() {
 
     // Validate dates
     if (!fromDate.isValid() || !toDate.isValid()) {
-        QMessageBox::warning(this, "Input Error", "Please enter valid dates for prediction range.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter valid dates for prediction range."));
         return;
     }
 
     if (fromDate > toDate) {
-        QMessageBox::warning(this, "Input Error", "From date must be before To date.");
+        QMessageBox::warning(this, tr("Input Error"), tr("From date must be before To date."));
         return;
     }
 
@@ -4330,23 +4440,23 @@ void MainWindow::CalculateTransits() {
     int transitDays = fromDate.daysTo(toDate) + 1;
 
     if (transitDays <= 0 || transitDays > 370) {
-        QMessageBox::warning(this, "Input Error", "Prediction period must be between 1 and 370 days.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Prediction period must be between 1 and 370 days."));
         return;
     }
 
     if (transitDays > 60) {
         QMessageBox::information(
                     this,
-                    "Please Be Patient",
-                    "This operation may take some time.\n"
+                    tr("Please Be Patient"),
+                    tr("This operation may take some time.\n"
 
-                    " When finished you will be notified."
+                    " When finished you will be notified.")
                     );
     }
 
 
     // Update status
-    statusBar()->showMessage(QString("Calculating transits for %1 to %2...")
+    statusBar()->showMessage(tr("Calculating transits for %1 to %2...")
                              .arg(fromDate.toString("yyyy-MM-dd"))
                              .arg(toDate.toString("yyyy-MM-dd")));
 
@@ -4362,13 +4472,13 @@ void MainWindow::CalculateTransits() {
     if (m_chartDataManager.getLastError().isEmpty()) {
         //populate tab
         displayRawTransitData(transitData);
-        QMessageBox::information(this, "Transit Data", "Transit data has been generated successfully.\n"
+        QMessageBox::information(this, tr("Transit Data"), tr("Transit data has been generated successfully.\n"
                                                        "Please Navigate to the 'Raw Transit Data Table' to view the data.\n"
-                                                       "You may use 'Tools->Transit Filter' for advanced filtering.");
+                                                       "You may use 'Tools->Transit Filter' for advanced filtering."));
 
 
     } else {
-        handleError("Transit calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Transit calculation error: ") + m_chartDataManager.getLastError());
 
     }
 
@@ -4385,7 +4495,7 @@ void MainWindow::applyTransitFilter(const QString &datePattern,
 {
     // Show "Applying filter..." before starting
     if (m_transitSearchDialog && m_transitSearchDialog->statusLabel) {
-        m_transitSearchDialog->statusLabel->setText("Please wait...");
+        m_transitSearchDialog->statusLabel->setText(tr("Please wait..."));
         qApp->processEvents();
     }
     // Save current state
@@ -4458,7 +4568,7 @@ void MainWindow::applyTransitFilter(const QString &datePattern,
     }
     // Show "Filter applied" after finishing
     if (m_transitSearchDialog && m_transitSearchDialog->statusLabel)
-        m_transitSearchDialog->statusLabel->setText("Filter applied");
+        m_transitSearchDialog->statusLabel->setText(tr("Filter applied"));
 }
 
 
@@ -4476,14 +4586,14 @@ void MainWindow::openTransitFilter() {
 void MainWindow::exportChartData(){
     // Check if we have chart data by looking for the details tab widget
     if (!m_chartDetailsWidget) {
-        QMessageBox::warning(this, "No Chart Data", "Please generate a chart first.");
+        QMessageBox::warning(this, tr("No Chart Data"), tr("Please generate a chart first."));
         return;
     }
 
     // Find the details tabs widget
     QTabWidget *detailsTabs = m_chartDetailsWidget->findChild<QTabWidget*>();
     if (!detailsTabs) {
-        QMessageBox::warning(this, "No Chart Data", "Chart details not available.");
+        QMessageBox::warning(this, tr("No Chart Data"), tr("Chart details not available."));
         return;
     }
 
@@ -4496,7 +4606,7 @@ void MainWindow::exportChartData(){
         QTextStream stream(&file);
 
         // Write header
-        stream << "ASTROLOGICAL CHART DATA\n";
+        stream << tr("ASTROLOGICAL CHART DATA") << "\n";
         stream << "=======================\n\n";
 
         // Iterate through each tab
@@ -4558,9 +4668,9 @@ void MainWindow::exportChartData(){
         }
 
         file.close();
-        statusBar()->showMessage("Chart data exported to " + filePath, 3000);
+        statusBar()->showMessage(tr("Chart data exported to %1").arg(filePath), 3000);
     } else {
-        QMessageBox::critical(this, "Export Error", "Could not save chart data to " + filePath);
+        QMessageBox::critical(this, tr("Export Error"), tr("Could not save chart data to %1").arg(filePath));
     }
 }
 
@@ -4578,17 +4688,17 @@ void MainWindow::CalculateEclipses()
 
     // Validate dates
     if (!fromDate.isValid() || !toDate.isValid()) {
-        QMessageBox::warning(this, "Input Error", "Please enter valid dates for eclipse search range.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter valid dates for eclipse search range."));
         return;
     }
     if (fromDate > toDate) {
-        QMessageBox::warning(this, "Input Error", "From date must be before To date.");
+        QMessageBox::warning(this, tr("Input Error"), tr("From date must be before To date."));
         return;
     }
 
     int days = fromDate.daysTo(toDate) + 1;
     if (days <= 0 || days > 365 * 100) {
-        QMessageBox::warning(this, "Input Error", "Eclipse search period must be between 1 and 36500 days.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Eclipse search period must be between 1 and 36500 days."));
         return;
     }
 
@@ -4597,11 +4707,11 @@ void MainWindow::CalculateEclipses()
     //bool lunarEclipses = true;
 
     if (!solarEclipses && !lunarEclipses) {
-        QMessageBox::warning(this, "Input Error", "Please select at least one eclipse type (solar or lunar).");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please select at least one eclipse type (solar or lunar)."));
         return;
     }
 
-    statusBar()->showMessage(QString("Calculating eclipses for %1 to %2...")
+    statusBar()->showMessage(tr("Calculating eclipses for %1 to %2...")
                              .arg(fromDate.toString("yyyy-MM-dd"))
                              .arg(toDate.toString("yyyy-MM-dd")));
 
@@ -4610,10 +4720,10 @@ void MainWindow::CalculateEclipses()
 
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayRawEclipseData(eclipseData);
-        QMessageBox::information(this, "Eclipse Data", "Eclipse data has been generated successfully.\n"
-                                                       "Please navigate to 'Chart Details->Eclipses' tab tp view the data.");
+        QMessageBox::information(this, tr("Eclipse Data"), tr("Eclipse data has been generated successfully.\n"
+                                                       "Please navigate to 'Chart Details->Eclipses' tab tp view the data."));
     } else {
-        handleError("Eclipse calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Eclipse calculation error: ") + m_chartDataManager.getLastError());
     }
 }
 
@@ -4717,7 +4827,7 @@ void MainWindow::doSolarReturnCalculation(const QDate& birthDate, const QTime& b
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -4751,8 +4861,8 @@ void MainWindow::doSolarReturnCalculation(const QDate& birthDate, const QTime& b
         //m_interpretationtextEdit->clear();
         //m_interpretationtextEdit->setPlaceholderText("Click 'Get AI Interpretation' to analyze this chart.");
 
-        statusBar()->showMessage("Solar return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Solar Return Chart");
+        statusBar()->showMessage(tr("Solar return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Solar Return Chart"));
 
 
         QString dateStr = m_currentChartData.value("returnDate").toString();
@@ -4760,25 +4870,25 @@ void MainWindow::doSolarReturnCalculation(const QDate& birthDate, const QTime& b
         QString jdStr   = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Solar Return Year: %1\n"
+                    tr("Solar Return Year: %1\n"
                     "Solar Return Moment\n"
                     "Date: %2\n"
                     "Time: %3\n"
-                    "Julian Day: %4\n\n"
+                    "Julian Day: %4\n\n")
                     ).arg(QString::number(year), dateStr, timeStr, jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Solar return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Solar return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Solar Return Moment", msg);
+        QMessageBox::information(this, tr("Solar Return Moment"), msg);
 
     } else {
-        handleError("Solar return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Solar return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -4868,7 +4978,7 @@ void MainWindow::doLunarReturnCalculation(const QDate& birthDate, const QTime& b
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -4901,8 +5011,8 @@ void MainWindow::doLunarReturnCalculation(const QDate& birthDate, const QTime& b
         //m_interpretationtextEdit->clear();
         //m_interpretationtextEdit->setPlaceholderText("Click 'Get AI Interpretation' to analyze this chart.");
 
-        statusBar()->showMessage("Lunar return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Lunar Return Chart");
+        statusBar()->showMessage(tr("Lunar return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Lunar Return Chart"));
 
 
 
@@ -4911,24 +5021,24 @@ void MainWindow::doLunarReturnCalculation(const QDate& birthDate, const QTime& b
         QString jdStr   = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Lunar Return Moment\n"
+                    tr("Lunar Return Moment\n"
                     "Date: %1\n"
                     "Time: %2\n"
-                    "Julian Day: %3\n\n"
+                    "Julian Day: %3\n\n")
                     ).arg(dateStr, timeStr, jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Lunar return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Lunar return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Lunar Return Moment", msg);
+        QMessageBox::information(this, tr("Lunar Return Moment"), msg);
 
     } else {
-        handleError("Lunar return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Lunar return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -5015,7 +5125,7 @@ void MainWindow::doSaturnReturnCalculation(const QDate& birthDate, const QTime& 
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -5051,33 +5161,33 @@ void MainWindow::doSaturnReturnCalculation(const QDate& birthDate, const QTime& 
         // m_interpretationtextEdit->clear();
         // m_interpretationtextEdit->setPlaceholderText("Click 'Get AI Interpretation' to analyze this chart.");
 
-        statusBar()->showMessage("Saturn return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Saturn Return Chart");
+        statusBar()->showMessage(tr("Saturn return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Saturn Return Chart"));
 
         QString dateStr = m_currentChartData.value("returnDate").toString();
         QString timeStr = m_currentChartData.value("returnTime").toString();
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Saturn Return %1\n"
+                    tr("Saturn Return %1\n"
                     "Saturn Return Moment\n"
                     "Date: %2\n"
                     "Time: %3\n"
-                    "Julian Day: %4\n\n"
+                    "Julian Day: %4\n\n")
                     ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Saturn return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Saturn return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Saturn Return Moment", msg);
+        QMessageBox::information(this, tr("Saturn Return Moment"), msg);
 
     } else {
-        handleError("Saturn return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Saturn return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -5162,7 +5272,7 @@ void MainWindow::doJupiterReturnCalculation(const QDate& birthDate, const QTime&
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -5188,33 +5298,32 @@ void MainWindow::doJupiterReturnCalculation(const QDate& birthDate, const QTime&
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
 
-        statusBar()->showMessage("Jupiter return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Jupiter Return Chart");
+        statusBar()->showMessage(tr("Jupiter return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Jupiter Return Chart"));
 
         QString dateStr = m_currentChartData.value("returnDate").toString();
         QString timeStr = m_currentChartData.value("returnTime").toString();
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Jupiter Return %1\n"
+                    tr("Jupiter Return %1\n"
                     "Jupiter Return Moment\n"
                     "Date: %2\n"
                     "Time: %3\n"
-                    "Julian Day: %4\n\n"
-
+                    "Julian Day: %4\n\n")
                     ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Jupiter return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Jupiter return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Jupiter Return Moment", msg);
+        QMessageBox::information(this, tr("Jupiter Return Moment"), msg);
 
     } else {
-        handleError("Jupiter return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Jupiter return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -5296,7 +5405,7 @@ void MainWindow::doVenusReturnCalculation(const QDate& birthDate, const QTime& b
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -5321,33 +5430,33 @@ void MainWindow::doVenusReturnCalculation(const QDate& birthDate, const QTime& b
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
-        statusBar()->showMessage("Venus return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Venus Return Chart");
+        statusBar()->showMessage(tr("Venus return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Venus Return Chart"));
 
         QString dateStr = m_currentChartData.value("returnDate").toString();
         QString timeStr = m_currentChartData.value("returnTime").toString();
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Venus Return %1\n"
+                    tr("Venus Return %1\n"
                     "Venus Return Moment\n"
                     "Date: %2\n"
                     "Time: %3\n"
-                    "Julian Day: %4\n\n"
+                    "Julian Day: %4\n\n")
                     ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Venus return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Venus return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Venus Return Moment", msg);
+        QMessageBox::information(this, tr("Venus Return Moment"), msg);
 
     } else {
-        handleError("Venus return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Venus return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -5428,7 +5537,7 @@ void MainWindow::doMarsReturnCalculation(const QDate& birthDate, const QTime& bi
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -5453,33 +5562,33 @@ void MainWindow::doMarsReturnCalculation(const QDate& birthDate, const QTime& bi
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
-        statusBar()->showMessage("Mars return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Mars Return Chart");
+        statusBar()->showMessage(tr("Mars return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Mars Return Chart"));
 
         QString dateStr = m_currentChartData.value("returnDate").toString();
         QString timeStr = m_currentChartData.value("returnTime").toString();
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Mars Return %1\n"
+                    tr("Mars Return %1\n"
                     "Mars Return Moment\n"
                     "Date: %2\n"
                     "Time: %3\n"
-                    "Julian Day: %4\n\n"
+                    "Julian Day: %4\n\n")
                     ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Mars return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Mars return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Mars Return Moment", msg);
+        QMessageBox::information(this, tr("Mars Return Moment"), msg);
 
     } else {
-        handleError("Mars return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Mars return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -5560,7 +5669,7 @@ void MainWindow::doMercuryReturnCalculation(const QDate& birthDate, const QTime&
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -5585,33 +5694,33 @@ void MainWindow::doMercuryReturnCalculation(const QDate& birthDate, const QTime&
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
-        statusBar()->showMessage("Mercury return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Mercury Return Chart");
+        statusBar()->showMessage(tr("Mercury return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Mercury Return Chart"));
 
         QString dateStr = m_currentChartData.value("returnDate").toString();
         QString timeStr = m_currentChartData.value("returnTime").toString();
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Mercury Return %1\n"
+                    tr("Mercury Return %1\n"
                     "Mercury Return Moment\n"
                     "Date: %2\n"
                     "Time: %3\n"
-                    "Julian Day: %4\n\n"
+                    "Julian Day: %4\n\n")
                     ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Mercury return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Mercury return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Mercury Return Moment", msg);
+        QMessageBox::information(this, tr("Mercury Return Moment"), msg);
 
     } else {
-        handleError("Mercury return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Mercury return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -5731,7 +5840,7 @@ void MainWindow::doUranusReturnCalculation(const QDate& birthDate, const QTime& 
     QString houseSystem = m_houseSystemCombo->currentText();
 
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -5753,33 +5862,33 @@ void MainWindow::doUranusReturnCalculation(const QDate& birthDate, const QTime& 
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
 
-        statusBar()->showMessage("Uranus return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Uranus Return Chart");
+        statusBar()->showMessage(tr("Uranus return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Uranus Return Chart"));
 
         QString dateStr = m_currentChartData.value("returnDate").toString();
         QString timeStr = m_currentChartData.value("returnTime").toString();
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Uranus Return %1\n"
+                    tr("Uranus Return %1\n"
                     "Uranus Return Moment\n"
                     "Date: %2\n"
                     "Time: %3\n"
-                    "Julian Day: %4\n\n"
+                    "Julian Day: %4\n\n")
                     ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Uranus return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Uranus return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Uranus Return Moment", msg);
+        QMessageBox::information(this, tr("Uranus Return Moment"), msg);
 
     } else {
-        handleError("Uranus return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Uranus return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -5848,7 +5957,7 @@ void MainWindow::doNeptuneReturnCalculation(const QDate& birthDate, const QTime&
     QString houseSystem = m_houseSystemCombo->currentText();
 
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -5870,33 +5979,33 @@ void MainWindow::doNeptuneReturnCalculation(const QDate& birthDate, const QTime&
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
 
-        statusBar()->showMessage("Neptune return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Neptune Return Chart");
+        statusBar()->showMessage(tr("Neptune return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Neptune Return Chart"));
 
         QString dateStr = m_currentChartData.value("returnDate").toString();
         QString timeStr = m_currentChartData.value("returnTime").toString();
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Neptune Return %1\n"
+                    tr("Neptune Return %1\n"
                     "Neptune Return Moment\n"
                     "Date: %2\n"
                     "Time: %3\n"
-                    "Julian Day: %4\n\n"
+                    "Julian Day: %4\n\n")
                     ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Neptune return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Neptune return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Neptune Return Moment", msg);
+        QMessageBox::information(this, tr("Neptune Return Moment"), msg);
 
     } else {
-        handleError("Neptune return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Neptune return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -5965,7 +6074,7 @@ void MainWindow::doPlutoReturnCalculation(const QDate& birthDate, const QTime& b
     QString houseSystem = m_houseSystemCombo->currentText();
 
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -5987,33 +6096,33 @@ void MainWindow::doPlutoReturnCalculation(const QDate& birthDate, const QTime& b
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
 
-        statusBar()->showMessage("Pluto return chart calculated successfully", 3000);
-        setWindowTitle("Asteria - Pluto Return Chart");
+        statusBar()->showMessage(tr("Pluto return chart calculated successfully"), 3000);
+        setWindowTitle(tr("Asteria - Pluto Return Chart"));
 
         QString dateStr = m_currentChartData.value("returnDate").toString();
         QString timeStr = m_currentChartData.value("returnTime").toString();
         QString jdStr = m_currentChartData.value("returnJulianDay").toString();
 
         QString infoText = QString(
-                    "Pluto Return %1\n"
+                    tr("Pluto Return %1\n"
                     "Pluto Return Moment\n"
                     "Date: %2\n"
                     "Time: %3\n"
-                    "Julian Day: %4\n\n"
+                    "Julian Day: %4\n\n")
                     ).arg(returnNumber).arg(dateStr).arg(timeStr).arg(jdStr);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
-        QString msg = QString("Pluto return occurs on %1 at %2 (Julian Day: %3)")
+        QString msg = tr("Pluto return occurs on %1 at %2 (Julian Day: %3)")
                 .arg(dateStr)
                 .arg(timeStr)
                 .arg(jdStr);
 
-        QMessageBox::information(this, "Pluto Return Moment", msg);
+        QMessageBox::information(this, tr("Pluto Return Moment"), msg);
 
     } else {
-        handleError("Pluto return calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Pluto return calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -6087,7 +6196,7 @@ void MainWindow::doSecondaryProgressionCalculation(int progressionYear)
     QString houseSystem = m_houseSystemCombo->currentText();
 
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -6116,24 +6225,24 @@ void MainWindow::doSecondaryProgressionCalculation(int progressionYear)
 
         m_currentInterpretation.clear();
         m_interpretationtextEdit->clear();
-        m_interpretationtextEdit->setPlaceholderText("Click 'Get AI Interpretation' to analyze this chart.");
+        m_interpretationtextEdit->setPlaceholderText(tr("Click 'Get AI Interpretation' to analyze this chart."));
 
-        statusBar()->showMessage("Secondary progression chart calculated successfully", 3000);
+        statusBar()->showMessage(tr("Secondary progression chart calculated successfully"), 3000);
 
         QString dateStr = m_currentChartData.value("date").toString();
         QString timeStr = m_currentChartData.value("time").toString();
         QString infoText = QString(
-                    "Secondary Progression Chart\n"
+                    tr("Secondary Progression Chart\n"
                     "Progressed Date: %1\n"
                     "Time: %2\n"
-                    "Progression Year: %3\n\n"
+                    "Progression Year: %3\n\n")
                     ).arg(dateStr, timeStr).arg(progressionYear);
 
         m_interpretationtextEdit->append(infoText);
         m_currentInterpretation.append(infoText);
 
     } else {
-        handleError("Secondary progression calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Secondary progression calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -6145,7 +6254,7 @@ void MainWindow::showNewFeaturesDialog() {
     // Create the dialog only if it doesn't exist yet
     if (!m_showNewFeaturesDialog) {
         m_showNewFeaturesDialog = new QDialog(this);
-        m_showNewFeaturesDialog->setWindowTitle("What's New!");
+        m_showNewFeaturesDialog->setWindowTitle(tr("What's New!"));
         m_showNewFeaturesDialog->setMinimumSize(650, 600);
 
         // Create layout
@@ -6351,7 +6460,7 @@ We hope you enjoy these new features and improvements. As always, your feedback 
 
         // Add a close button at the bottom
         QHBoxLayout *buttonLayout = new QHBoxLayout();
-        QPushButton *closeButton = new QPushButton("Close", m_showNewFeaturesDialog);
+        QPushButton *closeButton = new QPushButton(tr("Close"), m_showNewFeaturesDialog);
         buttonLayout->addStretch();
         buttonLayout->addWidget(closeButton);
         layout->addLayout(buttonLayout);
@@ -6571,8 +6680,8 @@ void MainWindow::importChartInputData(const QJsonObject &inputData)
 
     m_chartCalculated = true;
     m_currentChartData = chartData;
-    statusBar()->showMessage("Chart imported via drag & drop", 3000);
-    setWindowTitle("Asteria - " + GlobalFlags::lastGeneratedChartType + " Chart");
+    statusBar()->showMessage(tr("Chart imported via drag & drop"), 3000);
+    setWindowTitle(tr("Asteria - %1 Chart").arg(GlobalFlags::lastGeneratedChartType));
 
 }
 
@@ -6634,7 +6743,7 @@ void MainWindow::calculateCurrentChart()
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -6697,7 +6806,7 @@ void MainWindow::calculateCurrentChart()
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -6756,12 +6865,12 @@ void MainWindow::calculateZodiacSignsChart()
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(
                 this,
-                "Zodiac Signs Chart",
-                "The Zodiac Signs Chart looks like a Birth chart but provides general astrological interpretations "
+                tr("Zodiac Signs Chart"),
+                tr("The Zodiac Signs Chart looks like a Birth chart but provides general astrological interpretations "
                 "for all 12 zodiac signs based on planetary positions at a chosen date, time, and location.\n\n"
                 "This chart's AI interpretations are not personal birth readings but give magazine-style forecasts. "
                 "Please make sure to populate the relevant date, time, and location fields before proceeding.\n\n"
-                "Do you want to continue?",
+                "Do you want to continue?"),
                 QMessageBox::Ok | QMessageBox::Cancel
                 );
 
@@ -6785,7 +6894,7 @@ void MainWindow::calculateZodiacSignsChart()
 
     // Validate inputs
     if (latitude.isEmpty() || longitude.isEmpty()) {
-        QMessageBox::warning(this, "Input Error", "Please enter latitude and longitude.");
+        QMessageBox::warning(this, tr("Input Error"), tr("Please enter latitude and longitude."));
         return;
     }
 
@@ -6818,9 +6927,9 @@ void MainWindow::calculateZodiacSignsChart()
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
 
-        statusBar()->showMessage("Zodiac Signs chart calculated successfully", 3000);
+        statusBar()->showMessage(tr("Zodiac Signs chart calculated successfully"), 3000);
     } else {
-        handleError("Chart calculation error: " + m_chartDataManager.getLastError());
+        handleError(tr("Chart calculation error: ") + m_chartDataManager.getLastError());
         m_chartCalculated = false;
         m_getInterpretationButton->setEnabled(false);
         getPredictionButton->setEnabled(false);
@@ -6841,8 +6950,8 @@ void MainWindow::copySavePath()
 
     QApplication::clipboard()->setText(dataDirPath);
     // Optional: Show a confirmation message
-    QMessageBox::information(this, "Path Copied",
-                             QString("Save location copied to clipboard:\n%1").arg(dataDirPath));
+    QMessageBox::information(this, tr("Path Copied"),
+                             tr("Save location copied to clipboard:\n%1").arg(dataDirPath));
 }
 
 void MainWindow::configureAIModels()
@@ -6874,7 +6983,7 @@ void MainWindow::setupShareButton()
     // Create the share button
     QPushButton *shareButton = new QPushButton(this);
     shareButton->setIcon(QIcon(":/icons/share-2.svg"));
-    shareButton->setToolTip("Share this spread");
+    shareButton->setToolTip(tr("Share this spread"));
     shareButton->setFlat(true);
     shareButton->setFixedSize(32, 32);
 
@@ -6919,11 +7028,11 @@ void MainWindow::onShareClicked()
     watermarkPainter.setPen(QPen(QColor(80, 80, 80, 200), 2));
     watermarkPainter.setFont(QFont("Arial", 20, QFont::Bold));
     watermarkPainter.drawText(screenshot.rect(), Qt::AlignBottom | Qt::AlignRight,
-                              "  Created with Asteria  ");
+                              tr("  Created with Asteria  "));
     watermarkPainter.end();
 
     // Build share text
-    QString shareText = QString("My %1 chart")
+    QString shareText = tr("My %1 chart")
                         .arg(GlobalFlags::lastGeneratedChartType);
 
     // Copy to clipboard
@@ -6957,8 +7066,8 @@ void MainWindow::createSymlink()
 #ifdef FLATHUB_BUILD
     QString msg = "";
     QMessageBox msgBox;
-    msgBox.setWindowTitle("Flatpak Permission Required");
-    msgBox.setText(QString(
+    msgBox.setWindowTitle(tr("Flatpak Permission Required"));
+    msgBox.setText(tr(
                        "%1 is running as a Flatpak and may not have access to your home directory.\n\n"
                        "To create a symlink, you may need to grant home directory access first.\n\n"
                        "Option 1 - Terminal:\n"
@@ -6973,8 +7082,8 @@ void MainWindow::createSymlink()
 
     msgBox.setIcon(QMessageBox::Information);
 
-    QPushButton *continueButton = msgBox.addButton("Continue", QMessageBox::AcceptRole);
-    QPushButton *cancelButton = msgBox.addButton("Cancel", QMessageBox::RejectRole);
+    QPushButton *continueButton = msgBox.addButton(tr("Continue"), QMessageBox::AcceptRole);
+    QPushButton *cancelButton = msgBox.addButton(tr("Cancel"), QMessageBox::RejectRole);
     msgBox.setDefaultButton(cancelButton);
 
     msgBox.exec();
@@ -6987,7 +7096,7 @@ void MainWindow::createSymlink()
     // Open dialog to select destination folder
     QString destinationDir = QFileDialog::getExistingDirectory(
                 this,
-                "Select Destination Folder for Symlink",
+                tr("Select Destination Folder for Symlink"),
                 QDir::homePath(),
                 QFileDialog::ShowDirsOnly
                 );
@@ -7002,8 +7111,8 @@ void MainWindow::createSymlink()
     if (QFile::exists(symlinkPath) || QFileInfo(symlinkPath).isSymLink()) {
         QMessageBox::StandardButton reply = QMessageBox::question(
                     this,
-                    "Symlink Exists",
-                    QString("A file or symlink already exists at:\n%1\n\nOverwrite?").arg(symlinkPath),
+                    tr("Symlink Exists"),
+                    tr("A file or symlink already exists at:\n%1\n\nOverwrite?").arg(symlinkPath),
                     QMessageBox::Yes | QMessageBox::No
                     );
 
@@ -7013,7 +7122,7 @@ void MainWindow::createSymlink()
 
         // Remove existing file/symlink
         if (!QFile::remove(symlinkPath)) {
-            QMessageBox::warning(this, "Error", "Could not remove existing file/symlink");
+            QMessageBox::warning(this, tr("Error"), tr("Could not remove existing file/symlink"));
             return;
         }
     }
@@ -7022,16 +7131,16 @@ void MainWindow::createSymlink()
     QString targetPath = GlobalFlags::appDir;
 
     if (!QFile::exists(targetPath)) {
-        QMessageBox::warning(this, "Error",
-                             QString("Target directory does not exist:\n%1").arg(targetPath));
+        QMessageBox::warning(this, tr("Error"),
+                             tr("Target directory does not exist:\n%1").arg(targetPath));
         return;
     }
 
     if (QFile::link(targetPath, symlinkPath)) {
         QMessageBox::information(
                     this,
-                    "Symlink Created",
-                    QString("Symlink created successfully!\n\n"
+                    tr("Symlink Created"),
+                    tr("Symlink created successfully!\n\n"
                             "Name: %3\n"
                             "Location: %1\n\n"
                             "Now you can access Ermis data from:\n%2")
@@ -7042,8 +7151,8 @@ void MainWindow::createSymlink()
     } else {
         QMessageBox::warning(
                     this,
-                    "Error",
-                    QString("Failed to create symlink.\n\n"
+                    tr("Error"),
+                    tr("Failed to create symlink.\n\n"
                             "Destination: %1\n"
                             "Target: %2\n\n"
                             "Possible reasons:\n"

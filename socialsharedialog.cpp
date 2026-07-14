@@ -21,7 +21,7 @@ SocialShareDialog::SocialShareDialog(const QString &defaultText,
     connect(m_shareManager, &SocialShare::shareCompleted,
             this, &SocialShareDialog::onShareComplete);
     
-    setWindowTitle(QString("Share %1 Chart").arg(QCoreApplication::applicationName()));
+    setWindowTitle(tr("Share %1 Chart").arg(QCoreApplication::applicationName()));
     setMinimumSize(500, 450);
     setModal(true);
 }
@@ -31,7 +31,7 @@ void SocialShareDialog::setupUI()
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     
     // Instructions
-    QLabel *instructionLabel = new QLabel("Share your chart with the community:");
+    QLabel *instructionLabel = new QLabel(tr("Share your chart with the community:"));
     instructionLabel->setStyleSheet("font-weight: bold; margin-bottom: 10px;");
     mainLayout->addWidget(instructionLabel);
     
@@ -47,22 +47,22 @@ void SocialShareDialog::setupUI()
 
 
     // Row 0
-    gridLayout->addWidget(createPlatformButton(SocialShare::Twitter, ":/icons/x.svg", "X"), 0, 0);
-    gridLayout->addWidget(createPlatformButton(SocialShare::Facebook, ":/icons/facebook.svg", "Facebook"), 0, 1);
-    gridLayout->addWidget(createPlatformButton(SocialShare::Reddit, ":/icons/reddit.svg", "Reddit"), 0, 2);
+    gridLayout->addWidget(createPlatformButton(SocialShare::Twitter, ":/icons/x.svg", tr("X")), 0, 0);
+    gridLayout->addWidget(createPlatformButton(SocialShare::Facebook, ":/icons/facebook.svg", tr("Facebook")), 0, 1);
+    gridLayout->addWidget(createPlatformButton(SocialShare::Reddit, ":/icons/reddit.svg", tr("Reddit")), 0, 2);
 
     // Row 1
-    gridLayout->addWidget(createPlatformButton(SocialShare::Telegram, ":/icons/telegram.svg", "Telegram"), 1, 1);
-    gridLayout->addWidget(createPlatformButton(SocialShare::Instagram, ":/icons/instagram.svg", "Instagram"), 1, 0);
-    gridLayout->addWidget(createPlatformButton(SocialShare::Email, ":/icons/send.svg", "Email"), 1, 2);
+    gridLayout->addWidget(createPlatformButton(SocialShare::Telegram, ":/icons/telegram.svg", tr("Telegram")), 1, 1);
+    gridLayout->addWidget(createPlatformButton(SocialShare::Instagram, ":/icons/instagram.svg", tr("Instagram")), 1, 0);
+    gridLayout->addWidget(createPlatformButton(SocialShare::Email, ":/icons/send.svg", tr("Email")), 1, 2);
 
     // Row 2
-    gridLayout->addWidget(createPlatformButton(SocialShare::CopyToClipboard, ":/icons/copy.svg", "Copy"), 2, 1);
-    gridLayout->addWidget(createPlatformButton(SocialShare::SaveToFile, ":/icons/save.svg", "Save Image"), 2, 2);
-    gridLayout->addWidget(createPlatformButton(SocialShare::OpenFolder, ":/icons/folder.svg", "Open Folder"), 2, 0);
+    gridLayout->addWidget(createPlatformButton(SocialShare::CopyToClipboard, ":/icons/copy.svg", tr("Copy")), 2, 1);
+    gridLayout->addWidget(createPlatformButton(SocialShare::SaveToFile, ":/icons/save.svg", tr("Save Image")), 2, 2);
+    gridLayout->addWidget(createPlatformButton(SocialShare::OpenFolder, ":/icons/folder.svg", tr("Open Folder")), 2, 0);
 
     // Row 3
-    gridLayout->addWidget(createPlatformButton(SocialShare::WhatsApp, ":/icons/whatsapp.svg", "WhatsApp"), 3, 0);
+    gridLayout->addWidget(createPlatformButton(SocialShare::WhatsApp, ":/icons/whatsapp.svg", tr("WhatsApp")), 3, 0);
 
     // Empty at 3,1 and 3,2
 
@@ -80,7 +80,7 @@ void SocialShareDialog::setupUI()
     mainLayout->addWidget(line);
     
     // Text editor for custom message
-    QLabel *textLabel = new QLabel("Your message:");
+    QLabel *textLabel = new QLabel(tr("Your message:"));
     mainLayout->addWidget(textLabel);
     
     m_textEdit = new QTextEdit();
@@ -89,14 +89,14 @@ void SocialShareDialog::setupUI()
     mainLayout->addWidget(m_textEdit);
     
     // Include screenshot checkbox
-    m_includeImageCheck = new QCheckBox("Include screenshot of the spread");
+    m_includeImageCheck = new QCheckBox(tr("Include screenshot of the spread"));
     m_includeImageCheck->setChecked(true);
     m_includeImageCheck->setVisible(false);
     mainLayout->addWidget(m_includeImageCheck);
     
     // Preview area (optional - shows small thumbnail)
     if (!m_previewImage.isNull()) {
-        QLabel *previewTitle = new QLabel("Preview:");
+        QLabel *previewTitle = new QLabel(tr("Preview:"));
         mainLayout->addWidget(previewTitle);
         
         m_previewLabel = new QLabel();
@@ -171,9 +171,9 @@ void SocialShareDialog::onShareComplete(SocialShare::Platform platform, bool suc
         
         // Close only for non-copy/save actions that are "done"
         if (platform == SocialShare::CopyToClipboard) {
-            QMessageBox::information(this, "Copied",
-                "✓ Screenshot and caption copied to clipboard!\n\n"
-                "You can now paste (Ctrl+V) anywhere.");
+            QMessageBox::information(this, tr("Copied"),
+                tr("✓ Screenshot and caption copied to clipboard!\n\n"
+                "You can now paste (Ctrl+V) anywhere."));
         }
         if (platform != SocialShare::CopyToClipboard && 
             platform != SocialShare::SaveToFile &&
@@ -181,8 +181,8 @@ void SocialShareDialog::onShareComplete(SocialShare::Platform platform, bool suc
             accept();
         }
     } else {
-        QMessageBox::warning(this, "Share Failed", 
-                             QString("Could not share to %1\n%2")
+        QMessageBox::warning(this, tr("Share Failed"),
+                             tr("Could not share to %1\n%2")
                              .arg(m_shareManager->platformDisplayName(platform))
                              .arg(message));
     }

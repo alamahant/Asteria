@@ -23,38 +23,35 @@ void DonationDialog::setupUI()
 
     // Donation platforms
     layout->addWidget(createDonationSection(
-        //"☕ Buy Me a Coffee",
-        "<span style='color:saddlebrown;'>☕</span> Buy Me a Coffee",
+        //"<span style='color:saddlebrown;'>☕</span> Buy Me a Coffee",
+        tr("<span style='color:saddlebrown;'>☕</span> Buy Me a Coffee"),
         "https://buymeacoffee.com/Alamahant",
         "buymeacoffee.com/Alamahant"
     ));
 
     layout->addWidget(createDonationSection(
-        //"❤️ Ko-fi",
-        "<span style='color:red;'>❤️</span> Ko-fi",
+        //"<span style='color:red;'>❤️</span> Ko-fi",
+        tr("<span style='color:red;'>❤️</span> Ko-fi"),
         "https://ko-fi.com/alamahant",
         "ko-fi.com/alamahant"
     ));
 
     layout->addWidget(createDonationSection(
-        //"💰 PayPal",
-        "<span style='color:#B8860B; font-weight:bold;'>$</span> PayPal",
+        //"<span style='color:#B8860B; font-weight:bold;'>$</span> PayPal",
+        tr("<span style='color:#B8860B; font-weight:bold;'>$</span> PayPal"),
         "https://paypal.me/Alamahant",
         "paypal.me/Alamahant"
     ));
 
     // Support enables section - NOW VISIBLE
     QLabel *supportEnablesLabel = new QLabel(
-        R"(
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <p style="margin: 0; font-size: 14px; color: #2c3e50; font-weight: bold; line-height: 1.5;">
-                    <strong style="font-size: 15px;">✨ Your support enables:</strong><br>
-                    • New features and improvements<br>
-                    • Bug fixes and maintenance<br>
-                    • Future updates and compatibility
-                </p>
-            </div>
-        )"
+        tr("<div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;'>"
+           "<p style='margin: 0; font-size: 14px; color: #2c3e50; font-weight: bold; line-height: 1.5;'>"
+           "<strong style='font-size: 15px;'>✨ Your support enables:</strong><br>"
+           "• New features and improvements<br>"
+           "• Bug fixes and maintenance<br>"
+           "• Future updates and compatibility"
+           "</p></div>")
     );
     supportEnablesLabel->setTextFormat(Qt::RichText);
     supportEnablesLabel->setWordWrap(true);
@@ -90,7 +87,7 @@ QWidget* DonationDialog::createDonationSection(const QString &title, const QStri
     copyButton->setFixedSize(60, 25);
     connect(copyButton, &QPushButton::clicked, [this, url]() {
         copyToClipboard(url);
-    	QMessageBox::information(this, "Success", "URL copied to clipboard!");
+    	QMessageBox::information(this, tr("Success"), tr("URL copied to clipboard!"));
     });
     layout->addWidget(copyButton);
 
@@ -107,29 +104,25 @@ void DonationDialog::copyToClipboard(const QString &url)
 
 QString DonationDialog::getDonationContent() const
 {
-    return QString(R"(
-        <div style="text-align: center; font-family: Arial, sans-serif; color: #2c3e50;">
-        <h2 style="color: #2c3e50; margin-bottom: 15px;">
-            <span style="color: red;">❤️</span> Support %1
-        </h2>
-            <p style="font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
-                If you find <strong>%1</strong> useful and you enjoy using it,
-                please consider supporting its development. Your donation
-                helps maintain and improve this application, ensuring it
-                remains free and actively developed.
-            </p>
-            <p style="font-size: 14px; line-height: 1.5; margin-bottom: 25px;">
-                Every contribution, no matter how small, makes a difference
-                and is greatly appreciated! Choose your preferred platform below.
-            </p>
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
-                <p style="margin: 0; font-size: 14px; color: #2c3e50; font-weight: bold; line-height: 1.5;">
-                <strong style="font-size: 15px;">✨ Your support enables:</strong><br>
-                    • New features and improvements<br>
-                    • Bug fixes and maintenance<br>
-                    • Future updates and compatibility
-                </p>
-            </div>
-        </div>
-    )").arg(QApplication::applicationName());
+    return tr("<div style='text-align: center; font-family: Arial, sans-serif; color: #2c3e50;'>"
+        "<h2 style='color: #2c3e50; margin-bottom: 15px;'>"
+        "<span style='color: red;'>❤️</span> Support %1"
+        "</h2>"
+        "<p style='font-size: 14px; line-height: 1.5; margin-bottom: 20px;'>"
+        "If you find <strong>%1</strong> useful and you enjoy using it, "
+        "please consider supporting its development. Your donation "
+        "helps maintain and improve this application, ensuring it "
+        "remains free and actively developed."
+        "</p>"
+        "<p style='font-size: 14px; line-height: 1.5; margin-bottom: 25px;'>"
+        "Every contribution, no matter how small, makes a difference "
+        "and is greatly appreciated! Choose your preferred platform below."
+        "</p>"
+        "<div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;'>"
+        "<p style='margin: 0; font-size: 14px; color: #2c3e50; font-weight: bold; line-height: 1.5;'>"
+        "<strong style='font-size: 15px;'>✨ Your support enables:</strong><br>"
+        "• New features and improvements<br>"
+        "• Bug fixes and maintenance<br>"
+        "• Future updates and compatibility"
+        "</p></div></div>").arg(QApplication::applicationName());
 }

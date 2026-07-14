@@ -15,7 +15,7 @@ void AspectarianWidget::setupUi() {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     // Title label
-    m_titleLabel = new QLabel("Aspectarian", this);
+    m_titleLabel = new QLabel(tr("Aspectarian"), this);
     QFont titleFont = m_titleLabel->font();
     titleFont.setBold(true);
     titleFont.setPointSize(titleFont.pointSize() + 2);
@@ -197,10 +197,11 @@ void AspectarianWidget::updateData(const ChartData &chartData)
         item->setBackground(color);
 
         // Set tooltip with more information
-        item->setToolTip(QString("%1 %2 %3 (Orb: %4°)")
+        item->setToolTip(QString("%1 %2 %3 (%4: %5°)")
                              .arg(aspect.planet1)
                              .arg(aspect.aspectType)
                              .arg(aspect.planet2)
+                             .arg(tr("Orb"))
                              .arg(aspect.orb, 0, 'f', 2));
 
         m_table->setItem(row, col, item);

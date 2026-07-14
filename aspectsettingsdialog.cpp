@@ -10,7 +10,7 @@
 AspectSettingsDialog::AspectSettingsDialog(QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle("Aspect Display Settings");
+    setWindowTitle(tr("Aspect Display Settings"));
     setupUI();
     loadCurrentSettings();
 }
@@ -50,7 +50,7 @@ void AspectSettingsDialog::setupUI()
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
     // Show/Hide all aspects
-    m_showAspectsCheckbox = new QCheckBox("Show Aspect Lines");
+    m_showAspectsCheckbox = new QCheckBox(tr("Show Aspect Lines"));
     mainLayout->addWidget(m_showAspectsCheckbox);
 
     // Create grid layout for settings
@@ -58,15 +58,15 @@ void AspectSettingsDialog::setupUI()
     int row = 0;
 
     // Major aspect settings
-    gridLayout->addWidget(new QLabel("<b>Major Aspects</b>"), row++, 0, 1, 2);
+    gridLayout->addWidget(new QLabel(tr("<b>Major Aspects</b>")), row++, 0, 1, 2);
 
-    gridLayout->addWidget(new QLabel("Line Width:"), row, 0);
+    gridLayout->addWidget(new QLabel(tr("Line Width:")), row, 0);
     m_majorWidthSpinBox = new QDoubleSpinBox();
     m_majorWidthSpinBox->setRange(0.5, 5.0);
     m_majorWidthSpinBox->setSingleStep(0.5);
     gridLayout->addWidget(m_majorWidthSpinBox, row++, 1);
 
-    gridLayout->addWidget(new QLabel("Line Style:"), row, 0);
+    gridLayout->addWidget(new QLabel(tr("Line Style:")), row, 0);
     m_majorStyleCombo = new QComboBox();
     populateStyleCombo(m_majorStyleCombo);
     gridLayout->addWidget(m_majorStyleCombo, row++, 1);
@@ -75,15 +75,15 @@ void AspectSettingsDialog::setupUI()
     gridLayout->addWidget(new QLabel(""), row++, 0);
 
     // Minor aspect settings
-    gridLayout->addWidget(new QLabel("<b>Minor Aspects</b>"), row++, 0, 1, 2);
+    gridLayout->addWidget(new QLabel(tr("<b>Minor Aspects</b>")), row++, 0, 1, 2);
 
-    gridLayout->addWidget(new QLabel("Line Width:"), row, 0);
+    gridLayout->addWidget(new QLabel(tr("Line Width:")), row, 0);
     m_minorWidthSpinBox = new QDoubleSpinBox();
     m_minorWidthSpinBox->setRange(0.5, 5.0);
     m_minorWidthSpinBox->setSingleStep(0.5);
     gridLayout->addWidget(m_minorWidthSpinBox, row++, 1);
 
-    gridLayout->addWidget(new QLabel("Line Style:"), row, 0);
+    gridLayout->addWidget(new QLabel(tr("Line Style:")), row, 0);
     m_minorStyleCombo = new QComboBox();
     populateStyleCombo(m_minorStyleCombo);
     gridLayout->addWidget(m_minorStyleCombo, row++, 1);
@@ -96,17 +96,17 @@ void AspectSettingsDialog::setupUI()
     // Buttons at the bottom
     QHBoxLayout* buttonLayout = new QHBoxLayout();
 
-    QPushButton* resetButton = new QPushButton("Reset to Defaults");
+    QPushButton* resetButton = new QPushButton(tr("Reset to Defaults"));
     connect(resetButton, &QPushButton::clicked, this, &AspectSettingsDialog::resetDefaults);
     buttonLayout->addWidget(resetButton);
 
     buttonLayout->addStretch();
 
-    QPushButton* cancelButton = new QPushButton("Cancel");
+    QPushButton* cancelButton = new QPushButton(tr("Cancel"));
     connect(cancelButton, &QPushButton::clicked, this, &QDialog::reject);
     buttonLayout->addWidget(cancelButton);
 
-    QPushButton* saveButton = new QPushButton("Save");
+    QPushButton* saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &AspectSettingsDialog::saveSettings);
     buttonLayout->addWidget(saveButton);
 
@@ -118,12 +118,12 @@ void AspectSettingsDialog::setupUI()
 
 void AspectSettingsDialog::populateStyleCombo(QComboBox* combo)
 {
-    combo->addItem("Solid Line");
-    combo->addItem("Dash Line");
-    combo->addItem("Dot Line");
-    combo->addItem("Dash Dot Line");
-    combo->addItem("Dash Dot Dot Line");
-    combo->addItem("No Pen");
+    combo->addItem(tr("Solid Line"));
+    combo->addItem(tr("Dash Line"));
+    combo->addItem(tr("Dot Line"));
+    combo->addItem(tr("Dash Dot Line"));
+    combo->addItem(tr("Dash Dot Dot Line"));
+    combo->addItem(tr("No Pen"));
 }
 
 void AspectSettingsDialog::loadCurrentSettings()

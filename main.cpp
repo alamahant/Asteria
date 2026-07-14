@@ -42,6 +42,7 @@ bool loadTranslator(QTranslator &translator, const QString &languageCode)
     const QString appDir = QCoreApplication::applicationDirPath();
     searchDirs << (appDir + "/translations")
                << (QDir::currentPath() + "/translations")
+               << (appDir + "/../translations")
                << (appDir + "/../share/Asteria/translations");
 
     for (const QString &dir : searchDirs) {
@@ -61,6 +62,17 @@ int main(int argc, char *argv[])
     QDir().mkpath(GlobalFlags::sharesDirPath);
 
     QApplication a(argc, argv);
+
+    // Set organization/application name BEFORE any QSettings access so that
+    // saved preferences (e.g. app/language) are read from the right location.
+#ifdef FLATHUB_BUILD
+    QCoreApplication::setOrganizationName("");
+#else
+    QCoreApplication::setOrganizationName("Alamahant");
+#endif
+    QCoreApplication::setApplicationName("Asteria");
+    QDir().mkpath(GlobalFlags::appDir);
+    QCoreApplication::setApplicationVersion("2.4.7");
 
     QString selectedLanguage = "en";
     for (int i = 1; i < argc; ++i) {
@@ -104,22 +116,6 @@ int main(int argc, char *argv[])
     } else {
         g_astroFontFamily = QFontDatabase::applicationFontFamilies(fontId).at(0);
     }
-
-    //QCoreApplication::setOrganizationName("Alamahant");
-
-#ifdef FLATHUB_BUILD
-    QCoreApplication::setOrganizationName("");
-
-#else
-    QCoreApplication::setOrganizationName("Alamahant");
-
-#endif
-
-    QCoreApplication::setApplicationName("Asteria");
-    QDir().mkpath(GlobalFlags::appDir);
-    QCoreApplication::setApplicationVersion("2.4.7");
-
-
 
     MainWindow w;
     w.show();

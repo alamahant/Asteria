@@ -29,13 +29,13 @@ MistralAPI::~MistralAPI()
 void MistralAPI::interpretChart(const QJsonObject &chartData)
 {
     if (m_requestInProgress) {
-        m_lastError = "A request is already in progress";
+        m_lastError = tr("A request is already in progress");
         emit error(m_lastError);
         return;
     }
 
     if (!GlobalFlags::activeModelLoaded) {
-        m_lastError = "No active AI model configured. Please configure one in Settings → Configure AI Models.";;
+        m_lastError = tr("No active AI model configured. Please configure one in Settings → Configure AI Models.");
         emit error(m_lastError);
         return;
     }
@@ -66,7 +66,7 @@ void MistralAPI::handleNetworkReply(QNetworkReply *reply) {
 
     // Check for network errors
     if (reply->error() != QNetworkReply::NoError) {
-        m_lastError = "Network error: " + reply->errorString();
+        m_lastError = tr("Network error: ") + reply->errorString();
         emit error(m_lastError);
         reply->deleteLater();
         return;
@@ -76,7 +76,7 @@ void MistralAPI::handleNetworkReply(QNetworkReply *reply) {
     QByteArray responseData = reply->readAll();
     QJsonDocument doc = QJsonDocument::fromJson(responseData);
     if (doc.isNull() || !doc.isObject()) {
-        m_lastError = "Invalid JSON response";
+        m_lastError = tr("Invalid JSON response");
         emit error(m_lastError);
         reply->deleteLater();
         return;
@@ -87,7 +87,7 @@ void MistralAPI::handleNetworkReply(QNetworkReply *reply) {
     // Format the response
     QString formattedResponse = formatInterpretation(responseObj);
     if (formattedResponse.isEmpty()) {
-        m_lastError = "Failed to extract response from API";
+        m_lastError = tr("Failed to extract response from API");
         emit error(m_lastError);
     } else {
         // Determine which signal to emit based on the request type
@@ -148,13 +148,13 @@ QString MistralAPI::getLastError() const
 
 void MistralAPI::interpretTransits(const QJsonObject &transitData) {
     if (m_requestInProgress) {
-        m_lastError = "A request is already in progress";
+        m_lastError = tr("A request is already in progress");
         emit error(m_lastError);
         return;
     }
 
     if (!GlobalFlags::activeModelLoaded) {
-        m_lastError = "No active AI model configured. Please configure one in Settings → Configure AI Models.";;
+        m_lastError = tr("No active AI model configured. Please configure one in Settings → Configure AI Models.");
         emit error(m_lastError);
         return;
     }
@@ -368,7 +368,7 @@ bool MistralAPI::loadActiveModel()
     // Get the active model name
     QString activeModelName = settings.value("ActiveModel").toString();
     if (activeModelName.isEmpty()) {
-        m_lastError = "No active model selected";
+        m_lastError = tr("No active model selected");
         return false;
     }
 

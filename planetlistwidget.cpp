@@ -16,7 +16,7 @@ void PlanetListWidget::setupUi()
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     // Title label
-    m_titleLabel = new QLabel("Planets", this);
+    m_titleLabel = new QLabel(tr("Planets"), this);
     QFont titleFont = m_titleLabel->font();
     titleFont.setBold(true);
     titleFont.setPointSize(titleFont.pointSize() + 2);
@@ -47,7 +47,7 @@ void PlanetListWidget::setupUi()
     // Set up columns
     m_table->setColumnCount(5);
     QStringList headers;
-    headers << "Planet" << "Sign" << "Degree" << "Minute" << "House";
+    headers << tr("Planet") << tr("Sign") << tr("Degree") << tr("Minute") << tr("House");
     m_table->setHorizontalHeaderLabels(headers);
 
     // Add widgets to layout

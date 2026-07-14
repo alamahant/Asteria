@@ -3,7 +3,7 @@
 
 TransitSearchDialog::TransitSearchDialog(QWidget *parent) : QDialog(parent)
 {
-    setWindowTitle("Transit Search");
+    setWindowTitle(tr("Transit Search"));
     setWindowFlags(Qt::Tool | Qt::WindowStaysOnTopHint);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -15,15 +15,15 @@ TransitSearchDialog::TransitSearchDialog(QWidget *parent) : QDialog(parent)
     m_maxOrbFilter = new QLineEdit(this);
 
 
-    m_dateFilter->setPlaceholderText("Filter by date (yyyy-mm-dd)");
-    m_dateFilter->setToolTip("Filter by date patterns. Examples:\n"
+    m_dateFilter->setPlaceholderText(tr("Filter by date (yyyy-mm-dd)"));
+    m_dateFilter->setToolTip(tr("Filter by date patterns. Examples:\n"
                              "• 2024-01 (January 2024)\n"
                              "• 2024-01-15 (specific date)\n"
                              "• 2024 (entire year)\n"
-                             "Supports regex patterns");
+                             "Supports regex patterns"));
 
-    m_transitPlanetFilter->setPlaceholderText("Filter by transit planet");
-    m_transitPlanetFilter->setToolTip("Filter by transiting planets. Examples:\n"
+    m_transitPlanetFilter->setPlaceholderText(tr("Filter by transit planet"));
+    m_transitPlanetFilter->setToolTip(tr("Filter by transiting planets. Examples:\n"
                                       "PLANETS:\n"
                                       "• Sun, Moon, Mercury, Venus, Mars\n"
                                       "• Jupiter, Saturn, Uranus, Neptune, Pluto\n"
@@ -41,10 +41,10 @@ TransitSearchDialog::TransitSearchDialog(QWidget *parent) : QDialog(parent)
                                       "• Part of Spirit (Part of Spirit - spiritual purpose)\n"
                                       "• East Point (East Point - identity)\n"
                                       "• Vertex (fated encounters)\n"
-                                      "•Lilith (Black Moon Lilith - shadow feminine, repressed power)");
+                                      "•Lilith (Black Moon Lilith - shadow feminine, repressed power)"));
 
-    m_aspectFilter->setPlaceholderText("Filter by aspect");
-    m_aspectFilter->setToolTip("Filter by aspect types. Examples:\n"
+    m_aspectFilter->setPlaceholderText(tr("Filter by aspect"));
+    m_aspectFilter->setToolTip(tr("Filter by aspect types. Examples:\n"
                                "MAJOR ASPECTS:\n"
                                "• CON (Conjunction 0°) - fusion, new beginnings\n"
                                "• OPP (Opposition 180°) - tension, awareness, balance\n"
@@ -56,25 +56,25 @@ TransitSearchDialog::TransitSearchDialog(QWidget *parent) : QDialog(parent)
                                "• SSX (Semisextile 30°) - subtle opportunity\n"
                                "• SQQ (Sesquiquadrate 135°) - Challenge overcoming\n"
 
-                               "• SSQ (Semisquare 45°) - minor friction");
+                               "• SSQ (Semisquare 45°) - minor friction"));
 
-    m_natalPlanetFilter->setPlaceholderText("Filter by natal planet");
-    m_natalPlanetFilter->setToolTip("Filter by natal planets being aspected.\n"
+    m_natalPlanetFilter->setPlaceholderText(tr("Filter by natal planet"));
+    m_natalPlanetFilter->setToolTip(tr("Filter by natal planets being aspected.\n"
                                     "Same planet list as transit planets.\n"
                                     "Shows which part of your birth chart\n"
-                                    "is being activated by the transit.");
+                                    "is being activated by the transit."));
 
-    m_maxOrbFilter->setPlaceholderText("Max Orb (degrees)");
-    m_maxOrbFilter->setToolTip("Set the maximum allowed orb (in degrees) for aspects.\n"
+    m_maxOrbFilter->setPlaceholderText(tr("Max Orb (degrees)"));
+    m_maxOrbFilter->setToolTip(tr("Set the maximum allowed orb (in degrees) for aspects.\n"
                                "Examples:\n"
                                "• 6   (show only aspects with orb ≤ 6°)\n"
                                "• 2.5 (show only aspects with orb ≤ 2.5°)\n"
-                               "Leave empty for default orb.");
+                               "Leave empty for default orb."));
 
     // Add single exclude field
     m_excludeFilter = new QLineEdit(this);
-    m_excludeFilter->setPlaceholderText("Exclude Filter");
-    m_excludeFilter->setToolTip("Exclude specific terms (comma-separated).\n"
+    m_excludeFilter->setPlaceholderText(tr("Exclude Filter"));
+    m_excludeFilter->setToolTip(tr("Exclude specific terms (comma-separated).\n"
                                 "Searches across ALL columns. Examples:\n"
                                 "COMMON EXCLUSIONS:\n"
                                 "• (R) - hide all retrograde transits\n"
@@ -86,10 +86,10 @@ TransitSearchDialog::TransitSearchDialog(QWidget *parent) : QDialog(parent)
                                 "• (R), QUI, Lilith - multiple exclusions\n"
                                 "• Moon, Mercury - hide fast-moving planets\n"
                                 "• SSQ, SSX - hide semi-aspects\n"
-                                "• CON, OPP, SQR - show only soft aspects");
+                                "• CON, OPP, SQR - show only soft aspects"));
 
-    m_applyButton = new QPushButton("Apply Filter", this);
-    m_applyButton->setToolTip("Depending on the volume of data\nfiltering may take some time.\nPlease be patient!");
+    m_applyButton = new QPushButton(tr("Apply Filter"), this);
+    m_applyButton->setToolTip(tr("Depending on the volume of data\nfiltering may take some time.\nPlease be patient!"));
     mainLayout->addWidget(m_dateFilter);
     mainLayout->addWidget(m_transitPlanetFilter);
     mainLayout->addWidget(m_aspectFilter);
@@ -102,7 +102,7 @@ TransitSearchDialog::TransitSearchDialog(QWidget *parent) : QDialog(parent)
 
     connect(m_applyButton, &QPushButton::clicked, this, &TransitSearchDialog::emitFilter);
 
-    m_clearButton = new QPushButton("Clear All", this);
+    m_clearButton = new QPushButton(tr("Clear All"), this);
 
     mainLayout->addWidget(m_clearButton);
     connect(m_clearButton, &QPushButton::clicked, this, &TransitSearchDialog::clearFilters);

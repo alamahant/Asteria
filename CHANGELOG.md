@@ -1,5 +1,19 @@
 # Changelog
 
+## Version 2.4.8 (2026-09-04) – Synastry & Relationship Analysis
+
+### New Features
+- **Synastry Charts**
+- **Synastry Chart Comparison**: Compare planetary aspects between two natal charts
+- **Synastry Table**: Display all aspects with orb values in Chart Details
+- **House Overlays & Angles**: View house overlays and angles (Asc, MC, Desc, IC) for both individuals
+- **Synastry Save/Load**: Save and load synastry data including AI interpretations, auto-saves on calculation
+- **AI Synastry Interpretation**: Get detailed relationship analysis from Mistral AI
+- **Three Filters**: Synastry, Aspects, and Transit filters available via Tools menu
+- **Flatpak**: KDE runtime updated to 6.11
+
+---
+
 ## Version 2.4.7 (2026-06-14) – Share Features & MSA Language Support
 
 ### New Features

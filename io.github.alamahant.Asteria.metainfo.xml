@@ -9,7 +9,7 @@
   <project_license>AGPL-3.0-or-later</project_license>
 
   <url type="vcs-browser">https://github.com/alamahant/Asteria</url>
-
+  <url type="donation">https://ko-fi.com/alamahant</url>
   <description>
     <p>
       Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology.
@@ -89,6 +89,21 @@
   </screenshots>
 
   <releases>
+
+<release version="2.4.8" date="2026-09-04">
+  <description>
+    <p>Synastry &amp; Relationship Analysis:</p>
+    <ul>
+	<li>Synastry Charts</li>
+      <li>Added Synastry chart comparison with Person A and Person B planetary aspects table</li>
+      <li>Added house overlays showing where each person's planets fall in the other's houses</li>
+      <li>Added Save/Load Synastry data with auto-save on calculation</li>
+      <li>Added Synastry, Aspects, and Transit filters available via Tools menu</li>
+      <li>Added AI interpretation support for Synastry relationship analysis</li>
+      <li>Added angles display (Asc, MC, Desc, IC) for both individuals</li>
+    </ul>
+  </description>
+</release>
 
 <release version="2.4.7" date="2026-06-14">
   <description>

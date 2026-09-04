@@ -30,41 +30,29 @@ void SocialShareDialog::setupUI()
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     
-    // Instructions
     QLabel *instructionLabel = new QLabel("Share your chart with the community:");
     instructionLabel->setStyleSheet("font-weight: bold; margin-bottom: 10px;");
     mainLayout->addWidget(instructionLabel);
     
     QGridLayout *gridLayout = new QGridLayout();
     gridLayout->setSpacing(15);
-    //gridLayout->setVerticalSpacing(15);
-
-    // Force all rows to have same height
-    //for (int i = 0; i < 4; i++) {
-      //  gridLayout->setRowMinimumHeight(i, 80);
-      //  gridLayout->setRowStretch(i, 0);
-   // }
 
 
-    // Row 0
+
     gridLayout->addWidget(createPlatformButton(SocialShare::Twitter, ":/icons/x.svg", "X"), 0, 0);
     gridLayout->addWidget(createPlatformButton(SocialShare::Facebook, ":/icons/facebook.svg", "Facebook"), 0, 1);
     gridLayout->addWidget(createPlatformButton(SocialShare::Reddit, ":/icons/reddit.svg", "Reddit"), 0, 2);
 
-    // Row 1
     gridLayout->addWidget(createPlatformButton(SocialShare::Telegram, ":/icons/telegram.svg", "Telegram"), 1, 1);
     gridLayout->addWidget(createPlatformButton(SocialShare::Instagram, ":/icons/instagram.svg", "Instagram"), 1, 0);
     gridLayout->addWidget(createPlatformButton(SocialShare::Email, ":/icons/send.svg", "Email"), 1, 2);
 
-    // Row 2
     gridLayout->addWidget(createPlatformButton(SocialShare::CopyToClipboard, ":/icons/copy.svg", "Copy"), 2, 1);
     gridLayout->addWidget(createPlatformButton(SocialShare::SaveToFile, ":/icons/save.svg", "Save Image"), 2, 2);
     gridLayout->addWidget(createPlatformButton(SocialShare::OpenFolder, ":/icons/folder.svg", "Open Folder"), 2, 0);
 
-    // Row 3
     gridLayout->addWidget(createPlatformButton(SocialShare::WhatsApp, ":/icons/whatsapp.svg", "WhatsApp"), 3, 0);
 
-    // Empty at 3,1 and 3,2
 
     QWidget *spacer = new QWidget();
     spacer->setFixedSize(60, 60);
@@ -73,13 +61,11 @@ void SocialShareDialog::setupUI()
 
     mainLayout->addLayout(gridLayout);
     mainLayout->addLayout(gridLayout);
-    // Separator
     QFrame *line = new QFrame();
     line->setFrameShape(QFrame::HLine);
     line->setFrameShadow(QFrame::Sunken);
     mainLayout->addWidget(line);
     
-    // Text editor for custom message
     QLabel *textLabel = new QLabel("Your message:");
     mainLayout->addWidget(textLabel);
     
@@ -88,13 +74,11 @@ void SocialShareDialog::setupUI()
     m_textEdit->setMaximumHeight(100);
     mainLayout->addWidget(m_textEdit);
     
-    // Include screenshot checkbox
     m_includeImageCheck = new QCheckBox("Include screenshot of the spread");
     m_includeImageCheck->setChecked(true);
     m_includeImageCheck->setVisible(false);
     mainLayout->addWidget(m_includeImageCheck);
     
-    // Preview area (optional - shows small thumbnail)
     if (!m_previewImage.isNull()) {
         QLabel *previewTitle = new QLabel("Preview:");
         mainLayout->addWidget(previewTitle);
@@ -107,7 +91,6 @@ void SocialShareDialog::setupUI()
         mainLayout->addWidget(m_previewLabel);
     }
     
-    // Bottom buttons
     QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Close);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
     mainLayout->addWidget(buttonBox);
@@ -119,7 +102,6 @@ QPushButton* SocialShareDialog::createPlatformButton(SocialShare::Platform platf
 {
     QPushButton *button = new QPushButton();
     button->setIcon(QIcon(iconPath));
-    //button->setIconSize(QSize(32, 32));
     button->setToolTip(label);
     button->setFixedSize(32, 32);
     button->setProperty("platform", platform);
@@ -164,12 +146,7 @@ void SocialShareDialog::onShareComplete(SocialShare::Platform platform, bool suc
 
 
     if (success) {
-        //QMessageBox::information(this, "Success",
-          //                       QString("Shared to %1 successfully!\n%2")
-            //                     .arg(m_shareManager->platformDisplayName(platform))
-            //                     .arg(message));
         
-        // Close only for non-copy/save actions that are "done"
         if (platform == SocialShare::CopyToClipboard) {
             QMessageBox::information(this, "Copied",
                 "✓ Screenshot and caption copied to clipboard!\n\n"

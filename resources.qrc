@@ -14,5 +14,9 @@
         <file>icons/telegram.svg</file>
         <file>icons/whatsapp.svg</file>
         <file>icons/x.svg</file>
+        <file>icons/rss.svg</file>
+        <file>icons/rss-green.svg</file>
+        <file>icons/link.svg</file>
+        <file>icons/link-2.svg</file>
     </qresource>
 </RCC>

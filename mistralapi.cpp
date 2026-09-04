@@ -6,24 +6,19 @@
 #include <QDebug>
 #include"Globals.h"
 
-//#include<QNetworkRequest>
-//#include<QByteArray>
 MistralAPI::MistralAPI(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
     , m_requestInProgress(false)
 {
-    // Connect network reply signal
     connect(m_networkManager, &QNetworkAccessManager::finished,
             this, &MistralAPI::handleNetworkReply);
 
-    // Try to load API key from settings
     GlobalFlags::activeModelLoaded = loadActiveModel();
 }
 
 MistralAPI::~MistralAPI()
 {
-    // QObject parent-child relationship will handle deletion
 }
 
 void MistralAPI::interpretChart(const QJsonObject &chartData)
@@ -41,20 +36,16 @@ void MistralAPI::interpretChart(const QJsonObject &chartData)
     }
 
 
-    // Create the prompt for Mistral
     QJsonObject prompt = createPrompt(chartData);
 
-    // Prepare the network request - Fix: use braces instead of parentheses
     QUrl url(m_apiEndpoint);
     QNetworkRequest request{url};  // Using braces instead of parentheses
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Authorization", QString("Bearer %1").arg(m_apiKey).toUtf8());
 
-    // Convert prompt to JSON document
     QJsonDocument doc(prompt);
     QByteArray data = doc.toJson();
 
-    // Send the request
     m_networkManager->post(request, data);
     m_requestInProgress = true;
 
@@ -64,7 +55,6 @@ void MistralAPI::interpretChart(const QJsonObject &chartData)
 void MistralAPI::handleNetworkReply(QNetworkReply *reply) {
     m_requestInProgress = false;
 
-    // Check for network errors
     if (reply->error() != QNetworkReply::NoError) {
         m_lastError = "Network error: " + reply->errorString();
         emit error(m_lastError);
@@ -72,7 +62,6 @@ void MistralAPI::handleNetworkReply(QNetworkReply *reply) {
         return;
     }
 
-    // Read and parse the response
     QByteArray responseData = reply->readAll();
     QJsonDocument doc = QJsonDocument::fromJson(responseData);
     if (doc.isNull() || !doc.isObject()) {
@@ -84,13 +73,11 @@ void MistralAPI::handleNetworkReply(QNetworkReply *reply) {
 
     QJsonObject responseObj = doc.object();
 
-    // Format the response
     QString formattedResponse = formatInterpretation(responseObj);
     if (formattedResponse.isEmpty()) {
         m_lastError = "Failed to extract response from API";
         emit error(m_lastError);
     } else {
-        // Determine which signal to emit based on the request type
         if (reply->property("isTransitRequest").toBool()) {
             emit transitInterpretationReady(formattedResponse);
         } else {
@@ -103,7 +90,6 @@ void MistralAPI::handleNetworkReply(QNetworkReply *reply) {
 
 QString MistralAPI::formatInterpretation(const QJsonObject &response)
 {
-    // Extract the interpretation from the Mistral API response
     if (!response.contains("choices") || !response["choices"].isArray()) {
         return QString();
     }
@@ -131,7 +117,6 @@ QString MistralAPI::getSettingsPath() const
     QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir dir(appDataPath);
 
-    // Create directory if it doesn't exist
     if (!dir.exists()) {
         dir.mkpath(".");
     }
@@ -144,7 +129,6 @@ QString MistralAPI::getLastError() const
     return m_lastError;
 }
 
-///////////////////////Predictions
 
 void MistralAPI::interpretTransits(const QJsonObject &transitData) {
     if (m_requestInProgress) {
@@ -159,33 +143,26 @@ void MistralAPI::interpretTransits(const QJsonObject &transitData) {
         return;
     }
 
-    // Create the prompt for Mistral
     QJsonObject prompt = createTransitPrompt(transitData);
 
-    // Prepare the network request
     QUrl url(m_apiEndpoint);
     QNetworkRequest request{url};
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Authorization", QString("Bearer %1").arg(m_apiKey).toUtf8());
 
-    // Convert prompt to JSON document
     QJsonDocument doc(prompt);
     QByteArray data = doc.toJson();
 
-    // Send the request
     QNetworkReply *reply = m_networkManager->post(request, data);
     reply->setProperty("isTransitRequest", true);
     m_requestInProgress = true;
 
 }
 
-/////////////////////////////////////////////////////////////////////
 
 QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
-    // Create the messages array for the chat completion
     QJsonArray messages;
 
-    // System message to instruct the model
     QJsonObject systemMessage;
     systemMessage["role"] = "system";
 
@@ -228,9 +205,20 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
             "IMPORTANT: Format the output in Markdown or plain text in %2. "
             "Do NOT output JSON, XML, YAML, or any other structured data formats."
             ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
-    }
-    else {
-        // All other charts use the unified template
+
+    }else if (GlobalFlags::lastGeneratedChartType == "Synastry") {
+        systemMessage["content"] = QString(
+            "You are an expert astrologer providing detailed and insightful interpretations of Synastry charts. "
+            "Analyze the relationship between Person A and Person B based on their planetary aspects and house overlays. "
+            "Explain the strengths, challenges, emotional dynamics, communication style, and long-term potential of this relationship. "
+            "Pay special attention to personal planets (Sun, Moon, Venus, Mars), outer planets (Jupiter, Saturn, Uranus, Neptune, Pluto), "
+            "and the house overlays where each person's planets fall in the other's houses. "
+            "Provide practical insights into how the partners can nurture harmony, overcome obstacles, and grow together. "
+            "Make the narrative detailed, blending psychological insight with grounded relationship advice. "
+            "IMPORTANT: Format the output in Markdown or plain text in %1. "
+            "Do NOT output JSON, XML, YAML, or any other structured data formats."
+            ).arg(m_language);
+    } else {
         systemMessage["content"] = QString(
             "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
             "Analyze the following chart data and provide a comprehensive reading covering personality traits, "
@@ -242,11 +230,9 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
 
     messages.append(systemMessage);
 
-    // User message with the chart data
     QJsonObject userMessage;
     userMessage["role"] = "user";
 
-    // Add language instruction to user message as well for emphasis
     if (m_language != "English") {
         userMessage["content"] = QString("Please interpret this astrological chart in %1: %2")
         .arg(m_language)
@@ -258,7 +244,6 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
 
     messages.append(userMessage);
 
-    // Create the complete request object
     QJsonObject requestObj;
     requestObj["model"] = m_model;
     requestObj["messages"] = messages;
@@ -269,14 +254,11 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
 }
 
 QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
-    // Create the messages array for the chat completion
     QJsonArray messages;
 
-    // System message to instruct the model
     QJsonObject systemMessage;
     systemMessage["role"] = "system";
 
-    // Base content with dates
     QString baseContent = QString("You are an expert astrologer providing detailed and insightful "
                                   "interpretations of planetary transits on %1 charts. The data provided contains "
                                   "transits for EACH DAY from %2 to %3 (a full %4-day period). "
@@ -305,7 +287,6 @@ QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
                                        .toString("yyyy/MM/dd"))
                               .arg(transitData["numberOfDays"].toInt());
 
-    // Add language instruction if not English
     if (m_language != "English") {
         systemMessage["content"] = baseContent + QString(" IMPORTANT: Your entire response must be in %1.")
         .arg(m_language);
@@ -315,14 +296,11 @@ QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
 
     messages.append(systemMessage);
 
-    // User message with the transit data
     QJsonObject userMessage;
     userMessage["role"] = "user";
 
-    // Extract the raw transit data from the JSON
     QString rawTransitData = transitData["rawTransitData"].toString();
 
-    // Create the prompt with the raw data
     QString prompt;
     if (m_language != "English") {
         prompt = QString("Please interpret these astrological transits in %1 for a person born on %2 at %3, "
@@ -350,7 +328,6 @@ QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
     userMessage["content"] = prompt;
     messages.append(userMessage);
 
-    // Create the complete request object
     QJsonObject requestObj;
     requestObj["model"] = m_model;
     requestObj["messages"] = messages;
@@ -365,14 +342,12 @@ bool MistralAPI::loadActiveModel()
     QSettings settings;
     settings.beginGroup("Models");
 
-    // Get the active model name
     QString activeModelName = settings.value("ActiveModel").toString();
     if (activeModelName.isEmpty()) {
         m_lastError = "No active model selected";
         return false;
     }
 
-    // Load only the active model's settings
     settings.beginGroup(activeModelName);
     m_apiEndpoint = settings.value("endpoint").toString();
     m_apiKey = settings.value("apiKey").toString();

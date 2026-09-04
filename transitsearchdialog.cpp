@@ -71,7 +71,6 @@ TransitSearchDialog::TransitSearchDialog(QWidget *parent) : QDialog(parent)
                                "• 2.5 (show only aspects with orb ≤ 2.5°)\n"
                                "Leave empty for default orb.");
 
-    // Add single exclude field
     m_excludeFilter = new QLineEdit(this);
     m_excludeFilter->setPlaceholderText("Exclude Filter");
     m_excludeFilter->setToolTip("Exclude specific terms (comma-separated).\n"
@@ -107,9 +106,7 @@ TransitSearchDialog::TransitSearchDialog(QWidget *parent) : QDialog(parent)
     mainLayout->addWidget(m_clearButton);
     connect(m_clearButton, &QPushButton::clicked, this, &TransitSearchDialog::clearFilters);
 
-    // status label
 
-    // --- Add status label at the bottom ---
     statusLabel = new QLabel(this);
     statusLabel->setText(""); // Initially empty
     statusLabel->setAlignment(Qt::AlignCenter);

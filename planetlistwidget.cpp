@@ -15,7 +15,6 @@ void PlanetListWidget::setupUi()
 {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
-    // Title label
     m_titleLabel = new QLabel("Planets", this);
     QFont titleFont = m_titleLabel->font();
     titleFont.setBold(true);
@@ -23,7 +22,6 @@ void PlanetListWidget::setupUi()
     m_titleLabel->setFont(titleFont);
     m_titleLabel->setAlignment(Qt::AlignCenter);
 
-    // Create table
     m_table = new QTableWidget(this);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -44,13 +42,11 @@ void PlanetListWidget::setupUi()
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    // Set up columns
     m_table->setColumnCount(5);
     QStringList headers;
     headers << "Planet" << "Sign" << "Degree" << "Minute" << "House";
     m_table->setHorizontalHeaderLabels(headers);
 
-    // Add widgets to layout
     layout->addWidget(m_titleLabel);
     layout->addWidget(m_table);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -60,58 +56,45 @@ void PlanetListWidget::setupUi()
 
 void PlanetListWidget::updateData(const ChartData &chartData)
 {
-    // Clear the table
     m_table->setRowCount(0);
 
-    // Sort planets in traditional order
     QStringList orderedPlanets = {
         "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
         "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
         "Pars Fortuna", "Syzygy",
-        // Additional bodies
         "Lilith", "Ceres", "Pallas", "Juno", "Vesta",
         "Vertex", "East Point", "Part of Spirit"
     };
 
-    // Create a map for quick lookup
     QMap<QString, PlanetData> planetMap;
     for (const PlanetData &planet : chartData.planets) {
         planetMap[planet.id] = planet;
     }
 
-    // Create font for symbols if Astromoony is available
     QFont symbolFont = m_table->font();
     bool useCustomFont = !g_astroFontFamily.isEmpty();
     if (useCustomFont) {
         symbolFont = QFont(g_astroFontFamily, symbolFont.pointSize());
     }
 
-    // Add planets in order
     for (const QString &planetId : orderedPlanets) {
         if (planetMap.contains(planetId)) {
             const PlanetData &planet = planetMap[planetId];
             int row = m_table->rowCount();
             m_table->insertRow(row);
 
-            // Planet symbol and name
             QString planetSymbol = getSymbolForPlanet(planet.id);
-            //QTableWidgetItem *planetItem = new QTableWidgetItem(planetSymbol + " " + planet.id);
             QTableWidgetItem *planetItem = new QTableWidgetItem(planetSymbol + " " + planet.id + (planet.isRetrograde && planet.id != "North Node" && planet.id != "South Node" ? " ℞ " : ""));
             if (useCustomFont) {
                 planetItem->setFont(symbolFont);
             }
 
-            // Sign symbol and name
-            //QString signSymbol = getSymbolForSign(planet.sign);
-            //QTableWidgetItem *signItem = new QTableWidgetItem(signSymbol + " " + planet.sign);
 
             QString signName = planet.sign.split(' ').first();
             QString signSymbol = getSymbolForSign(signName);
             QTableWidgetItem *signItem = new QTableWidgetItem(signSymbol + " " + signName);
-            //QTableWidgetItem *signItem = new QTableWidgetItem(signName);
 
             if (useCustomFont) {
-                //QFont zodiacFont = m_table->font(); // ordinary UI font
                 QFont zodiacFont("Dejavu Sans", 11);      // use a known system font
                 zodiacFont.setStyleStrategy(QFont::NoFontMerging); // prevent emoji fallback
 
@@ -119,71 +102,56 @@ void PlanetListWidget::updateData(const ChartData &chartData)
             }
             signItem->setBackground(getColorForSign(signName));
 
-            // Degree
             int degree = static_cast<int>(planet.longitude) % 30;
             QTableWidgetItem *degreeItem = new QTableWidgetItem(QString::number(degree) + "°");
 
-            // Minute
             int minute = static_cast<int>((planet.longitude - static_cast<int>(planet.longitude)) * 60);
             QTableWidgetItem *minuteItem = new QTableWidgetItem(QString::number(minute) + "'");
 
-            // House - use the house string directly
             QTableWidgetItem *houseItem = new QTableWidgetItem(planet.house);
 
-            // Set items in the table
             m_table->setItem(row, 0, planetItem);
             m_table->setItem(row, 1, signItem);
             m_table->setItem(row, 2, degreeItem);
             m_table->setItem(row, 3, minuteItem);
             m_table->setItem(row, 4, houseItem);
 
-            // Center align all items
             for (int col = 0; col < m_table->columnCount(); ++col) {
                 m_table->item(row, col)->setTextAlignment(Qt::AlignCenter);
             }
         }
     }
 
-    // Add any remaining planets not in the ordered list
     for (const PlanetData &planet : chartData.planets) {
         if (!orderedPlanets.contains(planet.id)) {
             int row = m_table->rowCount();
             m_table->insertRow(row);
 
-            // Planet name
             QTableWidgetItem *planetItem = new QTableWidgetItem(planet.id);
 
-            // Sign
-            //QTableWidgetItem *signItem = new QTableWidgetItem(planet.sign);
             QString signName = planet.sign.split(' ').first();
             QTableWidgetItem *signItem = new QTableWidgetItem(signName);
             signItem->setBackground(getColorForSign(signName));
 
-            // Degree
             int degree = static_cast<int>(planet.longitude) % 30;
             QTableWidgetItem *degreeItem = new QTableWidgetItem(QString::number(degree) + "°");
 
-            // Minute
             int minute = static_cast<int>((planet.longitude - static_cast<int>(planet.longitude)) * 60);
             QTableWidgetItem *minuteItem = new QTableWidgetItem(QString::number(minute) + "'");
 
-            // House - use the house string directly
             QTableWidgetItem *houseItem = new QTableWidgetItem(planet.house);
 
-            // Set items in the table
             m_table->setItem(row, 0, planetItem);
             m_table->setItem(row, 1, signItem);
             m_table->setItem(row, 2, degreeItem);
             m_table->setItem(row, 3, minuteItem);
             m_table->setItem(row, 4, houseItem);
 
-            // Center align all items
             for (int col = 0; col < m_table->columnCount(); ++col) {
                 m_table->item(row, col)->setTextAlignment(Qt::AlignCenter);
             }
         }
     }
-    // Re-apply header modes/minimums after model changes (Qt 6.9 may reset these)
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_table->horizontalHeader()->setMinimumSectionSize(1);
     m_table->verticalHeader()->setMinimumSectionSize(1);
@@ -191,7 +159,6 @@ void PlanetListWidget::updateData(const ChartData &chartData)
 
 QString PlanetListWidget::getSymbolForPlanet(const QString &planetId)
 {
-    // Unicode symbols for planets
     if (planetId == "Sun") return "☉";
     if (planetId == "Moon") return "☽";
     if (planetId == "Mercury") return "☿";
@@ -207,7 +174,6 @@ QString PlanetListWidget::getSymbolForPlanet(const QString &planetId)
     if (planetId == "South Node") return "☋";
     if (planetId == "Pars Fortuna") return "⊗";
     if (planetId == "Syzygy") return "☍";
-    // Additional bodies
     if (planetId == "Lilith") return "⚸";
     if (planetId == "Ceres") return "⚳";
     if (planetId == "Pallas") return "⚴";
@@ -222,7 +188,6 @@ QString PlanetListWidget::getSymbolForPlanet(const QString &planetId)
 
 QString PlanetListWidget::getSymbolForSign(const QString &sign)
 {
-    // Unicode symbols for zodiac signs
     if (sign == "Aries") return "♈";
     if (sign == "Taurus") return "♉";
     if (sign == "Gemini") return "♊";
@@ -241,12 +206,9 @@ QString PlanetListWidget::getSymbolForSign(const QString &sign)
 
 QColor PlanetListWidget::getColorForSign(const QString &sign)
 {
-    // Colors based on elements
     if (sign == "Aries" || sign == "Leo" || sign == "Sagittarius") {
         return QColor(255, 200, 200);  // Light red for Fire
     } else if (sign == "Taurus" || sign == "Virgo" || sign == "Capricorn") {
-        //return QColor(255, 255, 200);  // Light yellow for earth 255, 255, 200
-        //return QColor(240, 220, 150);  // Warm golden earth tone
         return QColor(255, 245, 160);  // Light golden
 
     } else if (sign == "Gemini" || sign == "Libra" || sign == "Aquarius") {

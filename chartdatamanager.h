@@ -174,6 +174,7 @@ public:
         const QString &houseSystem,
         int returnNumber);
 
+    ChartCalculator *calculator() const;
 };
 
 #endif // CHARTDATAMANAGER_H

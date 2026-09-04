@@ -15,7 +15,6 @@ void ElementModalityWidget::setupUi()
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
-    // Title label
     m_titleLabel = new QLabel("Elements & Modalities", this);
     QFont titleFont = m_titleLabel->font();
     titleFont.setBold(true);
@@ -23,12 +22,10 @@ void ElementModalityWidget::setupUi()
     m_titleLabel->setFont(titleFont);
     m_titleLabel->setAlignment(Qt::AlignCenter);
 
-    // Create grid layout for the element/modality table
     QWidget *gridWidget = new QWidget(this);
     m_gridLayout = new QGridLayout(gridWidget);
     m_gridLayout->setSpacing(2);
 
-    // Create header labels
     QLabel *headerElement = new QLabel("", this);
     QLabel *headerFire = new QLabel("Fire", this);
     QLabel *headerEarth = new QLabel("Earth", this);
@@ -40,7 +37,6 @@ void ElementModalityWidget::setupUi()
     QLabel *headerFixed = new QLabel("Fixed", this);
     QLabel *headerMutable = new QLabel("Mutable", this);
 
-    // Set header styles
     QFont headerFont;
     headerFont.setBold(true);
     headerElement->setFont(headerFont);
@@ -53,12 +49,10 @@ void ElementModalityWidget::setupUi()
     headerFixed->setFont(headerFont);
     headerMutable->setFont(headerFont);
 
-    // Set header colors
     headerFire->setStyleSheet("background-color: rgba(255, 100, 100, 100);");
     headerEarth->setStyleSheet("background-color: rgba(255, 255, 100, 100);"); // Yellow for Earth
     headerAir->setStyleSheet("background-color: rgba(100, 200, 100, 100);");   // Green for Air
     headerWater->setStyleSheet("background-color: rgba(100, 100, 255, 100);");
-    // Add headers to grid
     m_gridLayout->addWidget(headerElement, 0, 0);
     m_gridLayout->addWidget(headerFire, 0, 1);
     m_gridLayout->addWidget(headerEarth, 0, 2);
@@ -70,7 +64,6 @@ void ElementModalityWidget::setupUi()
     m_gridLayout->addWidget(headerFixed, 2, 0);
     m_gridLayout->addWidget(headerMutable, 3, 0);
 
-    // Make grid responsive to parent/splitter resizing
     gridWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_gridLayout->setContentsMargins(0, 0, 0, 0);
     m_gridLayout->setColumnStretch(1, 1);
@@ -83,14 +76,12 @@ void ElementModalityWidget::setupUi()
     m_gridLayout->setRowStretch(3, 1);
     m_gridLayout->setRowStretch(4, 0); // totals row minimal stretch
 
-    // Create cells for each sign
     QStringList signs = {
         "Aries", "Taurus", "Gemini", "Cancer",
         "Leo", "Virgo", "Libra", "Scorpio",
         "Sagittarius", "Capricorn", "Aquarius", "Pisces"
     };
 
-    // Map signs to their positions in the grid
     QMap<QString, QPair<int, int>> signPositions = {
         {"Aries", {1, 1}},       // Cardinal Fire
         {"Taurus", {2, 2}},      // Fixed Earth
@@ -106,13 +97,10 @@ void ElementModalityWidget::setupUi()
         {"Pisces", {3, 4}}       // Mutable Water
     };
 
-    // Create labels for each sign
     for (const QString &sign : signs) {
 
-        // Create label for the sign
         QString glyph = getSignGlyph(sign);
         QLabel *label = new QLabel(glyph, this);
-        //label->setAlignment(Qt::AlignCenter);
         label->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
 
 
@@ -121,30 +109,23 @@ void ElementModalityWidget::setupUi()
         label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         label->setWordWrap(false);
 
-        // Use a font that supports Unicode symbols
-        //QFont glyphFont = label->font();
-        //glyphFont.setPointSize(16); // Larger font for the glyph
 
         QFont glyphFont("DejaVu Sans", 14);      // use a known system font
         glyphFont.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback
         label->setFont(glyphFont);
 
-        // Set background color based on element
         QString element = getElement(sign);
         QColor color = getElementColor(element);
         label->setStyleSheet(QString("background-color: rgba(%1, %2, %3, 50);")
                                  .arg(color.red()).arg(color.green()).arg(color.blue()));
 
-        // Add to grid at the correct position
         QPair<int, int> pos = signPositions[sign];
         m_gridLayout->addWidget(label, pos.first, pos.second);
 
-        // Store for later updates
         m_signLabels[sign] = label;
 
     }
 
-    // Create total labels
     m_fireTotal = new QLabel("0", this);
     m_earthTotal = new QLabel("0", this);
     m_airTotal = new QLabel("0", this);
@@ -153,7 +134,6 @@ void ElementModalityWidget::setupUi()
     m_fixedTotal = new QLabel("0", this);
     m_mutableTotal = new QLabel("0", this);
 
-    // Set total label styles
     QFont totalFont = m_fireTotal->font();
     totalFont.setBold(true);
     m_fireTotal->setFont(totalFont);
@@ -172,7 +152,6 @@ void ElementModalityWidget::setupUi()
     m_fixedTotal->setAlignment(Qt::AlignCenter);
     m_mutableTotal->setAlignment(Qt::AlignCenter);
 
-    // Add total labels to grid
     m_gridLayout->addWidget(m_fireTotal, 4, 1);
     m_gridLayout->addWidget(m_earthTotal, 4, 2);
     m_gridLayout->addWidget(m_airTotal, 4, 3);
@@ -182,7 +161,6 @@ void ElementModalityWidget::setupUi()
     m_gridLayout->addWidget(m_fixedTotal, 2, 5);
     m_gridLayout->addWidget(m_mutableTotal, 3, 5);
 
-    // Add a grand total label
     QLabel *grandTotalLabel = new QLabel("Total", this);
     QLabel *grandTotal = new QLabel("0", this);
     grandTotalLabel->setFont(headerFont);
@@ -192,7 +170,6 @@ void ElementModalityWidget::setupUi()
     m_gridLayout->addWidget(grandTotalLabel, 4, 0);
     m_gridLayout->addWidget(grandTotal, 4, 5);
 
-    // Add the grid to the main layout
     mainLayout->addWidget(m_titleLabel);
     mainLayout->addWidget(gridWidget);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -203,12 +180,10 @@ void ElementModalityWidget::setupUi()
 
 void ElementModalityWidget::updateData(const ChartData &chartData) {
 
-    // Reset all counts and planet lists
     QMap<QString, QStringList> signPlanets;
     QMap<QString, int> elementCounts;
     QMap<QString, int> modalityCounts;
 
-    // Initialize counts to zero and planet lists to empty
     QStringList signs = {
         "Aries", "Taurus", "Gemini", "Cancer",
         "Leo", "Virgo", "Libra", "Scorpio",
@@ -227,14 +202,12 @@ void ElementModalityWidget::updateData(const ChartData &chartData) {
     modalityCounts["Fixed"] = 0;
     modalityCounts["Mutable"] = 0;
 
-    // Collect planets in each sign
     for (const PlanetData &planet : chartData.planets) {
         QString signName = planet.sign.split(' ').first();
 
         if (signPlanets.contains(signName)) {
             signPlanets[signName].append(planet.id);
 
-            // Update element and modality counts
             QString element = getElement(signName);
             QString modality = getModality(signName);
             elementCounts[element]++;
@@ -242,27 +215,21 @@ void ElementModalityWidget::updateData(const ChartData &chartData) {
         }
     }
 
-    // Update the sign labels with planet glyphs
 
     for (const QString &sign : signs) {
         if (m_signLabels.contains(sign)) {
             QString signGlyph = getSignGlyph(sign);
             QString planetGlyphs = "";
 
-            // Convert planet names to glyphs and join them
             for (const QString &planetId : signPlanets[sign]) {
                 planetGlyphs += getPlanetGlyph(planetId) + " ";
             }
 
-            // Create a simple text label with sign glyph and planet glyphs
             QString labelText = signGlyph + "\n" + planetGlyphs.trimmed();
 
-            // Set the label text without HTML formatting
             m_signLabels[sign]->setText(labelText);
 
-            // Apply the Astromoony font to the label
             if (!g_astroFontFamily.isEmpty()) {
-                //QFont astroFont(g_astroFontFamily, 16);
                 QFont astroFont("DejaVu Sans", 14);      // use a known system font
                 astroFont.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback <<<<<<----
 
@@ -274,7 +241,6 @@ void ElementModalityWidget::updateData(const ChartData &chartData) {
 
 
 
-    // Update the total labels
     m_fireTotal->setText(QString::number(elementCounts["Fire"]));
     m_earthTotal->setText(QString::number(elementCounts["Earth"]));
     m_airTotal->setText(QString::number(elementCounts["Air"]));
@@ -283,11 +249,9 @@ void ElementModalityWidget::updateData(const ChartData &chartData) {
     m_fixedTotal->setText(QString::number(modalityCounts["Fixed"]));
     m_mutableTotal->setText(QString::number(modalityCounts["Mutable"]));
 
-    // Update grand total
     int grandTotal = elementCounts["Fire"] + elementCounts["Earth"] +
                      elementCounts["Air"] + elementCounts["Water"];
 
-    // Find the grand total label and update it
     QLayoutItem *item = m_gridLayout->itemAtPosition(4, 5);
     if (item && item->widget()) {
         QLabel *grandTotalLabel = qobject_cast<QLabel*>(item->widget());
@@ -368,7 +332,6 @@ QString ElementModalityWidget::getPlanetGlyph(const QString &planetId) {
     if (planetId == "South Node") return "☋";
     if (planetId == "Pars Fortuna") return "⊗";
     if (planetId == "Syzygy") return "☍";
-    // Additional bodies
     if (planetId == "Lilith") return "⚸";
     if (planetId == "Ceres") return "⚳";
     if (planetId == "Pallas") return "⚴";
@@ -377,6 +340,5 @@ QString ElementModalityWidget::getPlanetGlyph(const QString &planetId) {
     if (planetId == "Vertex") return "⊗";
     if (planetId == "East Point") return "⊙";
     if (planetId == "Part of Spirit") return "⊖";
-    // Return first letter for any other planet
     return planetId.left(1);
 }

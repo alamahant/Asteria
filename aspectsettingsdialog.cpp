@@ -17,17 +17,13 @@ AspectSettingsDialog::AspectSettingsDialog(QWidget* parent)
 
 void AspectSettingsDialog::saveSettings()
 {
-    // Save show/hide setting
     AspectSettings::instance().setShowAspectLines(m_showAspectsCheckbox->isChecked());
 
-    // Save major aspect settings
     AspectSettings::instance().setMajorAspectWidth(m_majorWidthSpinBox->value());
     AspectSettings::instance().setMajorAspectStyle(penStyleFromIndex(m_majorStyleCombo->currentIndex()));
 
-    // Save minor aspect settings
     AspectSettings::instance().setMinorAspectWidth(m_minorWidthSpinBox->value());
     AspectSettings::instance().setMinorAspectStyle(penStyleFromIndex(m_minorStyleCombo->currentIndex()));
-    //use mainwindows settings functionality
     QSettings settings;
     AspectSettings::instance().saveToSettings(settings);
 
@@ -38,7 +34,6 @@ void AspectSettingsDialog::resetDefaults()
 {
     AspectSettings::instance().resetToDefaults();
 
-    // Save defaults to disk
     QSettings settings;
     AspectSettings::instance().saveToSettings(settings);
 
@@ -49,15 +44,12 @@ void AspectSettingsDialog::setupUI()
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
-    // Show/Hide all aspects
     m_showAspectsCheckbox = new QCheckBox("Show Aspect Lines");
     mainLayout->addWidget(m_showAspectsCheckbox);
 
-    // Create grid layout for settings
     QGridLayout* gridLayout = new QGridLayout();
     int row = 0;
 
-    // Major aspect settings
     gridLayout->addWidget(new QLabel("<b>Major Aspects</b>"), row++, 0, 1, 2);
 
     gridLayout->addWidget(new QLabel("Line Width:"), row, 0);
@@ -71,10 +63,8 @@ void AspectSettingsDialog::setupUI()
     populateStyleCombo(m_majorStyleCombo);
     gridLayout->addWidget(m_majorStyleCombo, row++, 1);
 
-    // Add some spacing
     gridLayout->addWidget(new QLabel(""), row++, 0);
 
-    // Minor aspect settings
     gridLayout->addWidget(new QLabel("<b>Minor Aspects</b>"), row++, 0, 1, 2);
 
     gridLayout->addWidget(new QLabel("Line Width:"), row, 0);
@@ -90,10 +80,8 @@ void AspectSettingsDialog::setupUI()
 
     mainLayout->addLayout(gridLayout);
 
-    // Add some spacing
     mainLayout->addStretch();
 
-    // Buttons at the bottom
     QHBoxLayout* buttonLayout = new QHBoxLayout();
 
     QPushButton* resetButton = new QPushButton("Reset to Defaults");
@@ -112,7 +100,6 @@ void AspectSettingsDialog::setupUI()
 
     mainLayout->addLayout(buttonLayout);
 
-    // Set a reasonable size
     resize(350, 300);
 }
 
@@ -128,14 +115,11 @@ void AspectSettingsDialog::populateStyleCombo(QComboBox* combo)
 
 void AspectSettingsDialog::loadCurrentSettings()
 {
-    // Load show/hide setting
     m_showAspectsCheckbox->setChecked(AspectSettings::instance().getShowAspectLines());
 
-    // Load major aspect settings
     m_majorWidthSpinBox->setValue(AspectSettings::instance().getMajorAspectWidth());
     m_majorStyleCombo->setCurrentIndex(penStyleToIndex(AspectSettings::instance().getMajorAspectStyle()));
 
-    // Load minor aspect settings
     m_minorWidthSpinBox->setValue(AspectSettings::instance().getMinorAspectWidth());
     m_minorStyleCombo->setCurrentIndex(penStyleToIndex(AspectSettings::instance().getMinorAspectStyle()));
 }

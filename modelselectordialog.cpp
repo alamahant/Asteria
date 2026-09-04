@@ -20,7 +20,6 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
     setWindowTitle(tr("AI Model Selector"));
     setMinimumSize(400, 300);
 
-    // Create widgets
     m_listWidget = new QListWidget(this);
     m_listWidget->setSelectionMode(QAbstractItemView::SingleSelection);
 
@@ -30,12 +29,10 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
     m_setActiveButton = new QPushButton(tr("Set Active"), this);
     QPushButton *closeButton = new QPushButton(tr("Close"), this);
 
-    // Initially disable buttons that require a selection
     m_editButton->setEnabled(false);
     m_deleteButton->setEnabled(false);
     m_setActiveButton->setEnabled(false);
 
-    // Layout
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(m_listWidget);
 
@@ -48,7 +45,6 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
     buttonLayout->addWidget(closeButton);
     mainLayout->addLayout(buttonLayout);
 
-    // Connect signals
     connect(addButton, &QPushButton::clicked, this, &ModelSelectorDialog::onAddClicked);
     connect(m_editButton, &QPushButton::clicked, this, &ModelSelectorDialog::onEditClicked);
     connect(m_deleteButton, &QPushButton::clicked, this, &ModelSelectorDialog::onDeleteClicked);
@@ -62,8 +58,6 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
         m_setActiveButton->setEnabled(hasSelection);
     });
 
-    //QLabel *infoLabel = new QLabel(tr("Note: Works best with Mistral, OpenAI (ChatGPT), and Ollama (local) models."));
-    //infoLabel->setToolTip("");
     QLabel *infoLabel = new QLabel(tr("Note: Works with any OpenAI-compatible API model.Hover for details.\n"
                                       "You MUST restart Asteria after configuring your first model."));
     infoLabel->setToolTip(tr(
@@ -86,7 +80,6 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
     ));
 
     mainLayout->addWidget(infoLabel);
-    // Load existing models
     loadModels();
     refreshModelList();
 }
@@ -194,7 +187,6 @@ void ModelSelectorDialog::onEditClicked()
     if (!current) return;
 
     QString name = current->text();
-    // Find the model by name
     for (int i = 0; i < m_models.size(); ++i) {
         if (m_models[i].name == name) {
             showEditDialog(&m_models[i]);
@@ -214,7 +206,6 @@ void ModelSelectorDialog::onDeleteClicked()
                                     QMessageBox::Yes | QMessageBox::No);
     if (ret != QMessageBox::Yes) return;
 
-    // Remove from vector
     for (int i = 0; i < m_models.size(); ++i) {
         if (m_models[i].name == name) {
             m_models.removeAt(i);
@@ -222,7 +213,6 @@ void ModelSelectorDialog::onDeleteClicked()
         }
     }
 
-    // If the active model was deleted, clear active
     if (m_activeModel == name) {
         setActiveModel(QString());
     }
@@ -245,7 +235,6 @@ void ModelSelectorDialog::onSetActiveClicked()
 
 void ModelSelectorDialog::onItemDoubleClicked(QListWidgetItem *item)
 {
-    // Treat double-click as edit
     onEditClicked();
 }
 
@@ -281,7 +270,6 @@ void ModelSelectorDialog::showEditDialog(Model *model)
     maxTokensSpin->setValue(8192);
     maxTokensSpin->setToolTip(tr("Maximum number of tokens in the response\n"
                                  "Keep 8192 for Mistral"));
-    // If editing, populate fields
     if (model) {
         nameEdit->setText(model->name);
         providerEdit->setText(model->provider);
@@ -307,21 +295,18 @@ void ModelSelectorDialog::showEditDialog(Model *model)
     connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
 
-    // Validate on accept
     connect(&dialog, &QDialog::accepted, [&]() {
         QString newName = nameEdit->text().trimmed();
         QString newProvider = providerEdit->text().trimmed();
         QString newEndpoint = endpointEdit->text().trimmed();
         QString newModelName = modelNameEdit->text().trimmed();
 
-        // Check each required field
         if (newName.isEmpty()) {
             QMessageBox::warning(&dialog, tr("Invalid Friendly Name"), tr("Model friendly name cannot be empty."));
             dialog.reject();
             return;
         }
 
-        // Check uniqueness
         if (modelNameExists(newName, model ? model->name : QString())) {
             QMessageBox::warning(&dialog, tr("Duplicate Friendly Name"), tr("A model with this friendly name already exists."));
             dialog.reject();
@@ -346,7 +331,6 @@ void ModelSelectorDialog::showEditDialog(Model *model)
             return;
         }
 
-        // Create or update model
         Model updatedModel;
         updatedModel.name = newName;
         updatedModel.provider = providerEdit->text().trimmed();
@@ -357,13 +341,11 @@ void ModelSelectorDialog::showEditDialog(Model *model)
         updatedModel.maxTokens = maxTokensSpin->value();
 
         if (model) {
-            // Editing: replace existing
             *model = updatedModel;
             if (model->name == m_activeModel) {
                             emit activeModelChanged(m_activeModel);
                         }
         } else {
-            // Adding: append to vector
             m_models.append(updatedModel);
         }
 

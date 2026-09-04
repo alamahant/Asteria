@@ -49,7 +49,6 @@
 #include "aspectarianwidget.h"
 #include "elementmodalitywidget.h"
 #include "symbolsdialog.h"
-#include"osmmapdialog.h"
 #include<QItemSelection>
 #include "transitsearchdialog.h"
 #include<QJsonArray>
@@ -57,10 +56,10 @@
 #include<QJsonObject>
 #include<QProgressDialog>
 #include<QPoint>
-#include"donationdialog.h"
 #include "model.h"
-#include "modelselectordialog.h"
 #include"socialshare.h"
+#include"rssnotificationdialog.h"
+#include"aspectsearchdialog.h"
 
 struct ParsedDate {
     int year;   // Astronomical year (negative for BCE, 0 for 1 BCE, etc.)
@@ -322,11 +321,82 @@ private slots:
     void onShareClicked();
     void openFolder();
     void createSymlink();
+    void onResetSettings();
+    void applyAspectFilter(const QString &planet1Pattern,
+                           const QString &aspectPattern,
+                           const QString &planet2Pattern,
+                           const QString &maxOrbPattern,
+                           const QString &excludePattern);
+    void openAspectsFilter();
+    void openSynastryFilter();
 
 private:
-     QVector<Model> allModels;
-     //sharing
-     void setupShareButton();
-     SocialShare* m_socialShare;
+    QVector<Model> allModels;
+    //sharing
+    void setupShareButton();
+    SocialShare* m_socialShare;
+    // rssfeed
+    RssNotificationDialog* rssDialog = nullptr;
+    QAction *rssAction;
+    void showAIConfigGuide();
+    // aspectsearchdialog
+    AspectSearchDialog *m_aspectSearchDialog = nullptr;
+    AspectSearchDialog *m_synastrySearchDialog = nullptr;
+    int m_savedAspectScrollPosition;
+    QItemSelection m_savedAspectSelection;
+    QTableWidget *aspectsTable;
+
+    // Synastry
+    void loadSynastryCharts();
+    void calculateSynastry();
+
+
+    void displaySynastryTable(const QVector<AspectData> &aspects,
+                              const QString &nameA,
+                              const QString &nameB,
+                              const QVector<PlanetData> &planetsA,
+                              const QVector<PlanetData> &planetsB,
+                              const QVector<HouseData> &housesA,
+                              const QVector<HouseData> &housesB,
+                              const QVector<AngleData> &anglesA,
+                              const QVector<AngleData> &anglesB);
+    void displaySynastryText(const QString &nameA,
+                             const QString &nameB,
+                             const QVector<AngleData> &anglesA,
+                             const QVector<AngleData> &anglesB,
+                             const QVector<PlanetData> &planetsA,
+                             const QVector<PlanetData> &planetsB,
+                             const QVector<HouseData> &housesA,
+                             const QVector<HouseData> &housesB);
+
+    QJsonObject createSynastryChartData(const QString &nameA,
+                                                     const QString &nameB,
+                                                     const QVector<PlanetData> &planetsA,
+                                                     const QVector<PlanetData> &planetsB,
+                                                     const QVector<HouseData> &housesA,
+                                                     const QVector<HouseData> &housesB,
+                                                     const QVector<AngleData> &anglesA,
+                                                     const QVector<AngleData> &anglesB,
+                                                     const QVector<AspectData> &aspects);
+
+    QTableWidget *m_synastryTable;
+    QTextEdit *m_synastryTextEdit;
+    QJsonObject m_synastryChartDataA;
+    QJsonObject m_synastryChartDataB;
+    QString m_synastryNameA;
+    QString m_synastryNameB;
+    QVector<AspectData> calculateSynastryAspects(const QVector<PlanetData> &planetsA,
+                                                              const QVector<PlanetData> &planetsB);
+    QVector<AspectData> m_lastSynastryAspects;
+    void saveSynastry();
+    void loadSynastry();
+    QTabWidget *detailsTabs;
+
+    void applySynastryFilter(const QString &planet1Pattern,
+                                          const QString &aspectPattern,
+                                          const QString &planet2Pattern,
+                                          const QString &maxOrbPattern,
+                                          const QString &excludePattern);
+
 };
 #endif // MAINWINDOW_H

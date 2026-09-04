@@ -20,10 +20,8 @@ void SymbolsDialog::setupUI()
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
-    // Create tab widget
     m_tabWidget = new QTabWidget(this);
 
-    // Create tables
     m_aspectTable = new QTableWidget(0, 4, this);  // Now 4 columns instead of 3
     m_aspectTable->setHorizontalHeaderLabels({"Aspect", "Abbr.", "Symbol", "Color"});
     m_aspectTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -39,14 +37,12 @@ void SymbolsDialog::setupUI()
     m_signTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_signTable->verticalHeader()->setVisible(false);
 
-    // Add tables to tabs
     m_tabWidget->addTab(m_aspectTable, "Aspects");
     m_tabWidget->addTab(m_planetTable, "Planets");
     m_tabWidget->addTab(m_signTable, "Signs");
 
     mainLayout->addWidget(m_tabWidget);
 
-    // Populate tables
     populateAspectTable();
     populatePlanetTable();
     populateSignTable();
@@ -73,8 +69,6 @@ void SymbolsDialog::populateAspectTable()
         {"SSQ", "Semi-square",      "∟", QColor(255, 165, 0)},      // Semi-square - Orange
         {"SSX", "Semi-sextile",     "⧫", QColor(0, 128, 0)},        // Semi-sextile - Classic Green
         {"SQQ", "Sesquiquadrate",   "⋔", QColor(255, 105, 180)},    // Sesquiquadrate - Pink
-        //{"SSP", "Semiparallel",     "?", QColor(124, 252, 0)},     // Semiparallel (custom) - Lawn Green
-        //{"PAR", "Parallel",         "?", QColor(218, 112, 214)},   // Parallel (custom) - Orchid
     };
 
     /*
@@ -97,21 +91,17 @@ void SymbolsDialog::populateAspectTable()
     QFont symbolFont(m_astroFontFamily, 14);
 
     for (int i = 0; i < rowCount; i++) {
-        // Name
         QTableWidgetItem *nameItem = new QTableWidgetItem(aspects[i].name);
         m_aspectTable->setItem(i, 0, nameItem);
 
-        // Abbreviation (code)
         QTableWidgetItem *codeItem = new QTableWidgetItem(aspects[i].code);
         m_aspectTable->setItem(i, 1, codeItem);
 
-        // Symbol
         QTableWidgetItem *symbolItem = new QTableWidgetItem(aspects[i].symbol);
         symbolItem->setFont(symbolFont);
         symbolItem->setTextAlignment(Qt::AlignCenter);
         m_aspectTable->setItem(i, 2, symbolItem);
 
-        // Color
         QTableWidgetItem *colorItem = new QTableWidgetItem();
         colorItem->setBackground(aspects[i].color);
         m_aspectTable->setItem(i, 3, colorItem);
@@ -126,7 +116,6 @@ void SymbolsDialog::populatePlanetTable()
     };
 
     PlanetInfo planets[] = {
-        // Main planets
         {"Sun", "☉"},
         {"Moon", "☽"},
         {"Mercury", "☿"},
@@ -142,7 +131,6 @@ void SymbolsDialog::populatePlanetTable()
         {"South Node", "☋"},
         {"Pars Fortuna", "⊕"},
         {"Syzygy", "☍"},
-        // Additional bodies
         {"Lilith", "⚸"},
         {"Ceres", "⚳"},
         {"Pallas", "⚴"},
@@ -160,11 +148,9 @@ void SymbolsDialog::populatePlanetTable()
     QFont symbolFont(m_astroFontFamily, 14);
 
     for (int i = 0; i < rowCount; i++) {
-        // Name
         QTableWidgetItem *nameItem = new QTableWidgetItem(planets[i].name);
         m_planetTable->setItem(i, 0, nameItem);
 
-        // Symbol
         QTableWidgetItem *symbolItem = new QTableWidgetItem(planets[i].symbol);
         symbolItem->setFont(symbolFont);
         symbolItem->setTextAlignment(Qt::AlignCenter);
@@ -200,11 +186,9 @@ void SymbolsDialog::populateSignTable()
     QFont symbolFont(m_astroFontFamily, 14);
 
     for (int i = 0; i < rowCount; i++) {
-        // Name
         QTableWidgetItem *nameItem = new QTableWidgetItem(signs[i].name);
         m_signTable->setItem(i, 0, nameItem);
 
-        // Symbol
         QTableWidgetItem *symbolItem = new QTableWidgetItem(signs[i].symbol);
         symbolItem->setFont(symbolFont);
         symbolItem->setTextAlignment(Qt::AlignCenter);

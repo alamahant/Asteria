@@ -12,7 +12,6 @@ ChartDataManager::ChartDataManager(QObject *parent)
 
 ChartDataManager::~ChartDataManager()
 {
-    // QObject parent-child relationship will handle deletion
 }
 
 
@@ -30,15 +29,12 @@ ChartData ChartDataManager::calculateChart(const QDate &birthDate,
                                            const QString &houseSystem,
                                            double orbMax)
 {
-    // Clear any previous error
     m_lastError.clear();
 
     orbMax = getOrbMax();
-    // Calculate the chart
     ChartData data = m_calculator->calculateChart(birthDate, birthTime, utcOffset,
                                                   latitude, longitude, houseSystem, orbMax);
 
-    // Check for errors
     if (!m_calculator->getLastError().isEmpty()) {
         m_lastError = m_calculator->getLastError();
     }
@@ -54,53 +50,27 @@ QJsonObject ChartDataManager::calculateChartAsJson(const QDate &birthDate,
                                                    const QString &houseSystem,
                                                    double orbMax)
 {
-    // Calculate the chart
     orbMax = getOrbMax();
 
     ChartData data = calculateChart(birthDate, birthTime, utcOffset,
                                     latitude, longitude, houseSystem, orbMax);
 
-    // If there was an error, return an empty object
     if (!m_lastError.isEmpty()) {
         return QJsonObject{{"error", m_lastError}};
     }
 
-    // Convert to JSON
     return chartDataToJson(data);
 }
-/*
-QJsonObject ChartDataManager::chartDataToJson(const ChartData &data)
-{
-    QJsonObject json;
-
-    // Add each component to the JSON object
-    json["planets"] = planetsToJson(data.planets);
-    json["houses"] = housesToJson(data.houses);
-    json["angles"] = anglesToJson(data.angles);
-    json["aspects"] = aspectsToJson(data.aspects);
-
-    if (data.returnDate.isValid())
-        json["solarReturnDate"] = data.returnDate.toString("dd/MM/yyyy");
-    if (data.returnTime.isValid())
-        json["solarReturnTime"] = data.returnTime.toString("HH:mm");
-    if (data.returnJulianDay > 0)
-        json["solarReturnJulianDay"] = QString::number(data.returnJulianDay, 'f', 6);
-
-    return json;
-}
-*/
 
 QJsonObject ChartDataManager::chartDataToJson(const ChartData &data)
 {
     QJsonObject json;
 
-    // Add each component to the JSON object
     json["planets"] = planetsToJson(data.planets);
     json["houses"] = housesToJson(data.houses);
     json["angles"] = anglesToJson(data.angles);
     json["aspects"] = aspectsToJson(data.aspects);
 
-    // Use generic keys for all types of returns
     if (data.returnDate.isValid())
         json["returnDate"] = data.returnDate.toString("dd/MM/yyyy");
 
@@ -177,12 +147,16 @@ QJsonArray ChartDataManager::aspectsToJson(const QVector<AspectData> &aspects)
     return jsonArray;
 }
 
+ChartCalculator *ChartDataManager::calculator() const
+{
+    return m_calculator;
+}
+
 QString ChartDataManager::getLastError() const
 {
     return m_lastError;
 }
 
-///////////////////////Predictions
 
 QString ChartDataManager::calculateTransits(const QDate &birthDate,
                                             const QTime &birthTime,
@@ -191,15 +165,12 @@ QString ChartDataManager::calculateTransits(const QDate &birthDate,
                                             const QString &longitude,
                                             const QDate &transitStartDate,
                                             int numberOfDays) {
-    // Clear any previous error
     m_lastError.clear();
 
-    // Calculate the transits
     QString output = m_calculator->calculateTransits(birthDate, birthTime, utcOffset,
                                                      latitude, longitude,
                                                      transitStartDate, numberOfDays);
 
-    // Check for errors
     if (!m_calculator->getLastError().isEmpty()) {
         m_lastError = m_calculator->getLastError();
     }
@@ -214,19 +185,15 @@ QJsonObject ChartDataManager::calculateTransitsAsJson(const QDate &birthDate,
                                                       const QString &longitude,
                                                       const QDate &transitStartDate,
                                                       int numberOfDays) {
-    // Calculate the transits
     QString output = calculateTransits(birthDate, birthTime, utcOffset,
                                        latitude, longitude,
                                        transitStartDate, numberOfDays);
 
-    // Debug the raw output
 
-    // If there was an error, return an empty object
     if (!m_lastError.isEmpty()) {
         return QJsonObject{{"error", m_lastError}};
     }
 
-    // Create a simple JSON object with the raw output
     QJsonObject json;
     json["birthDate"] = birthDate.toString("yyyy-MM-dd");
     json["birthTime"] = birthTime.toString("HH:mm");
@@ -236,7 +203,6 @@ QJsonObject ChartDataManager::calculateTransitsAsJson(const QDate &birthDate,
     json["numberOfDays"] = QString::number(numberOfDays);
     json["rawTransitData"] = output;
 
-    // Debug the JSON object
 
     return json;
 }
@@ -281,21 +247,17 @@ QJsonObject ChartDataManager::calculateSolarReturnAsJson(
 
     const int year)
 {
-    // Clear any previous error
     m_lastError.clear();
 
-    // Call the solar return calculation
     ChartData data = m_calculator->calculateSolarReturn(
         birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, year
         );
 
-    // If there was an error, return an error object
     if (!m_calculator->getLastError().isEmpty()) {
         m_lastError = m_calculator->getLastError();
         return QJsonObject{{"error", m_lastError}};
     }
 
-    // Convert the result to JSON
     return chartDataToJson(data);
 }
 
@@ -309,21 +271,17 @@ QJsonObject ChartDataManager::calculateLunarReturnAsJson(
     const QDate &targetDate
     )
 {
-    // Clear any previous error
     m_lastError.clear();
 
-    // Call the lunar return calculation
     ChartData data = m_calculator->calculateLunarReturn(
         birthDate, birthTime, utcOffset, latitude, longitude, houseSystem, targetDate
         );
 
-    // If there was an error, return an error object
     if (!m_calculator->getLastError().isEmpty()) {
         m_lastError = m_calculator->getLastError();
         return QJsonObject{{"error", m_lastError}};
     }
 
-    // Convert the result to JSON
     return chartDataToJson(data);
 }
 
@@ -431,7 +389,6 @@ QJsonObject ChartDataManager::calculateMercuryReturnAsJson(
     return chartDataToJson(data);
 }
 
-// Uranus Neptune Pluto
 
 QJsonObject ChartDataManager::calculateUranusReturnAsJson(const QDate &birthDate, const QTime &birthTime, const QString &utcOffset, const QString &latitude, const QString &longitude, const QString &houseSystem, int returnNumber)
 {

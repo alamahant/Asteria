@@ -147,7 +147,6 @@ QString SocialShare::saveTempImage(const QPixmap &image) const
 
 void SocialShare::shareToTwitter(const QString &text, const QPixmap &image)
 {
-    //Q_UNUSED(image);
     QMessageBox::information(nullptr, "Share to X",
         "✓ Screenshot copied to clipboard\n\n"
         "X will now open.\n"
@@ -173,9 +172,6 @@ void SocialShare::shareToFacebook(const QString &text)
     QString shareText = generateShareText(text);
     QUrl url("https://www.facebook.com/sharer/sharer.php");
     QUrlQuery query;
-    //query.addQueryItem("quote", shareText);
-    //query.addQueryItem("u", QString("https://github.com/alamahant/%1").arg(QCoreApplication::applicationName()));
-    //url.setQuery(query);
     
     bool success = QDesktopServices::openUrl(url);
     emit shareCompleted(Facebook, success, success ? "Opened Facebook" : "Failed to open Facebook");
@@ -240,11 +236,9 @@ void SocialShare::shareViaEmail(const QString &text, const QPixmap &image)
     QString shareText = generateShareText(text);
     QString subject = QString("%1 Reading").arg(m_appName);
 
-    // Properly encode
     QString encodedSubject = QUrl::toPercentEncoding(subject);
     QString encodedBody = QUrl::toPercentEncoding(shareText);
 
-    // Use "?to=" to force Thunderbird to recognize it as compose
     QUrl url(QString("mailto:?to=&subject=%1&body=%2").arg(encodedSubject).arg(encodedBody));
 
     bool success = QDesktopServices::openUrl(url);
@@ -264,7 +258,6 @@ void SocialShare::shareToInstagram(const QString &text, const QPixmap &image)
 
     QString shareText = generateShareText(text);
     QUrl url("https://www.instagram.com");
-    //QUrl url("https://www.instagram.com/create/post");
     bool success = QDesktopServices::openUrl(url);
     emit shareCompleted(Instagram, success, success ? "Opened Instagram" : "Failed to open Instagram");
 }

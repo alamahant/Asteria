@@ -201,6 +201,8 @@ public:
     // Get the last error message
     QString getLastError() const;
 
+    QString findHouse(double longitude, const QVector<HouseData> &houses) const;
+
 private:
     //ChartData parseOutput(const QString &output);
 
@@ -210,7 +212,6 @@ private:
 
 
     QString getZodiacSign(double longitude) const;
-    QString findHouse(double longitude, const QVector<HouseData> &houses) const;
     QVector<AspectData> calculateAspects(const QVector<PlanetData> &planets, double orbMax) const;
 
     // Swiss Ephemeris calculation methods

@@ -13,7 +13,6 @@ namespace {
 double g_orbMax = 8.0; // Default orb value
 }
 
-// Add a getter/setter function
 double getOrbMax() {
     return g_orbMax;
 }
@@ -49,7 +48,6 @@ int main(int argc, char *argv[])
     a.setPalette(lightPalette);
 #endif
 
-    // Load custom astronomical font
     int fontId = QFontDatabase::addApplicationFont(":/resources/AstromoonySans.ttf");
     if (fontId == -1) {
         qWarning() << "Failed to load Astromoony font";
@@ -57,7 +55,6 @@ int main(int argc, char *argv[])
         g_astroFontFamily = QFontDatabase::applicationFontFamilies(fontId).at(0);
     }
 
-    //QCoreApplication::setOrganizationName("Alamahant");
 
 #ifdef FLATHUB_BUILD
     QCoreApplication::setOrganizationName("");
@@ -69,7 +66,7 @@ int main(int argc, char *argv[])
 
     QCoreApplication::setApplicationName("Asteria");
     QDir().mkpath(GlobalFlags::appDir);
-    QCoreApplication::setApplicationVersion("2.4.7");
+    QCoreApplication::setApplicationVersion("2.4.8");
 
 
 

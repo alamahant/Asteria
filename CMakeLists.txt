@@ -123,6 +123,8 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
         model.h
         modelselectordialog.h modelselectordialog.cpp
         socialshare.cpp socialshare.h socialsharedialog.cpp socialsharedialog.h
+        rssnotificationdialog.cpp rssnotificationdialog.h
+        aspectsearchdialog.cpp aspectsearchdialog.h
     )
 else()
     if(ANDROID)

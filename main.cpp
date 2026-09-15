@@ -27,7 +27,7 @@ QString g_astroFontFamily;
 int main(int argc, char *argv[])
 {
 
-    QDir().mkpath(GlobalFlags::sharesDirPath);
+    QDir().mkpath(AsteriaFlags::sharesDirPath);
 
     QApplication a(argc, argv);
 
@@ -48,6 +48,10 @@ int main(int argc, char *argv[])
     a.setPalette(lightPalette);
 #endif
 
+#ifdef Q_OS_WIN
+    a.setStyleSheet("QLineEdit { placeholder-text-color: #999999; }");
+#endif
+
     int fontId = QFontDatabase::addApplicationFont(":/resources/AstromoonySans.ttf");
     if (fontId == -1) {
         qWarning() << "Failed to load Astromoony font";
@@ -61,13 +65,19 @@ int main(int argc, char *argv[])
 
 #else
     QCoreApplication::setOrganizationName("Alamahant");
-
 #endif
 
     QCoreApplication::setApplicationName("Asteria");
-    QDir().mkpath(GlobalFlags::appDir);
-    QCoreApplication::setApplicationVersion("2.4.8");
+    QDir().mkpath(AsteriaFlags::appDir);
+    QCoreApplication::setApplicationVersion("2.4.9");
 
+    QSettings settings;
+    // Display settings
+    AsteriaFlags::chartSize      = settings.value("display/chartSize",      AsteriaFlags::chartSize).toInt();
+    AsteriaFlags::wheelThickness = settings.value("display/wheelThickness", AsteriaFlags::wheelThickness).toInt();
+    AsteriaFlags::planetSize     = settings.value("display/planetSize",     AsteriaFlags::planetSize).toInt();
+    AsteriaFlags::pointSize      = settings.value("display/pointSize",      AsteriaFlags::pointSize).toInt();
+    AsteriaFlags::uiFontSize     = settings.value("display/uiFontSize",     AsteriaFlags::uiFontSize).toInt();
 
 
     MainWindow w;

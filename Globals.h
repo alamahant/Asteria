@@ -6,12 +6,27 @@
 #include <QColor>
 #include <QSettings>
 
-namespace GlobalFlags {
+namespace AsteriaFlags {
 extern bool additionalBodiesEnabled;
 extern QString lastGeneratedChartType;
 extern QString appDir;
 extern bool activeModelLoaded;
 extern QString sharesDirPath;
+
+// Display settings
+extern int chartSize;
+extern int wheelThickness;
+extern int planetSize;
+extern int pointSize;
+extern int uiFontSize;
+
+// Platform defaults (never changed at runtime)
+extern const int chartSizeDefault;
+extern const int wheelThicknessDefault;
+extern const int planetSizeDefault;
+extern const int pointSizeDefault;
+extern const int uiFontSizeDefault;
+
 }
 
 // Global orb setting functions

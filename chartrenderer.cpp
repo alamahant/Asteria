@@ -14,7 +14,7 @@ extern QString g_astroFontFamily;
 
 PlanetItem::PlanetItem(const QString &id, const QString &sign, double longitude,
                        const QString &house, bool isRetrograde = false, QGraphicsItem *parent)
-    : QGraphicsEllipseItem(0, 0, PLANET_SIZE, PLANET_SIZE, parent)
+    : QGraphicsEllipseItem(0, 0, AsteriaFlags::planetSize, AsteriaFlags::planetSize, parent)
     , m_id(id)
     , m_sign(sign)
     , m_longitude(longitude)
@@ -85,11 +85,11 @@ void PlanetItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
 
     if (!g_astroFontFamily.isEmpty()) {
 
-        planetFont = QFont(g_astroFontFamily, POINT_SIZE);
+        planetFont = QFont(g_astroFontFamily, AsteriaFlags::pointSize);
     } else {
 
         planetFont = QFont();
-        planetFont.setPointSize(POINT_SIZE);
+        planetFont.setPointSize(AsteriaFlags::pointSize);
         planetFont.setBold(true);
     }
 
@@ -157,8 +157,8 @@ ChartRenderer::ChartRenderer(QWidget *parent)
     , m_showHouseCusps(true)
     , m_showPlanetSymbols(true)
     , m_showPlanetLabels(true)
-    , m_chartSize(DEFAULT_CHART_SIZE)
-    , m_wheelThickness(DEFAULT_WHEEL_THICKNESS)
+    , m_chartSize(AsteriaFlags::chartSize)
+    , m_wheelThickness(AsteriaFlags::wheelThickness)
 {
     setScene(m_scene);
     setRenderHint(QPainter::Antialiasing);
@@ -363,8 +363,16 @@ void ChartRenderer::drawZodiacSigns()
 
         QGraphicsTextItem *signText = new QGraphicsTextItem(signs[i]);
 
-        QFont font("DejaVu Sans", 16);      // use a known system font
-        font.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback <<<<<<----
+       // QFont font("DejaVu Sans", 16);
+        //font.setStyleStrategy(QFont::NoFontMerging);
+
+#ifdef Q_OS_WIN
+    QFont font(g_astroFontFamily.isEmpty() ? "DejaVu Sans" : g_astroFontFamily,
+               AsteriaFlags::uiFontSize + 2);
+#else
+    QFont font("DejaVu Sans", AsteriaFlags::uiFontSize + 2);      // use a known system font
+    font.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback on Linux
+#endif
 
         signText->setFont(font);
 
@@ -476,13 +484,13 @@ void ChartRenderer::drawAspects() {
         PlanetItem *planet1Item = m_planetItems[aspect.planet1];
         PlanetItem *planet2Item = m_planetItems[aspect.planet2];
 
-        QPointF p1Center = planet1Item->pos() + QPointF(PLANET_SIZE/2, PLANET_SIZE/2);
-        QPointF p2Center = planet2Item->pos() + QPointF(PLANET_SIZE/2, PLANET_SIZE/2);
+        QPointF p1Center = planet1Item->pos() + QPointF(AsteriaFlags::planetSize/2, AsteriaFlags::planetSize/2);
+        QPointF p2Center = planet2Item->pos() + QPointF(AsteriaFlags::planetSize/2, AsteriaFlags::planetSize/2);
 
         QLineF centerLine(p1Center, p2Center);
         double angle = centerLine.angle() * M_PI / 180.0; // Convert to radians
 
-        double planetRadius = PLANET_SIZE / 2.0;
+        double planetRadius = AsteriaFlags::planetSize / 2.0;
 
         QPointF p1Periphery(
             p1Center.x() + planetRadius * cos(angle),
@@ -524,10 +532,10 @@ void ChartRenderer::drawAngles() {
 
     double outerRadius = m_chartSize / 2.0;
     double houseRingOuterRadius = outerRadius; // House ring is at the outer edge
-    double zodiacOuterRadius = houseRingOuterRadius - DEFAULT_WHEEL_THICKNESS;
+    double zodiacOuterRadius = houseRingOuterRadius - AsteriaFlags::wheelThickness;
     double zodiacInnerRadius = zodiacOuterRadius - m_wheelThickness;
 
-    double labelRadius = houseRingOuterRadius - (DEFAULT_WHEEL_THICKNESS * 0.5) + 70;
+    double labelRadius = houseRingOuterRadius - (AsteriaFlags::wheelThickness * 0.5) + 70;
 
 
     QMap<QString, QPointF> anglePoints;
@@ -713,7 +721,7 @@ void ChartRenderer::drawPlanets() {
     double chartRadius = m_chartSize / 2.0;
     double baseRadius = chartRadius - m_wheelThickness - 35; // Default radius for planets
 
-    double planetSize = PLANET_SIZE;
+    double planetSize = AsteriaFlags::planetSize;
     double minDistance = planetSize * 1.2; // 20% buffer for spacing
 
     QList<PlanetData> sortedPlanets = m_chartData.planets;
@@ -794,7 +802,7 @@ void ChartRenderer::drawPlanet(const PlanetData &planet, double radius) {
                                             planet.longitude, planet.house, planet.isRetrograde);
 
 
-    planetItem->setPos(x - PLANET_SIZE/2, y - PLANET_SIZE/2);
+    planetItem->setPos(x - AsteriaFlags::planetSize/2, y - AsteriaFlags::planetSize/2);
 
     m_scene->addItem(planetItem);
     m_planetItems[planet.id] = planetItem;
@@ -985,7 +993,8 @@ void ChartRenderer::drawHouseRing() {
             QGraphicsTextItem *houseNumber = new QGraphicsTextItem(QString::number(i + 1));
 
             QFont font;
-            font.setPointSize(12);
+            //font.setPointSize(12);
+            font.setPointSize(AsteriaFlags::uiFontSize - 2);
             font.setBold(true);
             houseNumber->setFont(font);
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## Version 2.4.9 (2026-09-15) – Display Settings & Quick Guide
+
+### New Features
+- **Display Settings Dialog**: Customize chart size, wheel thickness, planet size, planet glyph size, and UI font size from Settings menu
+- **Restore Defaults**: Reset all display settings to platform-calibrated defaults
+- **Persistent Preferences**: Display settings saved to QSettings and restored on next launch
+- **Platform-Aware Defaults**: Calibrated default sizes for Linux and Windows (125% scaling)
+- **Quick Guide Info Button**: ⓘ button in the top-right corner of the tab widget with an at-a-glance feature guide
+
+---
+
 ## Version 2.4.8 (2026-09-04) – Synastry & Relationship Analysis
 
 ### New Features

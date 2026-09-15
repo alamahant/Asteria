@@ -46,6 +46,7 @@
 #include"osmmapdialog.h"
 #include"donationdialog.h"
 #include "modelselectordialog.h"
+#include"displaysettingsdialog.h"
 
 extern QString g_astroFontFamily;
 
@@ -65,13 +66,16 @@ MainWindow::MainWindow(QWidget *parent)
     , m_aspectSearchDialog(nullptr)
     , m_synastrySearchDialog(nullptr)
 {
+
     setAcceptDrops(true);
     preloadMapResources();
     setWindowTitle("Asteria - Astrological Chart Analysis");
     setWindowIcon(QIcon(":/icons/asteria-icon-512.png"));
+
     setupUi();
 
     loadSettings();
+
     if (!m_chartDataManager.isCalculatorAvailable()) {
     }
 
@@ -82,12 +86,17 @@ MainWindow::MainWindow(QWidget *parent)
     m_howToUseDialog = nullptr;
     chartInfoOverlay->setVisible(false);
 
-
+#ifdef Q_OS_WIN
+    QTimer::singleShot(0, this, [this]() {
+        this->resize(960, 640);
+    });
+#else
     QTimer::singleShot(0, this, [this]() {
         this->resize(1200, 800);
     });
+#endif
 
-    setupShareButton();
+    setupCornerWidget();
 
     connect(rssDialog, &RssNotificationDialog::newContentAvailable,
             this, [this](bool hasNew){
@@ -100,8 +109,6 @@ MainWindow::MainWindow(QWidget *parent)
             rssAction->setIcon(QIcon(":/icons/rss.svg"));
 
         }
-
-
     });
 }
 
@@ -635,7 +642,7 @@ void MainWindow::setupInputDock() {
     m_additionalBodiesCB->setToolTip("Include Lilith, Ceres, Pallas, Juno, Vesta, Vertex, East Point and Part of Spirit");
     connect(m_additionalBodiesCB, &QCheckBox::toggled, this, [this](bool checked) {
 
-        GlobalFlags::additionalBodiesEnabled = checked;
+        AsteriaFlags::additionalBodiesEnabled = checked;
 
         if (m_chartCalculated) {
             displayChart(m_currentChartData);
@@ -818,7 +825,7 @@ void MainWindow::setupMenus()
         chartData["longitude"] = m_longitudeEdit->text();
         chartData["houseSystem"] = m_houseSystemCombo->currentText();
         chartData["useJulian"] = useJulianForPre1582Action->isChecked();
-        chartData["chartType"] = GlobalFlags::lastGeneratedChartType;
+        chartData["chartType"] = AsteriaFlags::lastGeneratedChartType;
 
         if (m_interpretationtextEdit && !m_interpretationtextEdit->toPlainText().isEmpty()) {
             chartData["interpretationText"] = m_interpretationtextEdit->toPlainText();
@@ -946,9 +953,9 @@ void MainWindow::setupMenus()
 
 
     QAction *checkModelAction = settingsMenu->addAction("Check AI Model &Status", this, [this]() {
-        if (!GlobalFlags::activeModelLoaded) {
+        if (!AsteriaFlags::activeModelLoaded) {
             m_mistralApi.loadActiveModel();
-            if (!GlobalFlags::activeModelLoaded) {
+            if (!AsteriaFlags::activeModelLoaded) {
 
                 QMessageBox msgBox(this);
                 msgBox.setWindowTitle("AI Model Not Configured");
@@ -1009,6 +1016,11 @@ void MainWindow::setupMenus()
     QAction* aiModelInfoAction = new QAction("AI Model Info Guide", this);
     connect(aiModelInfoAction, &QAction::triggered, this, &MainWindow::showAIConfigGuide);
     settingsMenu->addAction(aiModelInfoAction);
+
+    settingsMenu->addSeparator();
+    QAction *displaySettingsAction = new QAction("&Display Settings...", this);
+    connect(displaySettingsAction, &QAction::triggered, this, &MainWindow::showDisplaySettings);
+    settingsMenu->addAction(displaySettingsAction);
 
     settingsMenu->addSeparator();
     QAction *aspectSettingsAction = new QAction("&Aspect Display Settings...", this);
@@ -1264,7 +1276,7 @@ void MainWindow::calculateChart()
         displayChart(m_currentChartData);
         m_chartCalculated = true;
 
-        GlobalFlags::lastGeneratedChartType = "Natal Birth";
+        AsteriaFlags::lastGeneratedChartType = "Natal Birth";
 
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
@@ -1485,9 +1497,9 @@ void MainWindow::getInterpretation() {
         return;
     }
 
-    if (!GlobalFlags::activeModelLoaded) {
+    if (!AsteriaFlags::activeModelLoaded) {
         m_mistralApi.loadActiveModel();
-        if (!GlobalFlags::activeModelLoaded) {
+        if (!AsteriaFlags::activeModelLoaded) {
 
             QMessageBox::information(this, "AI Model Not Configured",
                                      "No active AI model found. Please go to Settings → Configure AI Models to set up a model.");
@@ -1690,7 +1702,7 @@ void MainWindow::loadChart() {
     newChart();
 
     QString appName = QApplication::applicationName();
-    QString appDir = GlobalFlags::appDir;
+    QString appDir = AsteriaFlags::appDir;
 #ifdef FLATHUB_BUILD
 #else
 #endif
@@ -1941,10 +1953,10 @@ QString MainWindow::getChartFilePath(bool forSaving)
 
     if (forSaving) {
         filePath = QFileDialog::getSaveFileName(this, "Save Chart",
-                                                GlobalFlags::appDir, "Chart Files (*.chart)");
+                                                AsteriaFlags::appDir, "Chart Files (*.chart)");
     } else {
         filePath = QFileDialog::getOpenFileName(this, "Open Chart",
-                                                GlobalFlags::appDir, "Chart Files (*.chart)");
+                                                AsteriaFlags::appDir, "Chart Files (*.chart)");
     }
 
     return filePath;
@@ -1970,7 +1982,6 @@ void MainWindow::saveSettings()
 void MainWindow::loadSettings()
 {
     QSettings settings;
-
 
     /*
     if (settings.contains("mainWindow/geometry")) {
@@ -2009,8 +2020,8 @@ void MainWindow::loadSettings()
     }
 
     AspectSettings::instance().loadFromSettings(settings);
-
 }
+
 
 QDate MainWindow::getBirthDate() const {
     QString dateText = m_birthDateEdit->text();
@@ -2110,9 +2121,9 @@ void MainWindow::getPrediction() {
         return;
     }
 
-    if (!GlobalFlags::activeModelLoaded) {
+    if (!AsteriaFlags::activeModelLoaded) {
            m_mistralApi.loadActiveModel();  // Try to reload once
-           if (!GlobalFlags::activeModelLoaded) {
+           if (!AsteriaFlags::activeModelLoaded) {
                QMessageBox::information(this, "AI Model Not Configured",
                    "No active AI model found. Please go to Settings → Configure AI Models to set up a model.");
                return;
@@ -2640,7 +2651,7 @@ QString MainWindow::getFilepath(const QString &format)
     }
 
     QString appName = QApplication::applicationName();
-    QString appDir = GlobalFlags::appDir;
+    QString appDir = AsteriaFlags::appDir;
 
 #ifdef FLATHUB_BUILD
 #else
@@ -2653,7 +2664,7 @@ QString MainWindow::getFilepath(const QString &format)
 
     QString currentDate = QDate::currentDate().toString("yyyy-MM-dd");
     QString currentTime = QTime::currentTime().toString("HHmm");
-    QString chartTypeSanitized = GlobalFlags::lastGeneratedChartType.replace(" ", "-");
+    QString chartTypeSanitized = AsteriaFlags::lastGeneratedChartType.replace(" ", "-");
     QString baseName = QString("%1-%2-%3-%4-%5-chart").arg(chartTypeSanitized, name, surname, currentDate, currentTime);
     QString defaultFilename = QString("%1.%2").arg(baseName, format);
     QString defaultPath = appDir + "/" + defaultFilename;
@@ -2805,16 +2816,15 @@ void MainWindow::searchLocationCoordinates(const QString& location) {
 
 #ifdef FLATHUB_BUILD
     QMessageBox::information(this, tr("Feature Unavailable"),
-                             tr("This feature is not available in the Flathub version of Asteria.\n"
-                                "Please manually search for the location coordinates."));
-#else
+                             tr("This feature might not available in the Flathub version of Asteria.\n"
+                                "In that case, please manually search for the location coordinates."));
+#endif
     QString searchQuery = QString("coordinates of %1").arg(location);
     QString encodedQuery = QUrl::toPercentEncoding(searchQuery);
     QUrl url(QString("https://www.google.com/search?q=%1").arg(QString(encodedQuery)));
 
     QDesktopServices::openUrl(url);
     locationSearchEdit->clear();
-#endif
 }
 
 
@@ -2996,7 +3006,7 @@ void MainWindow::createCompositeChart() {
     QMessageBox::information(this, "Select Charts",
                              "Please select two natal charts to create a composite chart.");
     QString appName = QApplication::applicationName();
-    QString appDir = GlobalFlags::appDir;
+    QString appDir = AsteriaFlags::appDir;
 #ifdef FLATHUB_BUILD
 #else
 #endif
@@ -3330,7 +3340,7 @@ void MainWindow::createCompositeChart() {
     m_currentChartData = compositeChartData;
     displayChart(compositeChartData);
     m_chartCalculated = true;
-    GlobalFlags::lastGeneratedChartType = "Composite Relationship";
+    AsteriaFlags::lastGeneratedChartType = "Composite Relationship";
     populateInfoOverlay();
 
     QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmm");
@@ -3363,7 +3373,7 @@ void MainWindow::createDavisonChart() {
     QMessageBox::information(this, "Select Charts",
                              "Please select two natal charts to create a Davison chart.");
     QString appName = QApplication::applicationName();
-    QString appDir = GlobalFlags::appDir;
+    QString appDir = AsteriaFlags::appDir;
 #ifdef FLATHUB_BUILD
 #else
 #endif
@@ -3583,7 +3593,7 @@ void MainWindow::createDavisonChart() {
 
     displayChart(m_currentChartData);
     m_chartCalculated = true;
-    GlobalFlags::lastGeneratedChartType = "Davison Relationship";
+    AsteriaFlags::lastGeneratedChartType = "Davison Relationship";
 
     populateInfoOverlay();
     setWindowTitle("Asteria - Astrological Chart Analysis - " + relationshipInfo["displayName"].toString());
@@ -3745,6 +3755,16 @@ void MainWindow::showChangelog(){
         QString changelogText = R"(
 
 <h1>Changelog</h1>
+
+<h2>Version 2.4.9 (2026-09-15) <span style='color:#2980b9;'>— Display Settings & Quick Guide</span></h2>
+<ul>
+  <li><b>Display Settings Dialog:</b> New Settings → Display Settings to customize chart size, wheel thickness, planet size, planet glyph size, and UI font size, with a Restore Defaults button</li>
+  <li><b>Persistent Display Preferences:</b> All display settings saved to QSettings and restored on next launch</li>
+  <li><b>Platform-Aware Defaults:</b> Sensible default sizes for Linux and Windows (calibrated for 125% Windows scaling)</li>
+  <li><b>Quick Guide Info Button:</b> New ⓘ button in the top-right corner of the tab widget with an at-a-glance guide to all Asteria features</li>
+  <li><b>Windows Placeholder Fix:</b> QLineEdit placeholder text now visible on Windows with Fusion palette</li>
+  <li><b>Font Handling Cleanup:</b> Consolidated UI font sizing through globals; removed NoFontMerging on Windows to allow proper glyph fallback</li>
+</ul>
 
 <h2>Version 2.4.8 (2026-09-04) <span style='color:#2980b9;'>— Synastry & Relationship Analysis</span></h2>
 <ul>
@@ -4361,7 +4381,7 @@ void MainWindow::doSolarReturnCalculation(const QDate& birthDate, const QTime& b
         displayChart(m_currentChartData);
         m_chartCalculated = true;
 
-        GlobalFlags::lastGeneratedChartType = "Solar Return";
+        AsteriaFlags::lastGeneratedChartType = "Solar Return";
 
 
         m_getInterpretationButton->setEnabled(true);
@@ -4493,7 +4513,7 @@ void MainWindow::doLunarReturnCalculation(const QDate& birthDate, const QTime& b
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Lunar Return";
+        AsteriaFlags::lastGeneratedChartType = "Lunar Return";
 
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
@@ -4629,7 +4649,7 @@ void MainWindow::doSaturnReturnCalculation(const QDate& birthDate, const QTime& 
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Saturn Return";
+        AsteriaFlags::lastGeneratedChartType = "Saturn Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -4757,7 +4777,7 @@ void MainWindow::doJupiterReturnCalculation(const QDate& birthDate, const QTime&
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Jupiter Return";
+        AsteriaFlags::lastGeneratedChartType = "Jupiter Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -4880,7 +4900,7 @@ void MainWindow::doVenusReturnCalculation(const QDate& birthDate, const QTime& b
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Venus Return";
+        AsteriaFlags::lastGeneratedChartType = "Venus Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5002,7 +5022,7 @@ void MainWindow::doMarsReturnCalculation(const QDate& birthDate, const QTime& bi
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Mars Return";
+        AsteriaFlags::lastGeneratedChartType = "Mars Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5124,7 +5144,7 @@ void MainWindow::doMercuryReturnCalculation(const QDate& birthDate, const QTime&
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Mercury Return";
+        AsteriaFlags::lastGeneratedChartType = "Mercury Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5287,7 +5307,7 @@ void MainWindow::doUranusReturnCalculation(const QDate& birthDate, const QTime& 
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Uranus Return";
+        AsteriaFlags::lastGeneratedChartType = "Uranus Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5403,7 +5423,7 @@ void MainWindow::doNeptuneReturnCalculation(const QDate& birthDate, const QTime&
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Neptune Return";
+        AsteriaFlags::lastGeneratedChartType = "Neptune Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5519,7 +5539,7 @@ void MainWindow::doPlutoReturnCalculation(const QDate& birthDate, const QTime& b
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Pluto Return";
+        AsteriaFlags::lastGeneratedChartType = "Pluto Return";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -5642,7 +5662,7 @@ void MainWindow::doSecondaryProgressionCalculation(int progressionYear)
     if (m_chartDataManager.getLastError().isEmpty()) {
         displayChart(m_currentChartData);
         m_chartCalculated = true;
-        GlobalFlags::lastGeneratedChartType = "Secondary Progression";
+        AsteriaFlags::lastGeneratedChartType = "Secondary Progression";
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
         getTransitsButton->setEnabled(true);
@@ -6000,7 +6020,7 @@ void MainWindow::startChartDrag()
     inputData["houseSystem"] = m_houseSystemCombo->currentText();
     inputData["useJulian"] = useJulianForPre1582Action->isChecked();
 
-    inputData["chartType"] = GlobalFlags::lastGeneratedChartType;
+    inputData["chartType"] = AsteriaFlags::lastGeneratedChartType;
 
     if (m_interpretationtextEdit && !m_interpretationtextEdit->toPlainText().isEmpty()) {
 
@@ -6059,7 +6079,7 @@ void MainWindow::importChartInputData(const QJsonObject &inputData)
     useJulianForPre1582Action->setChecked(inputData["useJulian"].toBool());
 
     if (inputData.contains("chartType")) {
-        GlobalFlags::lastGeneratedChartType = inputData["chartType"].toString();
+        AsteriaFlags::lastGeneratedChartType = inputData["chartType"].toString();
     }
 
     if (inputData.contains("interpretationText") && m_interpretationtextEdit) {
@@ -6073,7 +6093,7 @@ void MainWindow::importChartInputData(const QJsonObject &inputData)
     m_chartCalculated = true;
     m_currentChartData = chartData;
     statusBar()->showMessage("Chart imported via drag & drop", 3000);
-    setWindowTitle("Asteria - " + GlobalFlags::lastGeneratedChartType + " Chart");
+    setWindowTitle("Asteria - " + AsteriaFlags::lastGeneratedChartType + " Chart");
 
 }
 
@@ -6161,7 +6181,7 @@ void MainWindow::calculateZodiacSignsChart()
         first_name->setText("no");
         last_name->setText("name");
 
-        GlobalFlags::lastGeneratedChartType = "Zodiac Signs";
+        AsteriaFlags::lastGeneratedChartType = "Zodiac Signs";
 
         m_getInterpretationButton->setEnabled(true);
         getPredictionButton->setEnabled(true);
@@ -6208,8 +6228,8 @@ void MainWindow::configureAIModels()
 
 }
 
-
-void MainWindow::setupShareButton()
+/*
+void MainWindow::setupCornerWidget()
 {
     QPushButton *shareButton = new QPushButton(this);
     shareButton->setIcon(QIcon(":/icons/share-2.svg"));
@@ -6217,12 +6237,120 @@ void MainWindow::setupShareButton()
     shareButton->setFlat(true);
     shareButton->setFixedSize(32, 32);
 
-
     if (m_centralTabWidget) {
         m_centralTabWidget->setCornerWidget(shareButton, Qt::TopRightCorner);
     }
 
     connect(shareButton, &QPushButton::clicked, this, &MainWindow::onShareClicked);
+}
+*/
+
+void MainWindow::setupCornerWidget()
+{
+    QPushButton *shareButton = new QPushButton(this);
+    shareButton->setIcon(QIcon(":/icons/share-2.svg"));
+    shareButton->setToolTip("Share this spread");
+    shareButton->setFlat(true);
+    shareButton->setFixedSize(32, 32);
+    connect(shareButton, &QPushButton::clicked, this, &MainWindow::onShareClicked);
+
+    QPushButton *infoButton = new QPushButton("ⓘ", this);
+    infoButton->setFixedSize(32, 32);
+    infoButton->setToolTip(
+        "<html><body style='white-space: nowrap;'>"
+        "<b>Asteria — Quick Guide</b><br><br>"
+
+        "<b>Getting Started:</b><br>"
+        "• Enter birth date, time, and location in the left dock<br>"
+        "• Paste coordinates from Google in the yellow field<br>"
+        "• Or use 'Select on Map' to pick a location visually<br>"
+        "• Choose UTC offset and house system<br>"
+        "• Click 'Calculate Chart' to generate the chart<br><br>"
+
+        "<b>Reading the Chart:</b><br>"
+        "• Outer ring: zodiac signs and houses<br>"
+        "• Middle: planet symbols (red = retrograde)<br>"
+        "• Colored lines: aspects between planets<br>"
+        "• Hover over any element for details<br><br>"
+
+        "<b>Sidebar Panels:</b><br>"
+        "• <b>Planets</b>: positions by sign, degree, house<br>"
+        "• <b>Aspectarian</b>: grid of all planet-to-planet aspects<br>"
+        "• <b>Elements & Modalities</b>: balance of fire/earth/air/water<br>"
+        "• Drag the splitters between panels to resize<br><br>"
+
+        "<b>Chart Details Tab:</b><br>"
+        "• Planets, Angles, Houses, Aspects tables<br>"
+        "• Raw Transit Data and Eclipses appear after calculation<br>"
+        "• Synastry table populates after loading two charts<br>"
+        "• Right-click any table → Copy<br>"
+        "• Use Tools → Aspect Filter on 'Chart Details->Aspects' tab to narrow results<br><br>"
+
+        "<b>AI Interpretation:</b><br>"
+        "• Configure a model via Settings → Configure AI Models<br>"
+        "• Works with Mistral, OpenAI, Groq, Ollama, Gemini<br>"
+        "• Consult 'Settings->AI Model Info Guide' for detailed instructions<br>"
+
+        "• Click 'Get Chart Interpretation From AI' after calculating<br>"
+        "• Select response language from the dropdown<br><br>"
+
+        "<b>Predictive Astrology:</b><br>"
+        "• Set a date range (up to 370 days) in the left dock<br>"
+        "• 'Calculate Transits' for raw transit data<br>"
+        "• 'Get AI Prediction' for AI-powered forecast(up to 7 days-Data can be huge)<br>"
+        "• Use Tools → Transit Filter on 'Chart Details->Raw Transit Data' tab to narrow results<br><br>"
+
+        "<b>Return Charts (Tools menu):</b><br>"
+        "• Solar, Lunar, Saturn, Jupiter, Venus, Mars<br>"
+        "• Mercury, Uranus, Neptune, Pluto returns<br>"
+        "• Secondary Progression charts<br><br>"
+
+        "<b>Relationship Charts (Tools menu):</b><br>"
+        "• <b>Composite</b>: midpoints between two charts<br>"
+        "• <b>Davison</b>: relationship as a hypothetical person<br>"
+        "• <b>Synastry</b>: aspects between two people's charts<br>"
+        "• Use Tools → Synastry Filter on 'Chart Details->Synastry' tab to narrow results<br><br>"
+
+        "<b>Other Features:</b><br>"
+        "• <b>Eclipses</b>: Tools → Calculate Eclipses<br>"
+        "• <b>Zodiac Signs Chart</b>: Tools → Calculate Zodiac Chart<br>"
+        "• <b>Share</b>: screenshot with watermark (top-right button)<br>"
+        "• <b>Zoom</b>: Ctrl + mouse wheel on chart<br>"
+        "• <b>Export</b>: PNG, SVG, PDF, or text from File menu<br>"
+        "• <b>Drag & drop</b>: Ctrl+drag chart to another window<br><br>"
+
+        "</body></html>"
+    );
+    infoButton->setStyleSheet(
+        "QPushButton#infoButton { "
+        "background-color: rgba(37, 99, 235, 0.15); "
+        "border-radius: 16px; "
+        "font-size: 18px; "
+        "font-weight: bold; "
+        "color: #60a5fa; "
+        "border: none; "
+        "padding: 0px; "
+        "} "
+        "QPushButton#infoButton:hover { "
+        "background-color: rgba(37, 99, 235, 0.3); "
+        "color: #93bbfc; "
+        "}"
+    );
+
+    infoButton->setObjectName("infoButton");
+
+
+    // Container holding both buttons
+    QWidget *cornerContainer = new QWidget(this);
+    QHBoxLayout *cornerLayout = new QHBoxLayout(cornerContainer);
+    cornerLayout->setContentsMargins(0, 0, 6, 0);
+    cornerLayout->setSpacing(6);
+    cornerLayout->addWidget(infoButton);
+    cornerLayout->addWidget(shareButton);
+
+    if (m_centralTabWidget) {
+        m_centralTabWidget->setCornerWidget(cornerContainer, Qt::TopRightCorner);
+    }
 }
 
 void MainWindow::onShareClicked()
@@ -6237,7 +6365,7 @@ void MainWindow::onShareClicked()
     watermarkPainter.end();
 
     QString shareText = QString("My %1 chart")
-                        .arg(GlobalFlags::lastGeneratedChartType);
+                        .arg(AsteriaFlags::lastGeneratedChartType);
 
     QClipboard *clipboard = QApplication::clipboard();
     QMimeData *mimeData = new QMimeData();
@@ -6252,12 +6380,12 @@ void MainWindow::onShareClicked()
 }
 
 void MainWindow::openFolder() {
-    QDir dir(GlobalFlags::appDir);
+    QDir dir(AsteriaFlags::appDir);
     if (!dir.exists()) {
         return;
     }
 
-    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(GlobalFlags::appDir))) {
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(AsteriaFlags::appDir))) {
     }
 }
 
@@ -6323,7 +6451,7 @@ void MainWindow::createSymlink()
         }
     }
 
-    QString targetPath = GlobalFlags::appDir;
+    QString targetPath = AsteriaFlags::appDir;
 
     if (!QFile::exists(targetPath)) {
         QMessageBox::warning(this, "Error",
@@ -6603,7 +6731,7 @@ void MainWindow::applyAspectFilter(const QString &planet1Pattern,
 ////////////////////////////
 
 void MainWindow::loadSynastryCharts() {
-    QString appDir = GlobalFlags::appDir;
+    QString appDir = AsteriaFlags::appDir;
     QDir dir;
     if (!dir.exists(appDir))
         dir.mkpath(appDir);
@@ -6787,7 +6915,7 @@ void MainWindow::calculateSynastry() {
 
     // Store for AI interpretation
     m_currentChartData = synastryChartData;
-    GlobalFlags::lastGeneratedChartType = "Synastry";
+    AsteriaFlags::lastGeneratedChartType = "Synastry";
     m_chartCalculated = true;
     m_getInterpretationButton->setEnabled(true);
 }
@@ -6798,7 +6926,7 @@ void MainWindow::saveSynastry() {
         return;
     }
 
-    QString appDir = GlobalFlags::appDir;
+    QString appDir = AsteriaFlags::appDir;
     QDir dir(appDir + "/SynastryCharts");
     if (!dir.exists()) {
         dir.mkpath(".");
@@ -6850,7 +6978,7 @@ void MainWindow::saveSynastry() {
 
 
 void MainWindow::loadSynastry() {
-    QString appDir = GlobalFlags::appDir;
+    QString appDir = AsteriaFlags::appDir;
     QDir dir(appDir + "/SynastryCharts");
     if (!dir.exists()) {
         dir.mkpath(".");
@@ -7228,4 +7356,8 @@ void MainWindow::applySynastryFilter(const QString &planet1Pattern,
         m_aspectSearchDialog->statusLabel->setText("Filter applied");
     }
 }
-
+void MainWindow::showDisplaySettings()
+{
+    DisplaySettingsDialog dlg(this);
+    dlg.exec();
+}

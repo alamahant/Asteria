@@ -14,7 +14,7 @@ MistralAPI::MistralAPI(QObject *parent)
     connect(m_networkManager, &QNetworkAccessManager::finished,
             this, &MistralAPI::handleNetworkReply);
 
-    GlobalFlags::activeModelLoaded = loadActiveModel();
+    AsteriaFlags::activeModelLoaded = loadActiveModel();
 }
 
 MistralAPI::~MistralAPI()
@@ -29,7 +29,7 @@ void MistralAPI::interpretChart(const QJsonObject &chartData)
         return;
     }
 
-    if (!GlobalFlags::activeModelLoaded) {
+    if (!AsteriaFlags::activeModelLoaded) {
         m_lastError = "No active AI model configured. Please configure one in Settings → Configure AI Models.";;
         emit error(m_lastError);
         return;
@@ -137,7 +137,7 @@ void MistralAPI::interpretTransits(const QJsonObject &transitData) {
         return;
     }
 
-    if (!GlobalFlags::activeModelLoaded) {
+    if (!AsteriaFlags::activeModelLoaded) {
         m_lastError = "No active AI model configured. Please configure one in Settings → Configure AI Models.";;
         emit error(m_lastError);
         return;
@@ -167,7 +167,7 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
     systemMessage["role"] = "system";
 
 
-    if (GlobalFlags::lastGeneratedChartType == "Zodiac Signs") {
+    if (AsteriaFlags::lastGeneratedChartType == "Zodiac Signs") {
         systemMessage["content"] = QString(
             "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
             "Analyze the following planetary chart data and provide detailed insights for each of the 12 zodiac signs (Aries through Pisces). "
@@ -178,9 +178,9 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
             "Make each sign’s narrative concise but detailed (about 12–15 sentences), like a magazine-style horoscope, with practical advice where appropriate.\n"
             "IMPORTANT: Format the output in Markdown or plain text in %2, with each zodiac sign clearly separated as its own paragraph or section. "
             "Do NOT output JSON, XML, YAML, or any other structured data formats."
-            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
+            ).arg(AsteriaFlags::lastGeneratedChartType).arg(m_language);
     }
-    else if (GlobalFlags::lastGeneratedChartType == "Secondary Progression") {
+    else if (AsteriaFlags::lastGeneratedChartType == "Secondary Progression") {
         systemMessage["content"] = QString(
             "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
             "Secondary progressions represent the symbolic unfolding of the natal chart, where each day after birth corresponds to a year of life. "
@@ -191,9 +191,9 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
             "Make the narrative detailed, providing both symbolic meaning and practical advice. "
             "IMPORTANT: Format the output in Markdown or plain text in %2. "
             "Do NOT output JSON, XML, YAML, or any other structured data formats."
-            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
+            ).arg(AsteriaFlags::lastGeneratedChartType).arg(m_language);
     }
-    else if (GlobalFlags::lastGeneratedChartType == "Davison Relationship") {
+    else if (AsteriaFlags::lastGeneratedChartType == "Davison Relationship") {
         systemMessage["content"] = QString(
             "You are an expert astrologer providing detailed and insightful interpretations of %1 charts. "
             "Davison charts are calculated by finding the exact midpoint in time and space between two individuals, creating a unique chart for the relationship itself. "
@@ -204,9 +204,9 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
             "Make the narrative detailed, blending psychological insight with grounded relationship advice. "
             "IMPORTANT: Format the output in Markdown or plain text in %2. "
             "Do NOT output JSON, XML, YAML, or any other structured data formats."
-            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
+            ).arg(AsteriaFlags::lastGeneratedChartType).arg(m_language);
 
-    }else if (GlobalFlags::lastGeneratedChartType == "Synastry") {
+    }else if (AsteriaFlags::lastGeneratedChartType == "Synastry") {
         systemMessage["content"] = QString(
             "You are an expert astrologer providing detailed and insightful interpretations of Synastry charts. "
             "Analyze the relationship between Person A and Person B based on their planetary aspects and house overlays. "
@@ -225,7 +225,7 @@ QJsonObject MistralAPI::createPrompt(const QJsonObject &chartData) {
             "strengths, challenges, and life path insights. Be specific about what each planet position, house placement, "
             "and major aspect means for the individual. IMPORTANT: Your entire response must be in %2, using Markdown or plain text only. "
             "Do NOT output JSON, XML, YAML, or any other structured data formats."
-            ).arg(GlobalFlags::lastGeneratedChartType).arg(m_language);
+            ).arg(AsteriaFlags::lastGeneratedChartType).arg(m_language);
     }
 
     messages.append(systemMessage);
@@ -280,7 +280,7 @@ QJsonObject MistralAPI::createTransitPrompt(const QJsonObject &transitData) {
                                   "advice for navigating these energies."
                                   "IMPORTANT: Your entire response must be in Markdown or plain text only. "
                                   "Do NOT output JSON, XML, YAML, or any other structured data formats.")
-                              .arg(GlobalFlags::lastGeneratedChartType)
+                              .arg(AsteriaFlags::lastGeneratedChartType)
                               .arg(transitData["transitStartDate"].toString())
                               .arg(QDate::fromString(transitData["transitStartDate"].toString(), "yyyy/MM/dd")
                                        .addDays(transitData["numberOfDays"].toInt() - 1)

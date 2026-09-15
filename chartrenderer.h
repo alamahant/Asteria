@@ -1,9 +1,9 @@
 #ifndef CHARTRENDERER_H
 #define CHARTRENDERER_H
-#define DEFAULT_CHART_SIZE 700
-#define DEFAULT_WHEEL_THICKNESS 30
-#define PLANET_SIZE 35
-#define POINT_SIZE 16
+//#define DEFAULT_CHART_SIZE 700
+//#define DEFAULT_WHEEL_THICKNESS 30
+//#define PLANET_SIZE 35
+//#define POINT_SIZE 16
 
 #include <QGraphicsView>
 #include <QGraphicsScene>

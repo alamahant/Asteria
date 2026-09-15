@@ -75,6 +75,7 @@ void PlanetListWidget::updateData(const ChartData &chartData)
     bool useCustomFont = !g_astroFontFamily.isEmpty();
     if (useCustomFont) {
         symbolFont = QFont(g_astroFontFamily, symbolFont.pointSize());
+
     }
 
     for (const QString &planetId : orderedPlanets) {
@@ -95,11 +96,16 @@ void PlanetListWidget::updateData(const ChartData &chartData)
             QTableWidgetItem *signItem = new QTableWidgetItem(signSymbol + " " + signName);
 
             if (useCustomFont) {
-                QFont zodiacFont("Dejavu Sans", 11);      // use a known system font
-                zodiacFont.setStyleStrategy(QFont::NoFontMerging); // prevent emoji fallback
-
+            #ifdef Q_OS_WIN
+                QFont zodiacFont(g_astroFontFamily.isEmpty() ? "DejaVu Sans" : g_astroFontFamily,
+                                 symbolFont.pointSize());
+            #else
+                QFont zodiacFont("DejaVu Sans", symbolFont.pointSize());      // use a known system font
+                zodiacFont.setStyleStrategy(QFont::NoFontMerging);
+            #endif
                 signItem->setFont(zodiacFont);
             }
+
             signItem->setBackground(getColorForSign(signName));
 
             int degree = static_cast<int>(planet.longitude) % 30;

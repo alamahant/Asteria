@@ -17,7 +17,7 @@
 SocialShare::SocialShare(QObject *parent)
     : QObject(parent)
     , m_appName(QCoreApplication::applicationName())
-    , m_screenshotDir(GlobalFlags::sharesDirPath)
+    , m_screenshotDir(AsteriaFlags::sharesDirPath)
     , m_includeScreenshot(true)
 {
 }

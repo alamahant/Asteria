@@ -1,6 +1,7 @@
 #include "elementmodalitywidget.h"
 #include <QFont>
 #include <QFrame>
+#include"Globals.h"
 
 extern QString g_astroFontFamily;
 
@@ -109,9 +110,14 @@ void ElementModalityWidget::setupUi()
         label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         label->setWordWrap(false);
 
+#ifdef Q_OS_WIN
+    QFont glyphFont(g_astroFontFamily.isEmpty() ? "DejaVu Sans" : g_astroFontFamily,
+                    AsteriaFlags::uiFontSize);
+#else
+    QFont glyphFont("DejaVu Sans", AsteriaFlags::uiFontSize);      // use a known system font
+    glyphFont.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback on Linux
+#endif
 
-        QFont glyphFont("DejaVu Sans", 14);      // use a known system font
-        glyphFont.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback
         label->setFont(glyphFont);
 
         QString element = getElement(sign);
@@ -230,12 +236,18 @@ void ElementModalityWidget::updateData(const ChartData &chartData) {
             m_signLabels[sign]->setText(labelText);
 
             if (!g_astroFontFamily.isEmpty()) {
-                QFont astroFont("DejaVu Sans", 14);      // use a known system font
-                astroFont.setStyleStrategy(QFont::NoFontMerging); // block emoji/color fallback <<<<<<----
+            #ifdef Q_OS_WIN
+                QFont astroFont(g_astroFontFamily.isEmpty() ? "DejaVu Sans" : g_astroFontFamily,
+                                AsteriaFlags::uiFontSize);
+            #else
+                QFont astroFont("DejaVu Sans", AsteriaFlags::uiFontSize);      // use a known system font
+                astroFont.setStyleStrategy(QFont::NoFontMerging);
+            #endif
 
                 astroFont.setBold(true);
                 m_signLabels[sign]->setFont(astroFont);
             }
+
         }
     }
 

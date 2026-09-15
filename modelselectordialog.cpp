@@ -61,8 +61,9 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
     QLabel *infoLabel = new QLabel(tr("Note: Works with any OpenAI-compatible API model.Hover for details.\n"
                                       "You MUST restart Asteria after configuring your first model."));
     infoLabel->setToolTip(tr(
-        "<b>✅ Fully compatible (OpenAI format):</b><br>"
+        "<b>Fully compatible (OpenAI format):</b><br>"
         "• Mistral<br>"
+        "• Gemini (Google)<br>"
         "• OpenAI (ChatGPT, GPT-4)<br>"
         "• Groq (fast inference, free tier)<br>"
         "• Ollama (local models, no API key)<br>"
@@ -71,9 +72,8 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
         "• Perplexity API<br>"
         "• Fireworks AI<br>"
         "• AnyLocal (OpenAI compatibility mode)<br><br>"
-        "<b>❌ NOT compatible (different formats):</b><br>"
+        "<b>NOT compatible (different formats):</b><br>"
         "• Claude (Anthropic)<br>"
-        "• Gemini (Google)<br>"
         "• Cohere<br><br>"
         "For local models: Install Ollama, use endpoint http://localhost:11434/v1/chat/completions"
 

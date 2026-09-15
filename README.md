@@ -8,7 +8,7 @@ Asteria is a comprehensive astrological chart application that combines traditio
 
 | Platform | Where to Get It |
 | :--- | :--- |
-| **Linux** | [Flathub](https://flathub.org/en/apps/search?q=alamahant) |
+| **Linux** | [Flathub](https://flathub.org/en/apps/io.github.alamahant.Asteria) |
 | **Windows and Mac** | [Buy on Gumroad](https://jnanadhakini.gumroad.com/) - Pre-compiled binary, no compilation needed |
 
 ## Features
@@ -19,9 +19,26 @@ Asteria is a comprehensive astrological chart application that combines traditio
 - **House and Sign Placements**: View planetary positions by house and zodiac sign
 - **Element & Modality Balance**: Analyze the distribution of elements and modalities in your chart
 - **AI-Powered Interpretations**: Receive personalized chart readings using advanced AI technology
+- **Multi-Provider AI Support**: Works with Mistral, OpenAI, Groq, Ollama, and Gemini
 - **Modern UI**: Clean, user-friendly interface suitable for both beginners and experienced astrologers
 - **Extended Time Range**: Calculate charts from 3000 BC to 3000 AD with high precision
-- **Relationship Charts**: Compare natal charts with synastry and composite analysis
+- **Relationship Charts**: Compare natal charts with Synastry, Composite, and Davison analysis
+- **Return Charts**: Solar, Lunar, Saturn, Jupiter, Venus, Mars, Mercury, Uranus, Neptune, and Pluto returns
+- **Secondary Progressions**: Explore the symbolic evolution of your chart over time
+- **Transit Calculations**: Track planetary transits over a period of up to 370 days
+- **Eclipse Calculations**: Compute solar and lunar eclipses for any date range
+- **Zodiac Signs Chart**: Generate magazine-style horoscopes for all twelve signs
+- **Additional Celestial Bodies**: Include Lilith, Ceres, Pallas, Juno, Vesta, Vertex, East Point, and Part of Spirit
+- **Aspect Filters**: Filter transits, aspects, and synastry data by planet, aspect type, orb, and exclusions
+- **Customizable Display**: Adjust chart size, wheel thickness, planet size, glyph size, and UI font size
+- **Aspect Display Settings**: Customize aspect line thickness and style for major and minor aspects
+- **Julian/Gregorian Calendar Toggle**: Accurate historical chart calculation before 1582
+- **Export Options**: Save charts as PNG, SVG, PDF, or text; export chart data tables as text
+- **Chart Sharing**: Capture chart screenshots with watermark and share via social dialog
+- **Multi-Window Support**: Open multiple charts in separate windows with drag-and-drop between them
+- **OpenStreetMap Integration**: Pick birth locations visually from an interactive map
+- **Multi-Language AI**: Get interpretations in English, Spanish, French, German, Italian, Russian, Greek, Portuguese, Hindi, Chinese, or Arabic
+- **Available Everywhere**: Native builds for Linux, Windows, macOS, and Flatpak
 
 ## Installation
 

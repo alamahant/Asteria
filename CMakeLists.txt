@@ -52,7 +52,14 @@ if(FLATHUB_BUILD)
     include_directories(${SWISSEPH_INCLUDE_DIR})
 else()
     # For local builds, use the local Swiss Ephemeris
-    set(SWISSEPH_DIR "/home/dharma/ssd/cpp/swisseph")
+    #set(SWISSEPH_DIR "/home/dharma/ssd/cpp/swisseph")
+
+    if(WIN32)
+        set(SWISSEPH_DIR "H:/swisseph")
+    else()
+        set(SWISSEPH_DIR "/home/dharma/ssd/cpp/swisseph")
+    endif()
+
     set(SWISSEPH_INCLUDE_DIR "${SWISSEPH_DIR}")
     set(SWISSEPH_DATA_DIR "${SWISSEPH_DIR}/ephe")
     include_directories(${SWISSEPH_INCLUDE_DIR})
@@ -125,6 +132,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
         socialshare.cpp socialshare.h socialsharedialog.cpp socialsharedialog.h
         rssnotificationdialog.cpp rssnotificationdialog.h
         aspectsearchdialog.cpp aspectsearchdialog.h
+        displaysettingsdialog.cpp displaysettingsdialog.h
     )
 else()
     if(ANDROID)

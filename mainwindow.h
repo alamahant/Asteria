@@ -329,11 +329,11 @@ private slots:
                            const QString &excludePattern);
     void openAspectsFilter();
     void openSynastryFilter();
-
+    void showDisplaySettings();
 private:
     QVector<Model> allModels;
     //sharing
-    void setupShareButton();
+    void setupCornerWidget();
     SocialShare* m_socialShare;
     // rssfeed
     RssNotificationDialog* rssDialog = nullptr;

@@ -1,6 +1,7 @@
 #include "aspectarianwidget.h"
 #include <QHeaderView>
 #include <QDebug>
+#include"Globals.h"
 
 extern QString g_astroFontFamily;
 
@@ -106,10 +107,10 @@ void AspectarianWidget::updateData(const ChartData &chartData)
     m_table->setVerticalHeaderLabels(symbolHeaders);
 
     QFont headerFont = m_table->font();
-    headerFont.setPointSize(14); // Use a fixed size instead of incrementing
+    headerFont.setPointSize(AsteriaFlags::uiFontSize); // Use a fixed size instead of incrementing
 
     if (!g_astroFontFamily.isEmpty()) {
-        headerFont = QFont(g_astroFontFamily, 14);
+        headerFont = QFont(g_astroFontFamily, AsteriaFlags::uiFontSize);
 
     }
 
@@ -161,7 +162,7 @@ void AspectarianWidget::updateData(const ChartData &chartData)
         item->setTextAlignment(Qt::AlignCenter);
 
         QFont symbolFont = m_table->font();
-        symbolFont.setPointSize(14); // Use a fixed size instead of incrementing
+        symbolFont.setPointSize(AsteriaFlags::uiFontSize); // Use a fixed size instead of incrementing
         item->setFont(symbolFont);
 
         QColor color = aspectColor(aspect.aspectType);

@@ -665,7 +665,7 @@ QString ChartCalculator::calculateTransits(const QDate &birthDate,
     QVector<HouseData> natalHouses = calculateHouseCusps(birthJd, lat, lon, houseSystem);
     QVector<AngleData> natalAngles = calculateAngles(birthJd, lat, lon, houseSystem);
     QVector<PlanetData> natalPlanets = calculatePlanetPositions(birthJd, natalHouses);
-    if (GlobalFlags::additionalBodiesEnabled) {
+    if (AsteriaFlags::additionalBodiesEnabled) {
         addSyzygyAndParsFortuna(natalPlanets, birthJd, natalHouses, natalAngles);
         calculateAdditionalBodies(natalPlanets, birthJd, natalHouses);
     }
@@ -676,7 +676,7 @@ QString ChartCalculator::calculateTransits(const QDate &birthDate,
     QStringList includedTargetObjects;
     QStringList excludedTransitingObjects;
 
-    if (GlobalFlags::additionalBodiesEnabled) {
+    if (AsteriaFlags::additionalBodiesEnabled) {
         includedTargetObjects = {"Sun", "Moon", "Mercury", "Venus", "Mars",
                                  "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto",
                                  "Lilith", "Ceres", "Pallas", "Juno", "Vesta", "Vertex", "East Point", "Chiron",
@@ -722,7 +722,7 @@ QString ChartCalculator::calculateTransits(const QDate &birthDate,
         QVector<AngleData> transitAngles = calculateAngles(transitJd, lat, lon, houseSystem);
         QVector<PlanetData> transitPlanets = calculatePlanetPositions(transitJd, transitHouses);
 
-        if (GlobalFlags::additionalBodiesEnabled) {
+        if (AsteriaFlags::additionalBodiesEnabled) {
             addSyzygyAndParsFortuna(transitPlanets, transitJd, transitHouses, transitAngles);
             calculateAdditionalBodies(transitPlanets, transitJd, transitHouses);
         }

@@ -10,23 +10,44 @@
 
   <url type="vcs-browser">https://github.com/alamahant/Asteria</url>
   <url type="donation">https://ko-fi.com/alamahant</url>
-  <description>
-    <p>
-      Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology.
-    </p>
-    <p>
-      Features:
-    </p>
-    <ul>
-      <li>Calculate and display natal charts with precise planetary positions</li>
-      <li>Analyze aspects between planets with detailed interpretations</li>
-      <li>View planetary positions by house and sign</li>
-      <li>Examine element and modality distributions</li>
-      <li>Generate AI-powered chart interpretations for deeper insights</li>
-      <li>Calculate transit charts to see how current planetary positions affect your natal chart</li>
-      <li>Clean, intuitive interface for both beginners and experienced astrologers</li>
-    </ul>
-  </description>
+
+  
+<description>
+  <p>
+    Asteria is a comprehensive astrological chart application that combines traditional astrology with modern AI technology.
+  </p>
+  <p>
+    Features:
+  </p>
+  <ul>
+    <li>Calculate and display natal charts with precise planetary positions</li>
+    <li>Analyze aspects between planets with detailed interpretations</li>
+    <li>View planetary positions by house and sign</li>
+    <li>Examine element and modality distributions</li>
+    <li>Generate AI-powered chart interpretations for deeper insights</li>
+    <li>Calculate transit charts to see how current planetary positions affect your natal chart</li>
+    <li>Clean, intuitive interface for both beginners and experienced astrologers</li>
+    <li>Composite, Davison, and Synastry relationship charts</li>
+    <li>Return charts for Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, and Pluto</li>
+    <li>Secondary progression charts</li>
+    <li>Solar and lunar eclipse calculations</li>
+    <li>Zodiac Signs chart with magazine-style horoscopes</li>
+    <li>Customizable aspect orb slider and additional celestial bodies (Lilith, Ceres, Pallas, Juno, Vesta, Vertex, East Point, Part of Spirit)</li>
+    <li>Aspect Display Settings for customizing aspect line thickness and style</li>
+    <li>Display Settings for chart size, wheel thickness, planet size, glyph size, and UI font size</li>
+    <li>Multi-provider AI support including Mistral, OpenAI, Groq, Ollama, and Gemini</li>
+    <li>Transit, Aspect, and Synastry filters for detailed data exploration</li>
+    <li>Julian/Gregorian calendar toggle for dates before 1582</li>
+    <li>Export charts as PNG, SVG, PDF, or text</li>
+    <li>Share charts with watermark via social dialog</li>
+    <li>Multi-window support with drag-and-drop between windows</li>
+    <li>OpenStreetMap-based location picker</li>
+    <li>AI response language selection including English, Spanish, French, German, Italian, Russian, Greek, Portuguese, Hindi, Chinese, and Arabic</li>
+    <li>Available for Linux, Windows, macOS, and Flatpak</li>
+  </ul>
+</description>
+
+
   <url type="homepage">https://github.com/alamahant/Asteria</url>
   <url type="bugtracker">https://github.com/alamahant/Asteria/issues</url>
   <screenshots>
@@ -89,6 +110,21 @@
   </screenshots>
 
   <releases>
+
+<release version="2.4.9" date="2026-09-15">
+  <description>
+    <p>Display Settings &amp; Quick Guide:</p>
+    <ul>
+      <li>Added Display Settings dialog (Settings menu) for chart size, wheel thickness, planet size, planet glyph size, and UI font size</li>
+      <li>Added Restore Defaults button to reset all display settings to platform defaults</li>
+      <li>Display preferences are now saved to QSettings and restored on next launch</li>
+      <li>Added platform-aware defaults with calibrated values for Linux and Windows (125% scaling)</li>
+      <li>Added Quick Guide info button in the top-right corner of the main tab widget</li>
+      <li>Fixed QLineEdit placeholder text not visible on Windows with the Fusion palette</li>
+      <li>Consolidated UI font sizing through global settings and removed NoFontMerging on Windows</li>
+    </ul>
+  </description>
+</release>
 
 <release version="2.4.8" date="2026-09-04">
   <description>

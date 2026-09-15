@@ -72,7 +72,6 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationVersion("2.4.9");
 
     QSettings settings;
-    // Display settings
     AsteriaFlags::chartSize      = settings.value("display/chartSize",      AsteriaFlags::chartSize).toInt();
     AsteriaFlags::wheelThickness = settings.value("display/wheelThickness", AsteriaFlags::wheelThickness).toInt();
     AsteriaFlags::planetSize     = settings.value("display/planetSize",     AsteriaFlags::planetSize).toInt();

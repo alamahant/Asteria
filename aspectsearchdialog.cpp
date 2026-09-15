@@ -1,4 +1,3 @@
-// aspectsearchdialog.cpp
 #include "aspectsearchdialog.h"
 #include <QVBoxLayout>
 

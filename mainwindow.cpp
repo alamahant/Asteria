@@ -328,7 +328,6 @@ void MainWindow::setupCentralWidget() {
         });
     }
 
-    //synastry
     m_synastryTable = new QTableWidget(0, 4, this);
     m_synastryTable->setObjectName("Synastry");
     m_synastryTable->setHorizontalHeaderLabels({"Person A Planet", "Aspect", "Person B Planet", "Orb"});
@@ -337,7 +336,6 @@ void MainWindow::setupCentralWidget() {
     m_synastryTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_synastryTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_synastryTable->setContextMenuPolicy(Qt::ActionsContextMenu);
-    // Copy action for synastry table
     QAction *copySynastryAction = new QAction("Copy", m_synastryTable);
     copySynastryAction->setShortcut(QKeySequence::Copy);
     m_synastryTable->addAction(copySynastryAction);
@@ -369,7 +367,6 @@ void MainWindow::setupCentralWidget() {
         QClipboard *clipboard = QGuiApplication::clipboard();
         clipboard->setText(copiedText);
     });
-    //
 
     detailsTabs->addTab(planetsTable, "Planets");
     detailsTabs->addTab(anglesTable, "Angles");
@@ -1065,7 +1062,6 @@ void MainWindow::setupMenus()
     relationshipMenu->addSeparator();
     relationshipMenu->addAction(synastryAction);
 
-    //synastryAction->setEnabled(false);
 
     connect(compositeAction, &QAction::triggered, this, &MainWindow::createCompositeChart);
     connect(davisonAction, &QAction::triggered, this, &MainWindow::createDavisonChart);
@@ -4123,7 +4119,6 @@ void MainWindow::openTransitFilter() {
                 this, &MainWindow::applyTransitFilter);
     }
     m_transitSearchDialog->show();
-   // m_transitSearchDialog->raise();
 }
 
 void MainWindow::openAspectsFilter() {
@@ -4133,7 +4128,6 @@ void MainWindow::openAspectsFilter() {
                 this, &MainWindow::applyAspectFilter);
     }
     m_aspectSearchDialog->show();
-   // m_aspectSearchDialog->raise();
 
 }
 
@@ -6340,7 +6334,6 @@ void MainWindow::setupCornerWidget()
     infoButton->setObjectName("infoButton");
 
 
-    // Container holding both buttons
     QWidget *cornerContainer = new QWidget(this);
     QHBoxLayout *cornerLayout = new QHBoxLayout(cornerContainer);
     cornerLayout->setContentsMargins(0, 0, 6, 0);
@@ -6649,7 +6642,6 @@ void MainWindow::showAIConfigGuide()
         dialog.accept();
         ModelSelectorDialog dlg(this);
         dlg.exec();
-        //aiManager->loadActiveModel();
     });
 
     connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::reject);
@@ -6690,7 +6682,6 @@ void MainWindow::applyAspectFilter(const QString &planet1Pattern,
             double maxOrb = maxOrbPattern.toDouble(&ok);
             if(ok) {
                 QString orbText = aspectsTable->item(row, 3)->text();
-                // Remove the degree symbol and any other non-numeric characters
                 QString cleanOrb = orbText.remove("°").trimmed();
                 double orbValue = cleanOrb.toDouble(&ok);
                 if(ok && orbValue > maxOrb) {
@@ -6728,7 +6719,6 @@ void MainWindow::applyAspectFilter(const QString &planet1Pattern,
 }
 
 
-////////////////////////////
 
 void MainWindow::loadSynastryCharts() {
     QString appDir = AsteriaFlags::appDir;
@@ -6759,7 +6749,6 @@ void MainWindow::loadSynastryCharts() {
 
     m_synastryChartDataA = docA.object();
 
-    // Extract name from birthInfo
     if (m_synastryChartDataA.contains("birthInfo")) {
         QJsonObject birthInfo = m_synastryChartDataA["birthInfo"].toObject();
         QString firstName = birthInfo["firstName"].toString();
@@ -6804,14 +6793,11 @@ void MainWindow::loadSynastryCharts() {
     calculateSynastry();
     saveSynastry();
 
-    // Switch to synastry tab
-    // Switch to Chart Details tab first
     int detailsTabIndex = m_centralTabWidget->indexOf(m_chartDetailsWidget);
     if (detailsTabIndex >= 0) {
         m_centralTabWidget->setCurrentIndex(detailsTabIndex);
     }
 
-    // Then switch to Synastry tab in detailsTabs
     int synastryTabIndex = detailsTabs->indexOf(m_synastryTable);
     if (synastryTabIndex >= 0) {
         detailsTabs->setCurrentIndex(synastryTabIndex);
@@ -6819,7 +6805,6 @@ void MainWindow::loadSynastryCharts() {
 }
 
 void MainWindow::calculateSynastry() {
-    // Extract planets from chartData
     QJsonObject chartDataA = m_synastryChartDataA["chartData"].toObject();
     QJsonObject chartDataB = m_synastryChartDataB["chartData"].toObject();
 
@@ -6830,7 +6815,6 @@ void MainWindow::calculateSynastry() {
     QJsonArray anglesArrayA = chartDataA["angles"].toArray();
     QJsonArray anglesArrayB = chartDataB["angles"].toArray();
 
-    // Convert to PlanetData, HouseData, AngleData
     QVector<PlanetData> planetsA, planetsB;
     QVector<HouseData> housesA, housesB;
     QVector<AngleData> anglesA, anglesB;
@@ -6893,15 +6877,12 @@ void MainWindow::calculateSynastry() {
         anglesB.append(angle);
     }
 
-    // Calculate synastry aspects
     QVector<AspectData> aspects = calculateSynastryAspects(planetsA, planetsB);
 
-    // Display table
     displaySynastryTable(aspects, m_synastryNameA, m_synastryNameB,
                          planetsA, planetsB, housesA, housesB,
                          anglesA, anglesB);
 
-    // Display text with angles and house overlays
     displaySynastryText(m_synastryNameA, m_synastryNameB,
                         anglesA, anglesB, planetsA, planetsB,
                         housesA, housesB);
@@ -6913,7 +6894,6 @@ void MainWindow::calculateSynastry() {
                                                             anglesA, anglesB,
                                                             m_lastSynastryAspects);
 
-    // Store for AI interpretation
     m_currentChartData = synastryChartData;
     AsteriaFlags::lastGeneratedChartType = "Synastry";
     m_chartCalculated = true;
@@ -6950,7 +6930,6 @@ void MainWindow::saveSynastry() {
     saveData["chartDataB"] = m_synastryChartDataB;
     saveData["interpretation"] = m_interpretationtextEdit->toPlainText();
 
-    // Save aspects from table
     QJsonArray aspectsArray;
     for (int row = 0; row < m_synastryTable->rowCount(); row++) {
         QJsonObject aspect;
@@ -7007,22 +6986,18 @@ void MainWindow::loadSynastry() {
 
     QJsonObject saveData = doc.object();
 
-    // Clear existing data
     m_synastryTable->setRowCount(0);
     m_interpretationtextEdit->clear();
 
-    // Load chart data
     m_synastryChartDataA = saveData["chartDataA"].toObject();
     m_synastryChartDataB = saveData["chartDataB"].toObject();
     m_synastryNameA = saveData["personA"].toString();
     m_synastryNameB = saveData["personB"].toString();
 
-    // Load interpretation
     if (saveData.contains("interpretation")) {
         m_interpretationtextEdit->setText(saveData["interpretation"].toString());
     }
 
-    // Load aspects into table
     QJsonArray aspectsArray = saveData["aspects"].toArray();
     for (const QJsonValue &val : aspectsArray) {
         QJsonObject aspect = val.toObject();
@@ -7034,14 +7009,11 @@ void MainWindow::loadSynastry() {
         m_synastryTable->setItem(row, 3, new QTableWidgetItem(aspect["orb"].toString() + "°"));
     }
 
-    // Switch to synastry tab
-    // Switch to Chart Details tab first
     int detailsTabIndex = m_centralTabWidget->indexOf(m_chartDetailsWidget);
     if (detailsTabIndex >= 0) {
         m_centralTabWidget->setCurrentIndex(detailsTabIndex);
     }
 
-    // Then switch to Synastry tab in detailsTabs
     int synastryTabIndex = detailsTabs->indexOf(m_synastryTable);
     if (synastryTabIndex >= 0) {
         detailsTabs->setCurrentIndex(synastryTabIndex);
@@ -7088,7 +7060,6 @@ void MainWindow::displaySynastryText(const QString &nameA, const QString &nameB,
     text += "=== HOUSE OVERLAYS ===\n";
     text += "Person A's Planets in Person B's Houses:\n";
     for (const PlanetData &planet : planetsA) {
-        //QString houseId = findHouse(planet.longitude, housesB);
         QString houseId = m_chartDataManager.calculator()->findHouse(planet.longitude, housesB);
 
         QString houseSign = "";
@@ -7104,7 +7075,6 @@ void MainWindow::displaySynastryText(const QString &nameA, const QString &nameB,
 
     text += "Person B's Planets in Person A's Houses:\n";
     for (const PlanetData &planet : planetsB) {
-        //QString houseId = findHouse(planet.longitude, housesA);
         QString houseId = m_chartDataManager.calculator()->findHouse(planet.longitude, housesB);
         QString houseSign = "";
         for (const HouseData &h : housesA) {
@@ -7180,7 +7150,6 @@ QJsonObject MainWindow::createSynastryChartData(const QString &nameA,
     QJsonObject chartData;
     chartData["chartType"] = "Synastry";
 
-    // Person A
     QJsonObject personA;
     QJsonArray planetsArrayA;
     for (const PlanetData &p : planetsA) {
@@ -7215,7 +7184,6 @@ QJsonObject MainWindow::createSynastryChartData(const QString &nameA,
     }
     personA["angles"] = anglesArrayA;
 
-    // Person B
     QJsonObject personB;
     QJsonArray planetsArrayB;
     for (const PlanetData &p : planetsB) {
@@ -7250,7 +7218,6 @@ QJsonObject MainWindow::createSynastryChartData(const QString &nameA,
     }
     personB["angles"] = anglesArrayB;
 
-    // Synastry aspects
     QJsonArray aspectsArray;
     for (const AspectData &a : aspects) {
         QJsonObject obj;
@@ -7261,7 +7228,6 @@ QJsonObject MainWindow::createSynastryChartData(const QString &nameA,
         aspectsArray.append(obj);
     }
 
-    // House overlays
     QJsonArray houseOverlaysAtoB;
     for (const PlanetData &p : planetsA) {
         QJsonObject obj;

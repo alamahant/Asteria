@@ -18,14 +18,12 @@ DisplaySettingsDialog::DisplaySettingsDialog(QWidget *parent)
     QSettings s;
 
     m_chartSizeSpin = new QSpinBox(this);
-    //m_chartSizeSpin->setToolTip("Set Default Chart Size");
     m_chartSizeSpin->setRange(400, 1200);
     m_chartSizeSpin->setSingleStep(10);
     m_chartSizeSpin->setSuffix(" px");
     m_chartSizeSpin->setValue(s.value("display/chartSize", AsteriaFlags::chartSize).toInt());
 
     m_wheelThicknessSpin = new QSpinBox(this);
-    //m_wheelThicknessSpin->setToolTip("Set Chart Wheel Thickness");
 
     m_wheelThicknessSpin->setRange(10, 80);
     m_wheelThicknessSpin->setSingleStep(1);
@@ -33,7 +31,6 @@ DisplaySettingsDialog::DisplaySettingsDialog(QWidget *parent)
     m_wheelThicknessSpin->setValue(s.value("display/wheelThickness", AsteriaFlags::wheelThickness).toInt());
 
     m_planetSizeSpin = new QSpinBox(this);
-    //m_planetSizeSpin->setToolTip("Set Planet Size");
 
     m_planetSizeSpin->setRange(10, 60);
     m_planetSizeSpin->setSingleStep(1);
@@ -41,7 +38,6 @@ DisplaySettingsDialog::DisplaySettingsDialog(QWidget *parent)
     m_planetSizeSpin->setValue(s.value("display/planetSize", AsteriaFlags::planetSize).toInt());
 
     m_pointSizeSpin = new QSpinBox(this);
-    //m_pointSizeSpin->setToolTip("Sep Planet Glyph Size");
 
     m_pointSizeSpin->setRange(8, 32);
     m_pointSizeSpin->setSingleStep(1);
@@ -49,7 +45,6 @@ DisplaySettingsDialog::DisplaySettingsDialog(QWidget *parent)
     m_pointSizeSpin->setValue(s.value("display/pointSize", AsteriaFlags::pointSize).toInt());
 
     m_uiFontSizeSpin = new QSpinBox(this);
-    //m_uiFontSizeSpin->setToolTip("Set UI Font Size");
     m_uiFontSizeSpin->setRange(8, 24);
     m_uiFontSizeSpin->setSingleStep(1);
     m_uiFontSizeSpin->setSuffix(" pt");

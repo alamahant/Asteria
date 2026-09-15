@@ -363,8 +363,6 @@ void ChartRenderer::drawZodiacSigns()
 
         QGraphicsTextItem *signText = new QGraphicsTextItem(signs[i]);
 
-       // QFont font("DejaVu Sans", 16);
-        //font.setStyleStrategy(QFont::NoFontMerging);
 
 #ifdef Q_OS_WIN
     QFont font(g_astroFontFamily.isEmpty() ? "DejaVu Sans" : g_astroFontFamily,
@@ -993,7 +991,6 @@ void ChartRenderer::drawHouseRing() {
             QGraphicsTextItem *houseNumber = new QGraphicsTextItem(QString::number(i + 1));
 
             QFont font;
-            //font.setPointSize(12);
             font.setPointSize(AsteriaFlags::uiFontSize - 2);
             font.setBold(true);
             houseNumber->setFont(font);

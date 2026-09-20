@@ -283,6 +283,7 @@ void MainWindow::setupCentralWidget() {
     planetsTable->setObjectName("Planets");
     planetsTable->setHorizontalHeaderLabels({"Planet", "Sign", "Degree", "House", "Tarot Mappings"});
     planetsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    planetsTable->setColumnHidden(4, !AsteriaFlags::tarotOverlayEnabled);
 
     QTableWidget *anglesTable = new QTableWidget(0, 3, detailsTabs);
     anglesTable->setObjectName("Angles");

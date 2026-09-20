@@ -6535,10 +6535,12 @@ void MainWindow::setupCornerWidget()
     m_tarotCardHeightSpin->setValue(AsteriaFlags::tarotCardHeight);
     m_tarotCardHeightSpin->blockSignals(false);
 
-    m_tarotCardHeightSpin->setFixedWidth(60);
+    m_tarotCardHeightSpin->setFixedWidth(70);
     m_tarotCardHeightSpin->setSuffix(" px");
     m_tarotCardHeightSpin->setToolTip("Tarot card height");
-
+    QSettings settings;
+    bool visible = settings.value("display/tarotCardHeight", false).toBool();
+    m_tarotCardHeightSpin->setVisible(visible);
     connect(m_tarotCardHeightSpin, &QSpinBox::valueChanged,
             this, [this](int value) {
         AsteriaFlags::tarotCardHeight = value;

@@ -41,37 +41,21 @@ int decanMinorNumber(const QString &sign, int decanIndex)
 {
     if (decanIndex < 0 || decanIndex > 2) return -1;
 
-    // Each element has three signs, each sign has three decans.
-    // The decan's pip number within the suit runs 2..10 across the three signs:
-    //   first sign of element:  decans 0,1,2 -> pips 2,3,4
-    //   second sign:            decans 0,1,2 -> pips 5,6,7
-    //   third sign:             decans 0,1,2 -> pips 8,9,10
-    //
-    // Suit base: Wands 22, Cups 36, Swords 50, Pentacles 64.
-    // cardNumber = base + (pipNumber - 1)  because Ace is base+0.
 
     struct Info { int base; int firstPip; };
     /*
     static const QMap<QString, Info> t = {
-        // Wands
         {"Aries",       {22, 2}}, {"Leo",         {22, 5}}, {"Sagittarius", {22, 8}},
-        // Cups
         {"Cancer",      {36, 2}}, {"Scorpio",     {36, 5}}, {"Pisces",      {36, 8}},
-        // Swords
         {"Gemini",      {50, 2}}, {"Libra",       {50, 5}}, {"Aquarius",    {50, 8}},
-        // Pentacles
         {"Taurus",      {64, 2}}, {"Virgo",       {64, 5}}, {"Capricorn",   {64, 8}},
     };
     */
 
     static const QMap<QString, Info> t = {
-        // Wands
         {"Aries",       {22, 2}}, {"Leo",         {22, 5}}, {"Sagittarius", {22, 8}},
-        // Pentacles
         {"Taurus",      {64, 5}}, {"Virgo",       {64, 8}}, {"Capricorn",   {64, 2}},
-        // Swords
         {"Gemini",      {50, 8}}, {"Libra",       {50, 2}}, {"Aquarius",    {50, 5}},
-        // Cups
         {"Cancer",      {36, 2}}, {"Scorpio",     {36, 5}}, {"Pisces",      {36, 8}},
     };
 
@@ -146,7 +130,6 @@ int courtCardNumber(const QString &sign, int decanIndex)
     int signIdx = signs.indexOf(sign);
     if (signIdx < 0) return -1;
 
-    // courts in chain order, indexed by the sign whose decan 1 and 2 they cover
     static const int courtNumbers[12] = {
         34,  // Aries   I, II   → Queen of Wands
         75,  // Taurus  I, II   → Knight of Coins

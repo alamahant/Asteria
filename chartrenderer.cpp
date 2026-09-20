@@ -170,7 +170,6 @@ ChartRenderer::ChartRenderer(QWidget *parent)
     m_scene->setSceneRect(-m_chartSize/2, -m_chartSize/2, m_chartSize, m_chartSize);
     centerOn(0, 0);
 
-    // tarot
     m_tarotDebounce = new QTimer(this);
     m_tarotDebounce->setSingleShot(true);
     m_tarotDebounce->setInterval(80);
@@ -184,7 +183,6 @@ ChartRenderer::ChartRenderer(QWidget *parent)
         m_pendingClear = false;
         m_pendingCardNumber = -1;
     });
-    //
 }
 
 ChartRenderer::~ChartRenderer()
@@ -1041,7 +1039,6 @@ void ChartRenderer::handleTarotHover(const QPointF &scenePos)
 {
     if (!AsteriaFlags::tarotOverlayEnabled) return;
 
-    // 1. Planet under cursor?
     for (QGraphicsItem *item : m_scene->items(scenePos)) {
         if (auto *planet = dynamic_cast<PlanetItem*>(item)) {
             int decanIdx = static_cast<int>(std::fmod(planet->longitude(), 30.0) / 10.0);
@@ -1056,7 +1053,6 @@ void ChartRenderer::handleTarotHover(const QPointF &scenePos)
         }
     }
 
-    // 2. Zodiac band?
     const double outerRadius = m_chartSize / 2.0;
     const double innerRadius = outerRadius - m_wheelThickness;
     const double r = std::hypot(scenePos.x(), scenePos.y());
@@ -1090,7 +1086,6 @@ void ChartRenderer::handleTarotHover(const QPointF &scenePos)
         }
     }
 
-    // 3. Nothing
     m_pendingClear = true;
     m_pendingCardNumber = -1;
     m_tarotDebounce->start();

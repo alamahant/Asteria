@@ -100,7 +100,6 @@ MainWindow::MainWindow(QWidget *parent)
     });
 #endif
 
-    setupCornerWidget();
 
     connect(rssDialog, &RssNotificationDialog::newContentAvailable,
             this, [this](bool hasNew){
@@ -155,6 +154,7 @@ void MainWindow::setupUi()
     setupCentralWidget();
     setupInputDock();
     setupInterpretationDock();
+    setupCornerWidget();
     setupMenus();
     setupConnections();
     resizeDocks({m_inputDock, m_interpretationDock}, {250, 350}, Qt::Horizontal);
@@ -313,7 +313,6 @@ void MainWindow::setupCentralWidget() {
     QList<QTableWidget*> tables = {planetsTable, anglesTable, housesTable, aspectsTable, rawTransitTable, eclipseTable};
 
     for (QTableWidget *table : tables) {
-        //table->setSelectionBehavior(QAbstractItemView::SelectItems);
         table->setSelectionBehavior(QAbstractItemView::SelectRows);
 
         table->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -720,9 +719,10 @@ void MainWindow::setupInputDock() {
     getPredictionButton->setEnabled(false);
     getPredictionButton->setIcon(QIcon::fromTheme("view-refresh"));
     getPredictionButton->setStatusTip("The AI prediction will be appended at the end of any existing text. Scroll down and be patient!");
+    getPredictionButton->setToolTip("Up to 30 days. Use less to save on AI tokens.\n Needs calculated chart!");
 
     getTransitsButton = new QPushButton("Calculate Transits", predictiveGroup);
-    getTransitsButton->setToolTip("Calculate transits for the selected period");
+    getTransitsButton->setToolTip("Calculate transits for the selected period -- Needs calculated chart!");
     getTransitsButton->setEnabled(false);
     getTransitsButton->setIcon(QIcon::fromTheme("view-chart"));
     getTransitsButton->setStatusTip("Calculate transits for the selected period");
@@ -738,11 +738,9 @@ void MainWindow::setupInputDock() {
     inputLayout->addWidget(m_calculateButton);
 
     inputLayout->addWidget(predictiveGroup);
-    //inputLayout->addStretch();
 
     m_tarotImageLabel = new QLabel(inputWidget);
     m_tarotImageLabel->setText("Tarot card associations\n will appear here");
-    //m_tarotImageLabel->setFixedSize(1, 234);      // ~classic card aspect 1:1.67
     m_tarotImageLabel->setScaledContents(false);
     m_tarotImageLabel->setAlignment(Qt::AlignCenter);
     m_tarotImageLabel->setStyleSheet(
@@ -1091,7 +1089,6 @@ void MainWindow::setupMenus()
     });
 
 
-    //taroot overlay
     settingsMenu->addSeparator();
     tarotOverlayAction = new QAction(tr("Show Tarot Overlay"), this);
     tarotOverlayAction->setCheckable(true);
@@ -1108,8 +1105,7 @@ void MainWindow::setupMenus()
 
         if (m_tarotImageLabel) m_tarotImageLabel->setVisible(checked);
         if (m_tarotNameLabel)  m_tarotNameLabel->setVisible(checked);
-
-
+        if(m_tarotCardHeightSpin) m_tarotCardHeightSpin->setVisible(checked);
         if (planetsTable) {
             planetsTable->setColumnHidden(4, !checked);
         }
@@ -1124,12 +1120,10 @@ void MainWindow::setupMenus()
             }
 
         } else {
-            // clear the display when turning off
             if (m_tarotImageLabel) m_tarotImageLabel->clear();
             if (m_tarotNameLabel)  m_tarotNameLabel->setText("—");
         }
     });
-    //
 
     settingsMenu->addSeparator();
 
@@ -1494,8 +1488,6 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
             planetsTable->setItem(i, 2, degreeItem);
             planetsTable->setItem(i, 3, houseItem);
 
-            //
-            // ── Tarot column (5th) ───────────────────────────────
             QWidget *tarotCell = new QWidget();
             QHBoxLayout *tarotLayout = new QHBoxLayout(tarotCell);
             tarotLayout->setContentsMargins(2, 0, 2, 0);
@@ -1535,7 +1527,6 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
                     if (m_tarotImageLabel)
                         m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(cardNumber));
                     if (m_tarotNameLabel)
-                        //m_tarotNameLabel->setText(TarotCorrespondences::cardName(cardNumber));
                         m_tarotNameLabel->setText(
                         QString("%1 — %2")
                             .arg(tooltip)
@@ -1544,12 +1535,6 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
                 return b;
             };
 
-            //tarotLayout->addWidget(makeLink("P", "Planet: " + planetId,
-              //                              planetCard));
-            //tarotLayout->addWidget(makeLink("S", "Sign: " + signName,
-              //                              signCard));
-            //tarotLayout->addWidget(makeLink("D", QString("Decan %1 of %2").arg(decanIdx + 1).arg(signName),
-              //                              decanCard));
 
             tarotLayout->addWidget(makeLink("P",
                 QString("Planet %1").arg(planetId), planetCard));
@@ -1573,7 +1558,6 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
             tarotLayout->addStretch();
 
             planetsTable->setCellWidget(i, 4, tarotCell);
-            //
         }
     }
 
@@ -6528,19 +6512,17 @@ void MainWindow::setupCornerWidget()
     infoButton->setObjectName("infoButton");
 
     m_tarotCardHeightSpin = new QSpinBox(this);
+    m_tarotCardHeightSpin->setVisible(false);
     m_tarotCardHeightSpin->setRange(100, 400);
     m_tarotCardHeightSpin->setSingleStep(10);
 
-    m_tarotCardHeightSpin->blockSignals(true);
     m_tarotCardHeightSpin->setValue(AsteriaFlags::tarotCardHeight);
-    m_tarotCardHeightSpin->blockSignals(false);
 
-    m_tarotCardHeightSpin->setFixedWidth(70);
+    m_tarotCardHeightSpin->setFixedWidth(80);
     m_tarotCardHeightSpin->setSuffix(" px");
     m_tarotCardHeightSpin->setToolTip("Tarot card height");
-    QSettings settings;
-    bool visible = settings.value("display/tarotCardHeight", false).toBool();
-    m_tarotCardHeightSpin->setVisible(visible);
+
+
     connect(m_tarotCardHeightSpin, &QSpinBox::valueChanged,
             this, [this](int value) {
         AsteriaFlags::tarotCardHeight = value;

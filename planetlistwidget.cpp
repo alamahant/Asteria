@@ -47,6 +47,31 @@ void PlanetListWidget::setupUi()
     headers << "Planet" << "Sign" << "Degree" << "Minute" << "House";
     m_table->setHorizontalHeaderLabels(headers);
 
+
+    connect(m_table, &QTableWidget::itemSelectionChanged, this, [this]() {
+        int row = m_table->currentRow();
+        if (row < 0) return;
+
+        QTableWidgetItem *item = m_table->item(row, 0);
+        if (!item) return;
+
+        QString text = item->text();          // e.g. "☉ Sun ℞ "
+
+        QStringList orderedPlanets = {
+            "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
+            "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
+            "Pars Fortuna", "Syzygy",
+            "Lilith", "Ceres", "Pallas", "Juno", "Vesta",
+            "Vertex", "East Point", "Part of Spirit"
+        };
+        for (const QString &p : orderedPlanets) {
+            if (text.contains(p)) {
+                emit planetRowSelected(p);
+                return;
+            }
+        }
+    });
+
     layout->addWidget(m_titleLabel);
     layout->addWidget(m_table);
     layout->setContentsMargins(0, 0, 0, 0);

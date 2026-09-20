@@ -108,13 +108,16 @@ See the LICENSE file for details.
 - Released to the public domain
 - https://github.com/RobertWinslow/Astromoony-Font
 
+### Rider-Waite-Smith Tarot Deck
+- Illustrated by Pamela Colman Smith (1878–1951)
+- First published 1909 by William Rider & Son, London
+- Public domain (copyright expired)
+- Source: Wikimedia Commons
+- https://commons.wikimedia.org/wiki/Category:Rider-Waite_tarot_deck
+
 ### Qt Framework
 - Used for the application's user interface and cross-platform compatibility
 - https://www.qt.io/
-
-### Mistral AI
-- Integration for chart interpretations
-- https://mistral.ai/
 
 ## Contact
 

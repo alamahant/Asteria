@@ -12,7 +12,8 @@ class PlanetListWidget : public QWidget {
 public:
     explicit PlanetListWidget(QWidget *parent = nullptr);
     void updateData(const ChartData &chartData);
-
+signals:
+    void planetRowSelected(const QString &planetId);
 private:
     QTableWidget *m_table;
     QLabel *m_titleLabel;

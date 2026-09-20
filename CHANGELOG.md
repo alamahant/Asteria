@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 2.5.0 (2026-09-20) – Tarot Overlay
+
+### New Features
+- **Tarot Overlay**: Golden Dawn tarot correspondences integrated throughout the chart
+- **Chart Hover**: Hovering a planet or zodiac decan shows the corresponding Minor Arcana card
+- **Planet Table Buttons**: Six buttons per planet row — P (planet's Major), S (sign's Major), D (decan's Minor), C (decan's court card), A (quadrant's Ace), G (quadrant's Page)
+- **Elements & Modalities**: Clicking a cell in the element/modality grid shows its court card
+- **Planet List Click**: Clicking a planet row shows its Major Arcana
+- **Card Size Control**: Spinbox in the input dock to adjust the tarot card display height
+- **Overlay Toggle**: Settings menu entry to enable or disable the tarot layer, persisted across sessions
+- **78 Card Deck**: Full Rider-Waite-Smith deck shipped with the app
+- **Credits Dialog**: Full attribution for Swiss Ephemeris, OpenStreetMap, Astromoony font, and the RWS tarot deck
+
+---
+
 ## Version 2.4.9 (2026-09-15) – Display Settings & Quick Guide
 
 ### New Features

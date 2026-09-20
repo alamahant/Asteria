@@ -101,7 +101,20 @@ void ElementModalityWidget::setupUi()
     for (const QString &sign : signs) {
 
         QString glyph = getSignGlyph(sign);
+
         QLabel *label = new QLabel(glyph, this);
+
+        static const QMap<QString, int> courtCards = {
+            {"Aries", 33},        {"Leo", 34},          {"Sagittarius", 35},
+            {"Taurus", 76},       {"Virgo", 77},        {"Capricorn", 75},
+            {"Gemini", 63},       {"Libra", 61},        {"Aquarius", 62},
+            {"Cancer", 47},       {"Scorpio", 48},      {"Pisces", 49},
+        };
+
+        label->setProperty("card", courtCards.value(sign, -1));
+        label->setCursor(Qt::PointingHandCursor);
+        label->installEventFilter(this);
+
         label->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
 
 
@@ -353,4 +366,19 @@ QString ElementModalityWidget::getPlanetGlyph(const QString &planetId) {
     if (planetId == "East Point") return "⊙";
     if (planetId == "Part of Spirit") return "⊖";
     return planetId.left(1);
+}
+
+bool ElementModalityWidget::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::MouseButtonPress) {
+        QLabel *label = qobject_cast<QLabel*>(obj);
+        if (label) {
+            int card = label->property("card").toInt();
+            if (card >= 0) {
+                emit courtCardClicked(card);
+                return true;
+            }
+        }
+    }
+    return QWidget::eventFilter(obj, event);
 }

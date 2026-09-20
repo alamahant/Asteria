@@ -60,6 +60,8 @@
 #include"socialshare.h"
 #include"rssnotificationdialog.h"
 #include"aspectsearchdialog.h"
+#include"cardloader.h"
+#include<QSpinBox>
 
 struct ParsedDate {
     int year;   // Astronomical year (negative for BCE, 0 for 1 BCE, etc.)
@@ -398,5 +400,12 @@ private:
                                           const QString &maxOrbPattern,
                                           const QString &excludePattern);
 
+    //tarot overlay
+    QLabel* m_tarotImageLabel;
+    QLabel* m_tarotNameLabel;
+    QAction *tarotOverlayAction;
+    CardLoader *m_cardLoader = nullptr;
+    QTableWidget *planetsTable;
+    QSpinBox* m_tarotCardHeightSpin;
 };
 #endif // MAINWINDOW_H

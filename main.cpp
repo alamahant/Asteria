@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 
     QCoreApplication::setApplicationName("Asteria");
     QDir().mkpath(AsteriaFlags::appDir);
-    QCoreApplication::setApplicationVersion("2.4.9");
+    QCoreApplication::setApplicationVersion("2.5.0");
 
     QSettings settings;
     AsteriaFlags::chartSize      = settings.value("display/chartSize",      AsteriaFlags::chartSize).toInt();

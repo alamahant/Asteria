@@ -28,4 +28,9 @@ QString sharesDirPath = appDir + "/shares";
     int planetSize     = planetSizeDefault;
     int pointSize      = pointSizeDefault;
     int uiFontSize     = uiFontSizeDefault;
+
+    bool tarotOverlayEnabled = false;
+    int tarotCardHeight = tarotCardDefaultHeight;
+    const int tarotCardDefaultHeight = 210;
+
 }

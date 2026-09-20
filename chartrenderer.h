@@ -11,6 +11,8 @@
 #include <QMap>
 #include <QColor>
 #include "chartcalculator.h"
+#include<QTimer>
+#include <QMouseEvent>
 
 
 // Forward declarations
@@ -143,6 +145,19 @@ private:
     bool isMajorAspect(const QString &aspectType);
     void updateSettings(bool showAspects, bool showHouseCusps, bool showPlanetSymbols, int chartSize);
     double getAscendantLongitude() const;
+
+    // tarot
+public:
+    void handleTarotHover(const QPointF &scenePos);
+    void clearTarotHover();
+private:
+    //void handleTarotHover(const QPointF &scenePos);
+    QTimer *m_tarotDebounce = nullptr;
+    int m_pendingCardNumber = -1;
+    bool m_pendingClear = false;
+signals:
+    void tarotCardHovered(int cardNumber);
+    void tarotHoverCleared();
 };
 
 #endif // CHARTRENDERER_H

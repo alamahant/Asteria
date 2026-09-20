@@ -26,7 +26,9 @@ extern const int wheelThicknessDefault;
 extern const int planetSizeDefault;
 extern const int pointSizeDefault;
 extern const int uiFontSizeDefault;
-
+extern bool tarotOverlayEnabled;
+extern int tarotCardHeight;
+extern const int tarotCardDefaultHeight;
 }
 
 // Global orb setting functions

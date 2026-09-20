@@ -9,6 +9,7 @@
 #include <QtMath>
 #include <QDebug>
 #include "Globals.h"
+#include"tarotcorrespondences.h"
 
 extern QString g_astroFontFamily;
 
@@ -169,6 +170,21 @@ ChartRenderer::ChartRenderer(QWidget *parent)
     m_scene->setSceneRect(-m_chartSize/2, -m_chartSize/2, m_chartSize, m_chartSize);
     centerOn(0, 0);
 
+    // tarot
+    m_tarotDebounce = new QTimer(this);
+    m_tarotDebounce->setSingleShot(true);
+    m_tarotDebounce->setInterval(80);
+    connect(m_tarotDebounce, &QTimer::timeout, this, [this]() {
+        if (!AsteriaFlags::tarotOverlayEnabled) return;
+        if (m_pendingClear) {
+            emit tarotHoverCleared();
+        } else if (m_pendingCardNumber >= 0) {
+            emit tarotCardHovered(m_pendingCardNumber);
+        }
+        m_pendingClear = false;
+        m_pendingCardNumber = -1;
+    });
+    //
 }
 
 ChartRenderer::~ChartRenderer()
@@ -1019,5 +1035,73 @@ double ChartRenderer::getAscendantLongitude() const {
         }
     }
     return 0.0; // Fallback if not found
+}
+
+void ChartRenderer::handleTarotHover(const QPointF &scenePos)
+{
+    if (!AsteriaFlags::tarotOverlayEnabled) return;
+
+    // 1. Planet under cursor?
+    for (QGraphicsItem *item : m_scene->items(scenePos)) {
+        if (auto *planet = dynamic_cast<PlanetItem*>(item)) {
+            int decanIdx = static_cast<int>(std::fmod(planet->longitude(), 30.0) / 10.0);
+            QString signName = planet->sign().split(' ').first();
+            int card = TarotCorrespondences::decanMinorNumber(signName, decanIdx);
+            if (card >= 0) {
+                m_pendingCardNumber = card;
+                m_pendingClear = false;
+                m_tarotDebounce->start();
+            }
+            return;
+        }
+    }
+
+    // 2. Zodiac band?
+    const double outerRadius = m_chartSize / 2.0;
+    const double innerRadius = outerRadius - m_wheelThickness;
+    const double r = std::hypot(scenePos.x(), scenePos.y());
+
+    if (r >= innerRadius && r <= outerRadius) {
+        double angleDeg = qRadiansToDegrees(std::atan2(-scenePos.y(), scenePos.x()));
+        if (angleDeg < 0) angleDeg += 360.0;
+
+        const double refAsc = (!m_chartData.houses.isEmpty()
+                               ? m_chartData.houses[0].longitude
+                               : getAscendantLongitude());
+        const double startAngle = 180.0 - refAsc;
+        const double relative = std::fmod(angleDeg - startAngle + 720.0, 360.0);
+
+        int signIndex = static_cast<int>(relative / 30.0);
+        double degreeInSign = relative - signIndex * 30.0;
+        int decanIndex = static_cast<int>(degreeInSign / 10.0);
+
+        static const QStringList signs = {
+            "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+            "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+        };
+        QString sign = signs.value(signIndex);
+
+        int card = TarotCorrespondences::decanMinorNumber(sign, decanIndex);
+        if (card >= 0) {
+            m_pendingCardNumber = card;
+            m_pendingClear = false;
+            m_tarotDebounce->start();
+            return;
+        }
+    }
+
+    // 3. Nothing
+    m_pendingClear = true;
+    m_pendingCardNumber = -1;
+    m_tarotDebounce->start();
+}
+
+
+void ChartRenderer::clearTarotHover()
+{
+    if (!AsteriaFlags::tarotOverlayEnabled) return;
+    m_pendingClear = true;
+    m_pendingCardNumber = -1;
+    m_tarotDebounce->start();
 }
 

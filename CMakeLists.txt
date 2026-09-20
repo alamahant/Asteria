@@ -133,6 +133,8 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
         rssnotificationdialog.cpp rssnotificationdialog.h
         aspectsearchdialog.cpp aspectsearchdialog.h
         displaysettingsdialog.cpp displaysettingsdialog.h
+        cardloader.cpp cardloader.h
+        tarotcorrespondences.cpp tarotcorrespondences.h
     )
 else()
     if(ANDROID)
@@ -253,6 +255,13 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-256.png"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
         DESTINATION "share/icons/hicolor/512x512/apps"
         RENAME "io.github.alamahant.Asteria.png")
+
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/OriginalRiderWaite" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/OriginalRiderWaite"
+        DESTINATION "${CMAKE_INSTALL_BINDIR}/OriginalRiderWaite")
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/OriginalRiderWaite"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/OriginalRiderWaite")
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(Asteria)

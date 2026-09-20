@@ -47,6 +47,7 @@
 #include"donationdialog.h"
 #include "modelselectordialog.h"
 #include"displaysettingsdialog.h"
+#include"tarotcorrespondences.h"
 
 extern QString g_astroFontFamily;
 
@@ -66,6 +67,9 @@ MainWindow::MainWindow(QWidget *parent)
     , m_aspectSearchDialog(nullptr)
     , m_synastrySearchDialog(nullptr)
 {
+
+    QSettings settings;
+    AsteriaFlags::tarotCardHeight = settings.value("display/tarotCardHeight", AsteriaFlags::tarotCardDefaultHeight).toInt();
 
     setAcceptDrops(true);
     preloadMapResources();
@@ -219,6 +223,23 @@ void MainWindow::setupCentralWidget() {
     m_planetListWidget = new PlanetListWidget(sidebarSplitter);
     m_planetListWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 
+    connect(m_planetListWidget, &PlanetListWidget::planetRowSelected,
+            this, [this](const QString &planetId) {
+        if (!m_cardLoader || !AsteriaFlags::tarotOverlayEnabled) return;
+
+        int card = TarotCorrespondences::planetMajorNumber(planetId);
+        if (card < 0) {
+            m_tarotImageLabel->clear();
+            m_tarotNameLabel->setText("—");
+            return;
+        }
+
+        m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(card));
+        m_tarotNameLabel->setText(
+            QString("Planet %1 — %2")
+                .arg(planetId, TarotCorrespondences::cardName(card)));
+    });
+
     sidebarSplitter->addWidget(m_planetListWidget);
 
     m_aspectarianWidget = new AspectarianWidget(sidebarSplitter);
@@ -228,7 +249,14 @@ void MainWindow::setupCentralWidget() {
 
     m_modalityElementWidget = new ElementModalityWidget(sidebarSplitter);
     m_modalityElementWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    connect(m_modalityElementWidget, &ElementModalityWidget::courtCardClicked,
+            this, [this](int cardNumber) {
+        if (!m_cardLoader || !AsteriaFlags::tarotOverlayEnabled) return;
 
+        m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(cardNumber));
+        m_tarotNameLabel->setText(
+            QString("Court — %1").arg(TarotCorrespondences::cardName(cardNumber)));
+    });
 
     sidebarSplitter->addWidget(m_modalityElementWidget);
 
@@ -251,9 +279,9 @@ void MainWindow::setupCentralWidget() {
 
     detailsTabs = new QTabWidget(m_chartDetailsWidget);
 
-    QTableWidget *planetsTable = new QTableWidget(0, 4, detailsTabs);
+    planetsTable = new QTableWidget(0, 5, detailsTabs);
     planetsTable->setObjectName("Planets");
-    planetsTable->setHorizontalHeaderLabels({"Planet", "Sign", "Degree", "House"});
+    planetsTable->setHorizontalHeaderLabels({"Planet", "Sign", "Degree", "House", "Tarot Mappings"});
     planetsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     QTableWidget *anglesTable = new QTableWidget(0, 3, detailsTabs);
@@ -285,7 +313,9 @@ void MainWindow::setupCentralWidget() {
     QList<QTableWidget*> tables = {planetsTable, anglesTable, housesTable, aspectsTable, rawTransitTable, eclipseTable};
 
     for (QTableWidget *table : tables) {
-        table->setSelectionBehavior(QAbstractItemView::SelectItems);
+        //table->setSelectionBehavior(QAbstractItemView::SelectItems);
+        table->setSelectionBehavior(QAbstractItemView::SelectRows);
+
         table->setSelectionMode(QAbstractItemView::ExtendedSelection);
         table->setEditTriggers(QAbstractItemView::NoEditTriggers);
         table->setContextMenuPolicy(Qt::ActionsContextMenu);
@@ -704,15 +734,32 @@ void MainWindow::setupInputDock() {
 
     connect(getTransitsButton, &QPushButton::clicked, this, &MainWindow::CalculateTransits);
 
-
-
-
     inputLayout->addWidget(birthGroup);
     inputLayout->addWidget(m_calculateButton);
 
     inputLayout->addWidget(predictiveGroup);
-    inputLayout->addStretch();
+    //inputLayout->addStretch();
 
+    m_tarotImageLabel = new QLabel(inputWidget);
+    m_tarotImageLabel->setText("Tarot card associations\n will appear here");
+    //m_tarotImageLabel->setFixedSize(1, 234);      // ~classic card aspect 1:1.67
+    m_tarotImageLabel->setScaledContents(false);
+    m_tarotImageLabel->setAlignment(Qt::AlignCenter);
+    m_tarotImageLabel->setStyleSheet(
+        "border: 1px solid #888; background: #fafafa;"
+    );
+    m_tarotImageLabel->setVisible(false);           // hidden until overlay is enabled
+
+
+    m_tarotNameLabel = new QLabel(inputWidget);
+    m_tarotNameLabel->setAlignment(Qt::AlignCenter);
+    m_tarotNameLabel->setWordWrap(true);
+    m_tarotNameLabel->setStyleSheet("font-weight: bold; padding: 2px;");
+    m_tarotNameLabel->setVisible(false);
+    m_tarotNameLabel->setText("—");
+
+    inputLayout->addWidget(m_tarotImageLabel, 1);   // stretch factor 1 — takes the free space
+    inputLayout->addWidget(m_tarotNameLabel, 0);    // fixed height
     m_inputDock->setWidget(inputWidget);
     addDockWidget(Qt::LeftDockWidgetArea, m_inputDock);
 }
@@ -1035,11 +1082,54 @@ void MainWindow::setupMenus()
     }
     settingsMenu->addAction(useJulianForPre1582Action);
 
+
+
     connect(useJulianForPre1582Action, &QAction::toggled, this, [this](bool checked) {
         qDebug() << "checked";
         QSettings settings;
         settings.setValue("useJulianForPre1582", checked);
     });
+
+
+    //taroot overlay
+    settingsMenu->addSeparator();
+    tarotOverlayAction = new QAction(tr("Show Tarot Overlay"), this);
+    tarotOverlayAction->setCheckable(true);
+
+
+
+    settingsMenu->addAction(tarotOverlayAction);
+
+    connect(tarotOverlayAction, &QAction::toggled, this, [this](bool checked) {
+        AsteriaFlags::tarotOverlayEnabled = checked;
+
+        QSettings s;
+        s.setValue("display/tarotOverlay", checked);
+
+        if (m_tarotImageLabel) m_tarotImageLabel->setVisible(checked);
+        if (m_tarotNameLabel)  m_tarotNameLabel->setVisible(checked);
+
+
+        if (planetsTable) {
+            planetsTable->setColumnHidden(4, !checked);
+        }
+
+        if (checked) {
+
+            if (!m_cardLoader) {
+                QString deckPath = QCoreApplication::applicationDirPath()
+                                   + "/OriginalRiderWaite";
+                m_cardLoader = new CardLoader(deckPath);
+                m_cardLoader->loadCards();
+            }
+
+        } else {
+            // clear the display when turning off
+            if (m_tarotImageLabel) m_tarotImageLabel->clear();
+            if (m_tarotNameLabel)  m_tarotNameLabel->setText("—");
+        }
+    });
+    //
 
     settingsMenu->addSeparator();
 
@@ -1235,6 +1325,20 @@ void MainWindow::setupConnections()
     connect(getPredictionButton, &QPushButton::clicked, this, &MainWindow::getPrediction);
     connect(&m_mistralApi, &MistralAPI::transitInterpretationReady,
             this, &MainWindow::displayTransitInterpretation);
+
+    connect(m_chartRenderer, &ChartRenderer::tarotCardHovered,
+            this, [this](int number) {
+        if (!m_cardLoader || !AsteriaFlags::tarotOverlayEnabled) return;
+        m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(number));
+        m_tarotNameLabel->setText(TarotCorrespondences::cardName(number));
+    });
+
+    connect(m_chartRenderer, &ChartRenderer::tarotHoverCleared,
+            this, [this]() {
+        if (!AsteriaFlags::tarotOverlayEnabled) return;
+        m_tarotImageLabel->clear();
+        m_tarotNameLabel->setText("—");
+    });
 }
 
 void MainWindow::calculateChart()
@@ -1389,6 +1493,87 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
             planetsTable->setItem(i, 1, signItem);
             planetsTable->setItem(i, 2, degreeItem);
             planetsTable->setItem(i, 3, houseItem);
+
+            //
+            // ── Tarot column (5th) ───────────────────────────────
+            QWidget *tarotCell = new QWidget();
+            QHBoxLayout *tarotLayout = new QHBoxLayout(tarotCell);
+            tarotLayout->setContentsMargins(2, 0, 2, 0);
+            tarotLayout->setSpacing(2);
+
+            QString planetId = planet["id"].toString();
+
+            int planetCard = TarotCorrespondences::planetMajorNumber(planetId);
+            int signCard   = TarotCorrespondences::signMajorNumber(signName);
+
+            double longitude = planet["longitude"].toDouble();
+            int decanIdx = static_cast<int>(std::fmod(longitude, 30.0) / 10.0);
+            int decanCard = TarotCorrespondences::decanMinorNumber(signName, decanIdx);
+            int courtCard = TarotCorrespondences::courtCardNumber(signName, decanIdx);
+            int aceCard  = TarotCorrespondences::aceForSign(signName);
+            int pageCard = TarotCorrespondences::pageForSign(signName);
+
+
+            auto makeLink = [this](const QString &letter,
+                                   const QString &tooltip,
+                                   int cardNumber) {
+                QPushButton *b = new QPushButton(letter);
+                b->setFixedSize(20, 20);
+                b->setCursor(Qt::PointingHandCursor);
+                b->setToolTip(tooltip);
+                b->setEnabled(cardNumber >= 0);
+                b->setStyleSheet(
+                    "QPushButton { border: 1px solid #888; border-radius: 3px; "
+                    "font-size: 10px; font-weight: bold; padding: 0; background: #f0f0f0; }"
+                    "QPushButton:hover { background: #e0e8ff; border-color: #2563eb; }"
+                    "QPushButton:disabled { color: #bbb; border-color: #ddd; background: #fafafa; }"
+                );
+
+                connect(b, &QPushButton::clicked, this, [this, cardNumber, tooltip]() {
+                    if (cardNumber < 0) return;
+                    if (!m_cardLoader) return;
+                    if (m_tarotImageLabel)
+                        m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(cardNumber));
+                    if (m_tarotNameLabel)
+                        //m_tarotNameLabel->setText(TarotCorrespondences::cardName(cardNumber));
+                        m_tarotNameLabel->setText(
+                        QString("%1 — %2")
+                            .arg(tooltip)
+                            .arg(TarotCorrespondences::cardName(cardNumber)));
+                });
+                return b;
+            };
+
+            //tarotLayout->addWidget(makeLink("P", "Planet: " + planetId,
+              //                              planetCard));
+            //tarotLayout->addWidget(makeLink("S", "Sign: " + signName,
+              //                              signCard));
+            //tarotLayout->addWidget(makeLink("D", QString("Decan %1 of %2").arg(decanIdx + 1).arg(signName),
+              //                              decanCard));
+
+            tarotLayout->addWidget(makeLink("P",
+                QString("Planet %1").arg(planetId), planetCard));
+
+            tarotLayout->addWidget(makeLink("S",
+                QString("%1 in %2").arg(planetId, signName), signCard));
+
+            tarotLayout->addWidget(makeLink("D",
+                QString("%1 in decan %2 of %3").arg(planetId).arg(decanIdx + 1).arg(signName), decanCard));
+
+            tarotLayout->addWidget(makeLink("C",
+                QString("%1 decan %2 court").arg(signName).arg(decanIdx + 1),
+                courtCard));
+
+            tarotLayout->addWidget(makeLink("A",
+                QString("%1 — Ace").arg(signName), aceCard));
+
+            tarotLayout->addWidget(makeLink("G",
+                QString("%1 — Page").arg(signName), pageCard));
+
+            tarotLayout->addStretch();
+
+            planetsTable->setCellWidget(i, 4, tarotCell);
+            //
         }
     }
 
@@ -1861,55 +2046,6 @@ void MainWindow::printChart() {
 
 
 
-/*
-void MainWindow::showAboutDialog()
-{
-    QString version = QCoreApplication::applicationVersion();
-    QMessageBox::about(this, "About Asteria",
-                       "Asteria - Astrological Chart Analysis\n\n"
-                       "Version 2.1.1\n\n"
-                       "A tool for calculating and interpreting astrological charts "
-                       "with AI-powered analysis.\n\n"
-                       "© 2025 Alamahant");
-}
-*/
-/*
-void MainWindow::showAboutDialog()
-{
-    QString version = QCoreApplication::applicationVersion();
-    QMessageBox::about(
-        this,
-        "About Asteria",
-        QString("Asteria - Astrological Chart Analysis\n\n"
-                "Version %1\n\n"
-                "A tool for calculating and interpreting astrological charts "
-                "with AI-powered analysis.\n"
-                "Available for Linux, Windows, Macos and Flatpak. \n"
-                "https://github.com/alamahant/Asteria/releases/latest\n\n"
-                "© 2025 Alamahant")
-            .arg(version)
-    );
-}
-*/
-/*
-void MainWindow::showAboutDialog()
-{
-    QString version = QCoreApplication::applicationVersion();
-    QMessageBox::about(
-                this,
-                "About Asteria",
-                QString("<h3>Asteria - Astrological Chart Analysis</h3>"
-                        "<p>Version %1</p>"
-                        "<p>A tool for calculating and interpreting astrological charts "
-                        "with AI-powered analysis.</p>"
-                        "<p>Available for Linux, Windows, Macos and Flatpak.</p>"
-                        "<p><a href=\"https://github.com/alamahant/Asteria/releases/latest\">"
-                        "https://github.com/alamahant/Asteria/releases/latest</a></p>"
-                        "<p>© 2025 Alamahant</p>")
-                .arg(version)
-                );
-}
-*/
 
 
 void MainWindow::showAboutDialog()
@@ -1930,7 +2066,7 @@ void MainWindow::showAboutDialog()
                 "<p>Source code & Linux version:<br>"
                 "<a href=\"https://github.com/alamahant/Asteria\">"
                 "https://github.com/alamahant/Asteria</a></p>"
-                "<p>© 2025 Alamahant</p>")
+                "<p>© 2026 Alamahant</p>")
         .arg(version)
     );
 }
@@ -2016,6 +2152,17 @@ void MainWindow::loadSettings()
     }
 
     AspectSettings::instance().loadFromSettings(settings);
+
+    if (settings.contains("display/tarotOverlay")) {
+        bool checked = settings.value("display/tarotOverlay", false).toBool();
+        AsteriaFlags::tarotOverlayEnabled = checked;
+        tarotOverlayAction->setChecked(checked);
+
+        if (planetsTable) {
+            planetsTable->setColumnHidden(4, !checked);
+        }
+
+    }
 }
 
 
@@ -2879,6 +3026,31 @@ void MainWindow::showHowToUseDialog() {
             <li><b>Aspects:</b> Lines connecting planets show their relationships (conjunctions, oppositions, etc.).</li>
             <li><b>Zodiac Signs:</b> The twelve signs of the zodiac form the outer wheel of the chart.</li>
         </ul>
+
+
+<h3>Tarot Overlay</h3>
+<p>Asteria includes an optional Golden Dawn tarot overlay, which maps the chart to the tarot correspondences used by the Golden Dawn tradition. Enable it from <b>Settings → Show Tarot Overlay</b>. When enabled, a card display appears at the bottom of the input dock, showing one card at a time.</p>
+<p>The tarot layer is fed by several sources, each showing a different correspondence:</p>
+<ul>
+    <li><b>Chart — Planet Hover:</b> Hovering a planet on the chart wheel shows the Minor Arcana card for the decan the planet occupies.</li>
+    <li><b>Chart — Zodiac Ring Hover:</b> Hovering a decan in the zodiac band shows that decan's Minor Arcana card.</li>
+    <li><b>Planet List — Row Click:</b> Clicking a planet row in the Planets sidebar shows that planet's Major Arcana card.</li>
+    <li><b>Chart Details — Planet Table Buttons:</b> Each planet row in the Chart Details tab has six buttons:
+        <ul>
+            <li><b>P</b> — the planet's Major Arcana</li>
+            <li><b>S</b> — the sign's Major Arcana</li>
+            <li><b>D</b> — the decan's Minor Arcana</li>
+            <li><b>C</b> — the decan's court card (Golden Dawn succession)</li>
+            <li><b>A</b> — the quadrant's Ace (elemental root)</li>
+            <li><b>G</b> — the quadrant's Page (personified elemental root)</li>
+        </ul>
+    </li>
+    <li><b>Elements &amp; Modalities — Cell Click:</b> Clicking a cell in the element/modality grid shows the court card for that element and modality combination.</li>
+</ul>
+<p>Every source shows one card at a time in the dock display. The card name label above the display tells you which layer was used and which planet, sign, decan, or cell it came from.</p>
+<p>You can adjust the tarot card height with the spinbox preceeding the info buton on the Tabs row. The setting is saved to QSettings and restored on next launch.</p>
+<p><b>Note:</b> The tarot overlay uses the Rider-Waite-Smith deck. It is optional and hidden until enabled.</p>
+
         <h3>Getting AI Interpretations</h3>
         <p>Asteria uses the Mistral AI API to provide personalized astrological interpretations. To use this feature:</p>
         <ol>
@@ -3751,6 +3923,19 @@ void MainWindow::showChangelog(){
         QString changelogText = R"(
 
 <h1>Changelog</h1>
+
+<h2>Version 2.5.0 (2026-09-23) <span style='color:#2980b9;'>— Tarot Overlay</span></h2>
+<ul>
+  <li><b>Tarot Overlay:</b> Golden Dawn tarot correspondences integrated throughout the chart — planets, signs, decans, court cards, Aces, and Pages</li>
+  <li><b>Chart Hover:</b> Hovering a planet or zodiac decan shows the corresponding Minor Arcana card</li>
+  <li><b>Planet Table Buttons:</b> Six buttons per planet row — P (planet's Major Arcana), S (sign's Major Arcana), D (decan's Minor Arcana), C (decan's court card), A (quadrant's Ace), G (quadrant's Page)</li>
+  <li><b>Elements and Modalities:</b> Clicking a cell in the element/modality grid shows its court card</li>
+  <li><b>Planet List Click:</b> Clicking a planet row in the sidebar shows its Major Arcana</li>
+  <li><b>Card Size Control:</b> Spinbox in the input dock to adjust the tarot card display height</li>
+  <li><b>Overlay Toggle:</b> Settings menu entry to enable or disable the tarot layer, persisted across sessions</li>
+  <li><b>Full Rider-Waite-Smith Deck:</b> All 78 cards shipped with the app</li>
+  <li><b>Credits:</b> Added credits.txt with full attribution for Swiss Ephemeris, OpenStreetMap, Astromoony font, and the RWS tarot deck</li>
+</ul>
 
 <h2>Version 2.4.9 (2026-09-15) <span style='color:#2980b9;'>— Display Settings & Quick Guide</span></h2>
 <ul>
@@ -5996,6 +6181,15 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                 }
             }
         }
+        else if (event->type() == QEvent::MouseMove && !ctrlPressed && AsteriaFlags::tarotOverlayEnabled && m_chartCalculated) {
+            QMouseEvent *me = static_cast<QMouseEvent*>(event);
+            QPointF scenePos = m_chartView->mapToScene(me->pos());
+
+            m_chartRenderer->handleTarotHover(scenePos);
+
+        }else if (event->type() == QEvent::Leave && AsteriaFlags::tarotOverlayEnabled && m_chartCalculated) {
+            m_chartRenderer->clearTarotHover();
+        }
     }
     return QMainWindow::eventFilter(obj, event);
 }
@@ -6333,11 +6527,34 @@ void MainWindow::setupCornerWidget()
 
     infoButton->setObjectName("infoButton");
 
+    m_tarotCardHeightSpin = new QSpinBox(this);
+    m_tarotCardHeightSpin->setRange(100, 400);
+    m_tarotCardHeightSpin->setSingleStep(10);
+
+    m_tarotCardHeightSpin->blockSignals(true);
+    m_tarotCardHeightSpin->setValue(AsteriaFlags::tarotCardHeight);
+    m_tarotCardHeightSpin->blockSignals(false);
+
+    m_tarotCardHeightSpin->setFixedWidth(60);
+    m_tarotCardHeightSpin->setSuffix(" px");
+    m_tarotCardHeightSpin->setToolTip("Tarot card height");
+
+    connect(m_tarotCardHeightSpin, &QSpinBox::valueChanged,
+            this, [this](int value) {
+        AsteriaFlags::tarotCardHeight = value;
+        QSettings settings;
+        settings.setValue("display/tarotCardHeight", value);
+
+        if (m_cardLoader) {
+            m_cardLoader->preScaleCards();
+        }
+    });
 
     QWidget *cornerContainer = new QWidget(this);
     QHBoxLayout *cornerLayout = new QHBoxLayout(cornerContainer);
     cornerLayout->setContentsMargins(0, 0, 6, 0);
     cornerLayout->setSpacing(6);
+    cornerLayout->addWidget(m_tarotCardHeightSpin);
     cornerLayout->addWidget(infoButton);
     cornerLayout->addWidget(shareButton);
 

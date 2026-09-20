@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QMap>
 #include "chartcalculator.h"
+#include<QEvent>
 
 class ElementModalityWidget : public QWidget {
     Q_OBJECT
@@ -13,6 +14,11 @@ public:
     explicit ElementModalityWidget(QWidget *parent = nullptr);
     void updateData(const ChartData &chartData);
 
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
+signals:
+    void courtCardClicked(int cardNumber);
 private:
     QLabel *m_titleLabel;
     QGridLayout *m_gridLayout;

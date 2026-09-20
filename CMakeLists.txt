@@ -255,7 +255,7 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-256.png"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/icons/asteria-icon-512.png"
         DESTINATION "share/icons/hicolor/512x512/apps"
         RENAME "io.github.alamahant.Asteria.png")
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/OriginalRiderWaite"
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/OriginalRiderWaite/"
         DESTINATION "${CMAKE_INSTALL_BINDIR}/OriginalRiderWaite")
 
 if(QT_VERSION_MAJOR EQUAL 6)

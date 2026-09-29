@@ -13,6 +13,12 @@
       <pubDate>2026-07-04 12:00:00</pubDate>
     </item>
 
+    <item>
+      <title>AI Model Providers - Important Update</title>
+      <description>AI providers and their pricing change frequently. Mistral AI is now a paid service and no longer offers free API keys. Google Gemini may experience heavy load and return temporary errors during peak times. For reliable, free testing, we recommend Groq (https://groq.com/) - it works flawlessly and is free. Configure your provider in Settings → Configure AI Models.</description>
+      <link>https://github.com/alamahant/Asteria/blob/master/asteria-feed.xml</link>
+      <pubDate>2026-09-29 12:00:00</pubDate>
+    </item>
 
   </channel>
 </rss>

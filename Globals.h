@@ -9,7 +9,10 @@
 namespace AsteriaFlags {
 extern bool additionalBodiesEnabled;
 extern QString lastGeneratedChartType;
-extern QString appDir;
+
+extern const QString appDir;
+extern const QString synastryDir;
+
 extern bool activeModelLoaded;
 extern QString sharesDirPath;
 
@@ -29,6 +32,10 @@ extern const int uiFontSizeDefault;
 extern bool tarotOverlayEnabled;
 extern int tarotCardHeight;
 extern const int tarotCardDefaultHeight;
+
+extern const qreal DEFAULTFONTSIZE;
+extern qreal FONTSIZE;
+
 }
 
 // Global orb setting functions

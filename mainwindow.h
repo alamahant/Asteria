@@ -62,6 +62,7 @@
 #include"aspectsearchdialog.h"
 #include"cardloader.h"
 #include<QSpinBox>
+#include"cardmeaning.h"
 
 struct ParsedDate {
     int year;   // Astronomical year (negative for BCE, 0 for 1 BCE, etc.)
@@ -401,11 +402,20 @@ private:
                                           const QString &excludePattern);
 
     //tarot overlay
-    QLabel* m_tarotImageLabel;
-    QLabel* m_tarotNameLabel;
+    QDialog *m_tarotDialog = nullptr;
+    QLabel* m_tarotImageLabel = nullptr;
+    QLabel* m_tarotNameLabel = nullptr;
     QAction *tarotOverlayAction;
     CardLoader *m_cardLoader = nullptr;
     QTableWidget *planetsTable;
     QSpinBox* m_tarotCardHeightSpin;
+    void setupTarotDialog();
+    QPushButton* m_openTarotButton;
+    void fitTarotDialog(int cardHeight);
+    int m_currentTarotCard = -1;
+    QMap<int, CardMeaning> cardMeanings;
+    bool isshowingcardmeaning = false;
+private slots:
+    void showCardMeaning(int cardNumber);
 };
 #endif // MAINWINDOW_H

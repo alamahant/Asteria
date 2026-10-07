@@ -18,7 +18,7 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(tr("AI Model Selector"));
-    setMinimumSize(400, 300);
+    setMinimumSize(600, 300);
 
     m_listWidget = new QListWidget(this);
     m_listWidget->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -62,13 +62,13 @@ ModelSelectorDialog::ModelSelectorDialog(QWidget *parent)
                                       "You MUST restart Asteria after configuring your first model."));
     infoLabel->setToolTip(tr(
         "<b>Fully compatible (OpenAI format):</b><br>"
-        "• Mistral<br>"
         "• Gemini (Google)<br>"
         "• OpenAI (ChatGPT, GPT-4)<br>"
         "• Groq (fast inference, free tier)<br>"
         "• Ollama (local models, no API key)<br>"
         "• Together AI<br>"
         "• DeepSeek<br>"
+        "• Mistral<br>"
         "• Perplexity API<br>"
         "• Fireworks AI<br>"
         "• AnyLocal (OpenAI compatibility mode)<br><br>"
@@ -241,23 +241,28 @@ void ModelSelectorDialog::onItemDoubleClicked(QListWidgetItem *item)
 void ModelSelectorDialog::showEditDialog(Model *model)
 {
     QDialog dialog(this);
+    dialog.resize(500, 200);
     dialog.setWindowTitle(model ? tr("Edit Model") : tr("Add Model"));
 
     QLineEdit *nameEdit = new QLineEdit(&dialog);
-    nameEdit->setText("Default");
+    nameEdit->setPlaceholderText("Default");
     nameEdit->setToolTip(tr("A unique name to identify this model configuration"));
     QLineEdit *providerEdit = new QLineEdit(&dialog);
-    providerEdit->setText("Mistral");
-    providerEdit->setToolTip(tr("The AI provider (e.g., Mistral, OpenAI, Ollama, etc.)"));
+    providerEdit->setPlaceholderText("Groq");
+
+    providerEdit->setToolTip(tr("The AI provider (e.g., Gemini, Groq, OpenAI, Ollama, etc.)"));
     QLineEdit *endpointEdit = new QLineEdit(&dialog);
-    endpointEdit->setText("https://api.mistral.ai/v1/chat/completions");
+    endpointEdit->setPlaceholderText("https://api.groq.com/openai/v1/chat/completions");
+
     endpointEdit->setToolTip(tr("The full API URL endpoint for this provider"));
     QLineEdit *apiKeyEdit = new QLineEdit(&dialog);
+    apiKeyEdit->setPlaceholderText("Your API key here...");
     apiKeyEdit->setEchoMode(QLineEdit::Password);
     apiKeyEdit->setToolTip(tr("API key for authentication. MUST BE PROVIDED! (may not be needed for local models like Ollama)"));
     QLineEdit *modelNameEdit = new QLineEdit(&dialog);
 
-    modelNameEdit->setText("mistral-medium");
+    modelNameEdit->setPlaceholderText("openai/gpt-oss-120b");
+
     modelNameEdit->setToolTip(tr("The specific model to use (e.g., mistral-medium, gpt-4, llama3)"));
     QDoubleSpinBox *tempSpin = new QDoubleSpinBox(&dialog);
     tempSpin->setRange(0.0, 2.0);
@@ -269,7 +274,7 @@ void ModelSelectorDialog::showEditDialog(Model *model)
     maxTokensSpin->setRange(1, 100000);
     maxTokensSpin->setValue(8192);
     maxTokensSpin->setToolTip(tr("Maximum number of tokens in the response\n"
-                                 "Keep 8192 for Mistral"));
+                                 "8192 should be sufficient"));
     if (model) {
         nameEdit->setText(model->name);
         providerEdit->setText(model->provider);

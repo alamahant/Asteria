@@ -51,12 +51,55 @@ void MistralAPI::interpretChart(const QJsonObject &chartData)
 
 }
 
-
+/*
 void MistralAPI::handleNetworkReply(QNetworkReply *reply) {
     m_requestInProgress = false;
 
     if (reply->error() != QNetworkReply::NoError) {
         m_lastError = "Network error: " + reply->errorString();
+        emit error(m_lastError);
+        reply->deleteLater();
+        return;
+    }
+
+    QByteArray responseData = reply->readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(responseData);
+    if (doc.isNull() || !doc.isObject()) {
+        m_lastError = "Invalid JSON response";
+        emit error(m_lastError);
+        reply->deleteLater();
+        return;
+    }
+
+    QJsonObject responseObj = doc.object();
+
+    QString formattedResponse = formatInterpretation(responseObj);
+    if (formattedResponse.isEmpty()) {
+        m_lastError = "Failed to extract response from API";
+        emit error(m_lastError);
+    } else {
+        if (reply->property("isTransitRequest").toBool()) {
+            emit transitInterpretationReady(formattedResponse);
+        } else {
+            emit interpretationReady(formattedResponse);
+        }
+    }
+
+    reply->deleteLater();
+}
+*/
+
+void MistralAPI::handleNetworkReply(QNetworkReply *reply) {
+    m_requestInProgress = false;
+
+    if (reply->error() != QNetworkReply::NoError) {
+        QByteArray responseData = reply->readAll();
+        QString fullError = reply->errorString();
+        if (!responseData.isEmpty()) {
+            fullError += "\n\n--- Server response ---\n";
+            fullError += QString::fromUtf8(responseData);
+        }
+        m_lastError = fullError;
         emit error(m_lastError);
         reply->deleteLater();
         return;

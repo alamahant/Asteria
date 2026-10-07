@@ -99,7 +99,8 @@ void DisplaySettingsDialog::saveAndClose()
     s.setValue("display/wheelThickness", m_wheelThicknessSpin->value());
     s.setValue("display/planetSize",     m_planetSizeSpin->value());
     s.setValue("display/pointSize",      m_pointSizeSpin->value());
-    s.setValue("display/uiFontSize",     m_uiFontSizeSpin->value());
+    s.setValue("ui/fontSize",     m_uiFontSizeSpin->value());
+
     s.sync();
 
     QMessageBox::information(this, tr("Display Settings"),

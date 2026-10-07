@@ -55,7 +55,7 @@ else()
     #set(SWISSEPH_DIR "/home/dharma/ssd/cpp/swisseph")
 
     if(WIN32)
-        set(SWISSEPH_DIR "H:/swisseph")
+        set(SWISSEPH_DIR "F:/swisseph")
     else()
         set(SWISSEPH_DIR "/home/dharma/ssd/cpp/swisseph")
     endif()
@@ -135,6 +135,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
         displaysettingsdialog.cpp displaysettingsdialog.h
         cardloader.cpp cardloader.h
         tarotcorrespondences.cpp tarotcorrespondences.h
+        cardmeaning.cpp cardmeaning.h
     )
 else()
     if(ANDROID)

@@ -8,6 +8,8 @@
 #include<QDir>
 #include<QPalette>
 #include<QStyleFactory>
+#include<QByteArray>
+#include<QFont>
 
 namespace {
 double g_orbMax = 8.0; // Default orb value
@@ -27,11 +29,33 @@ QString g_astroFontFamily;
 int main(int argc, char *argv[])
 {
 
+#ifdef FLATHUB_BUILD
+    QCoreApplication::setOrganizationName("");
+
+#else
+    QCoreApplication::setOrganizationName("Alamahant");
+#endif
+
+    QCoreApplication::setApplicationName("Asteria");
+    QCoreApplication::setApplicationVersion("2.5.1");
+
+#ifdef Q_OS_WIN
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+#endif
+
+    QDir().mkpath(AsteriaFlags::appDir);
     QDir().mkpath(AsteriaFlags::sharesDirPath);
+    QDir().mkpath(AsteriaFlags::synastryDir);
+
+    QSettings settings;
+
+    double factor = settings.value("ui/scaleFactor", 1.0).toDouble();
+    qputenv("QT_SCALE_FACTOR", QByteArray::number(factor));
+    AsteriaFlags::FONTSIZE = settings.value("ui/fontSize", AsteriaFlags::DEFAULTFONTSIZE).toReal();
 
     QApplication a(argc, argv);
 
-#ifndef FLATHUB_BUILD
+#ifdef Q_OS_WIN
 
     a.setStyle(QStyleFactory::create("Fusion"));
 
@@ -46,9 +70,6 @@ int main(int argc, char *argv[])
     lightPalette.setColor(QPalette::HighlightedText, Qt::white);
 
     a.setPalette(lightPalette);
-#endif
-
-#ifdef Q_OS_WIN
     a.setStyleSheet("QLineEdit { placeholder-text-color: #999999; }");
 #endif
 
@@ -60,23 +81,21 @@ int main(int argc, char *argv[])
     }
 
 
-#ifdef FLATHUB_BUILD
-    QCoreApplication::setOrganizationName("");
 
-#else
-    QCoreApplication::setOrganizationName("Alamahant");
-#endif
+    if (AsteriaFlags::FONTSIZE > 0.0) {
+            QFont appFont = a.font();
+            appFont.setPointSizeF(AsteriaFlags::FONTSIZE);
+            a.setFont(appFont);
+        } else {
+            AsteriaFlags::FONTSIZE = AsteriaFlags::DEFAULTFONTSIZE;
+        }
 
-    QCoreApplication::setApplicationName("Asteria");
-    QDir().mkpath(AsteriaFlags::appDir);
-    QCoreApplication::setApplicationVersion("2.5.0");
 
-    QSettings settings;
     AsteriaFlags::chartSize      = settings.value("display/chartSize",      AsteriaFlags::chartSize).toInt();
     AsteriaFlags::wheelThickness = settings.value("display/wheelThickness", AsteriaFlags::wheelThickness).toInt();
     AsteriaFlags::planetSize     = settings.value("display/planetSize",     AsteriaFlags::planetSize).toInt();
     AsteriaFlags::pointSize      = settings.value("display/pointSize",      AsteriaFlags::pointSize).toInt();
-    AsteriaFlags::uiFontSize     = settings.value("display/uiFontSize",     AsteriaFlags::uiFontSize).toInt();
+    AsteriaFlags::uiFontSize     = settings.value("ui/fontSize",     AsteriaFlags::uiFontSize).toInt();
 
 
     MainWindow w;

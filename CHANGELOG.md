@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 2.5.1 (2026-10-07) – Tarot Overlay
+
+### Changes
+- **Dedicated Tarot Window**: Tarot cards now display in a dedicated, always-on-top window instead of being overlaid on the input dock
+- **Open Tarot Button**: New button in the input dock to bring the tarot window forward manually
+- **Window Persistence**: The window hides on close (rather than being destroyed) so its state is preserved
+
+### New Features
+- **Tarot Meanings**: Added tarot card meanings, displayed in the interpretation dock
+
+---
+
 ## Version 2.5.0 (2026-09-20) – Tarot Overlay
 
 ### New Features

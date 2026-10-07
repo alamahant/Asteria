@@ -5,7 +5,9 @@
 namespace AsteriaFlags {
 bool additionalBodiesEnabled = false;
 QString lastGeneratedChartType = "Natal Birth";
-QString appDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/Asteria";
+
+const QString appDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/Asteria";
+const QString synastryDir = appDir + "/SynastryCharts";
 bool activeModelLoaded = false;
 QString sharesDirPath = appDir + "/shares";
 
@@ -20,7 +22,7 @@ QString sharesDirPath = appDir + "/shares";
     const int wheelThicknessDefault = 30;
     const int planetSizeDefault     = 35;
     const int pointSizeDefault      = 16;
-    const int uiFontSizeDefault     = 14;
+    const int uiFontSizeDefault     = 12;
 #endif
 
     int chartSize      = chartSizeDefault;
@@ -32,5 +34,13 @@ QString sharesDirPath = appDir + "/shares";
     bool tarotOverlayEnabled = false;
     int tarotCardHeight = tarotCardDefaultHeight;
     const int tarotCardDefaultHeight = 210;
+
+#ifdef Q_OS_WIN
+    const qreal DEFAULTFONTSIZE = 11;
+#else
+    const qreal DEFAULTFONTSIZE = 12;
+#endif
+qreal FONTSIZE = DEFAULTFONTSIZE;
+
 
 }

@@ -113,6 +113,11 @@ MainWindow::MainWindow(QWidget *parent)
 
         }
     });
+
+    QString jsonPath = ":/card_meanings.json";
+
+
+    cardMeanings = CardMeaning::loadFromJson(jsonPath);
 }
 
 MainWindow::~MainWindow()
@@ -152,6 +157,8 @@ MainWindow::~MainWindow()
 void MainWindow::setupUi()
 {
     setupCentralWidget();
+    setupTarotDialog();
+
     setupInputDock();
     setupInterpretationDock();
     setupCornerWidget();
@@ -235,6 +242,8 @@ void MainWindow::setupCentralWidget() {
         }
 
         m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(card));
+        m_currentTarotCard = card;
+        showCardMeaning(card);
         m_tarotNameLabel->setText(
             QString("Planet %1 — %2")
                 .arg(planetId, TarotCorrespondences::cardName(card)));
@@ -254,6 +263,8 @@ void MainWindow::setupCentralWidget() {
         if (!m_cardLoader || !AsteriaFlags::tarotOverlayEnabled) return;
 
         m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(cardNumber));
+        m_currentTarotCard = cardNumber;
+        showCardMeaning(cardNumber);
         m_tarotNameLabel->setText(
             QString("Court — %1").arg(TarotCorrespondences::cardName(cardNumber)));
     });
@@ -740,25 +751,51 @@ void MainWindow::setupInputDock() {
 
     inputLayout->addWidget(predictiveGroup);
 
-    m_tarotImageLabel = new QLabel(inputWidget);
-    m_tarotImageLabel->setText("Tarot card associations\n will appear here");
-    m_tarotImageLabel->setScaledContents(false);
-    m_tarotImageLabel->setAlignment(Qt::AlignCenter);
-    m_tarotImageLabel->setStyleSheet(
-        "border: 1px solid #888; background: #fafafa;"
-    );
-    m_tarotImageLabel->setVisible(false);           // hidden until overlay is enabled
+    inputLayout->addStretch();
 
+    auto *tarotLayout = new QHBoxLayout();
+    tarotLayout->setContentsMargins(0, 0, 0, 0);
+    tarotLayout->setSpacing(4);
 
-    m_tarotNameLabel = new QLabel(inputWidget);
-    m_tarotNameLabel->setAlignment(Qt::AlignCenter);
-    m_tarotNameLabel->setWordWrap(true);
-    m_tarotNameLabel->setStyleSheet("font-weight: bold; padding: 2px;");
-    m_tarotNameLabel->setVisible(false);
-    m_tarotNameLabel->setText("—");
+    m_openTarotButton = new QPushButton(tr("Open Tarot"), this);
+    m_openTarotButton->setToolTip(tr("Show the tarot card window"));
+    connect(m_openTarotButton, &QPushButton::clicked, this, [this]() {
+        if (!m_tarotDialog) return;
+        fitTarotDialog(AsteriaFlags::tarotCardHeight);
+        //m_tarotDialog->move(QCursor::pos() + QPoint(20, 20));
+        m_tarotDialog->show();
+        m_tarotDialog->raise();
+    });
 
-    inputLayout->addWidget(m_tarotImageLabel, 1);   // stretch factor 1 — takes the free space
-    inputLayout->addWidget(m_tarotNameLabel, 0);    // fixed height
+    m_tarotCardHeightSpin = new QSpinBox(this);
+    m_tarotCardHeightSpin->setVisible(false);
+    m_tarotCardHeightSpin->setRange(100, 600);
+    m_tarotCardHeightSpin->setSingleStep(10);
+    m_tarotCardHeightSpin->setValue(AsteriaFlags::tarotCardHeight);
+    m_tarotCardHeightSpin->setSuffix(" px");
+    m_tarotCardHeightSpin->setToolTip("Tarot card height");
+
+    connect(m_tarotCardHeightSpin, &QSpinBox::valueChanged,
+            this, [this](int value) {
+        AsteriaFlags::tarotCardHeight = value;
+        QSettings settings;
+        settings.setValue("display/tarotCardHeight", value);
+        settings.sync();
+        fitTarotDialog(value);
+        if (m_cardLoader) {
+            m_cardLoader->preScaleCards();
+            if (m_currentTarotCard >= 0)
+                m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(m_currentTarotCard));
+
+        }
+
+    });
+
+    tarotLayout->addWidget(m_openTarotButton);
+    tarotLayout->addWidget(m_tarotCardHeightSpin);
+
+    inputLayout->addLayout(tarotLayout);
+
     m_inputDock->setWidget(inputWidget);
     addDockWidget(Qt::LeftDockWidgetArea, m_inputDock);
 }
@@ -949,6 +986,11 @@ void MainWindow::setupMenus()
     fileMenu->addSeparator();
     QAction *createSymlinkAction = fileMenu->addAction(QString("Create Shortcut to %1 Data").arg(QApplication::applicationName()));
     connect(createSymlinkAction, &QAction::triggered, this, &MainWindow::createSymlink);
+
+#ifdef Q_OS_WIN
+    createSymlinkAction->setVisible(false);
+#endif
+
     fileMenu->addSeparator();
 
     rssAction = fileMenu->addAction("&RSS Notifications");
@@ -1065,7 +1107,68 @@ void MainWindow::setupMenus()
     connect(displaySettingsAction, &QAction::triggered, this, &MainWindow::showDisplaySettings);
     settingsMenu->addAction(displaySettingsAction);
 
-    settingsMenu->addSeparator();
+    QAction* scaleAction = settingsMenu->addAction("Set &Scale...");
+    scaleAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
+    connect(scaleAction, &QAction::triggered, this, [this]() {
+        QSettings settings;
+        bool ok = false;
+        double current = settings.value("ui/scaleFactor", 1.0).toDouble();
+
+        double factor = QInputDialog::getDouble(
+            this, tr("UI Scale"),
+            tr("Scale factor (e.g. 0.9, 1.0, 1.1, 1.25):"),
+            current,          // initial value
+            0.5,              // min
+            3.0,              // max
+            2,                // decimals shown
+            &ok,
+            Qt::WindowFlags(),
+            0.05);             // ← step
+
+        if (!ok) return;
+
+        settings.setValue("ui/scaleFactor", factor);
+        settings.sync();
+
+        QMessageBox msg(this);
+        msg.setWindowTitle(tr("Restart Required"));
+        msg.setIcon(QMessageBox::Information);
+        msg.setText(tr("Please restart the application to apply the new scale."));
+        msg.setInformativeText(tr(
+            "If the new scale makes the app unusable, delete the settings file:\n\n%1\n\n"
+            "Note: this will reset all user-defined settings.")
+            .arg(QSettings().fileName()));
+
+
+        QPushButton *copyBtn   = msg.addButton(tr("Copy Command"), QMessageBox::ActionRole);
+        QPushButton *cancelBtn = msg.addButton(tr("Cancel"), QMessageBox::RejectRole);
+        QPushButton *okBtn     = msg.addButton(tr("OK"), QMessageBox::AcceptRole);
+
+        for (;;) {
+            msg.exec();
+            if (msg.clickedButton() != copyBtn)
+                break;
+
+        #ifdef Q_OS_WIN
+            const QString cmd = QString("Remove-Item \"%1\"").arg(QSettings().fileName());
+        #else
+            const QString cmd = QString("rm \"%1\"").arg(QSettings().fileName());
+        #endif
+            QGuiApplication::clipboard()->setText(cmd);
+
+            msg.setInformativeText(tr(
+                "Command copied to clipboard:\n\n%1\n\n"
+                "If the new scale makes the app unusable, delete the settings file above.")
+                .arg(cmd));
+        }
+
+        if (msg.clickedButton() == okBtn)
+            qApp->quit();
+
+    });
+
+
+
     QAction *aspectSettingsAction = new QAction("&Aspect Display Settings...", this);
     connect(aspectSettingsAction, &QAction::triggered, this, &MainWindow::showAspectSettings);
     settingsMenu->addAction(aspectSettingsAction);
@@ -1084,7 +1187,6 @@ void MainWindow::setupMenus()
 
 
     connect(useJulianForPre1582Action, &QAction::toggled, this, [this](bool checked) {
-        qDebug() << "checked";
         QSettings settings;
         settings.setValue("useJulianForPre1582", checked);
     });
@@ -1104,9 +1206,10 @@ void MainWindow::setupMenus()
         QSettings s;
         s.setValue("display/tarotOverlay", checked);
 
-        if (m_tarotImageLabel) m_tarotImageLabel->setVisible(checked);
-        if (m_tarotNameLabel)  m_tarotNameLabel->setVisible(checked);
+
         if(m_tarotCardHeightSpin) m_tarotCardHeightSpin->setVisible(checked);
+        if(m_openTarotButton) m_openTarotButton->setVisible(checked);
+
         if (planetsTable) {
             planetsTable->setColumnHidden(4, !checked);
         }
@@ -1127,6 +1230,7 @@ void MainWindow::setupMenus()
     });
 
     settingsMenu->addSeparator();
+
 
     QAction *resetSettingsAction = settingsMenu->addAction("Reset Settings");
     connect(resetSettingsAction, &QAction::triggered, this, &MainWindow::onResetSettings);
@@ -1325,6 +1429,9 @@ void MainWindow::setupConnections()
             this, [this](int number) {
         if (!m_cardLoader || !AsteriaFlags::tarotOverlayEnabled) return;
         m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(number));
+        m_currentTarotCard = number;
+        showCardMeaning(number);
+
         m_tarotNameLabel->setText(TarotCorrespondences::cardName(number));
     });
 
@@ -1333,6 +1440,7 @@ void MainWindow::setupConnections()
         if (!AsteriaFlags::tarotOverlayEnabled) return;
         m_tarotImageLabel->clear();
         m_tarotNameLabel->setText("—");
+        if(m_currentInterpretation.isEmpty()) m_interpretationtextEdit->clear();
     });
 }
 
@@ -1527,6 +1635,9 @@ void MainWindow::updateChartDetailsTables(const QJsonObject &chartData)
                     if (!m_cardLoader) return;
                     if (m_tarotImageLabel)
                         m_tarotImageLabel->setPixmap(m_cardLoader->getCardImage(cardNumber));
+                        m_currentTarotCard = cardNumber;
+                        showCardMeaning(cardNumber);
+
                     if (m_tarotNameLabel)
                         m_tarotNameLabel->setText(
                         QString("%1 — %2")
@@ -2039,21 +2150,24 @@ void MainWindow::showAboutDialog()
     QMessageBox::about(
         this,
         "About Asteria",
-        QString("<h3>Asteria - Astrological Chart Analysis</h3>"
-                "<p>Version %1</p>"
-                "<p>Free for Linux on Flathub.<br>"
-                "Pre‑compiled binaries for <b>Windows & macOS</b> are available here:</p>"
-                "<p><a href=\"https://jnanadhakini.gumroad.com/l/kwcxvj\">"
-                "➡️ https://jnanadhakini.gumroad.com/l/kwcxvj</a></p>"
-                "<p>View all Windows/macOS apps:<br>"
-                "<a href=\"https://jnanadhakini.gumroad.com\">"
-                "https://jnanadhakini.gumroad.com</a></p>"
-                "<p>Source code & Linux version:<br>"
-                "<a href=\"https://github.com/alamahant/Asteria\">"
-                "https://github.com/alamahant/Asteria</a></p>"
-                "<p>© 2026 Alamahant</p>")
-        .arg(version)
-    );
+                QString("<h3>Asteria - Astrological Chart Analysis</h3>"
+                        "<p>Version %1</p>"
+                        "<p>Free for Linux on Flathub.<br>"
+                        "Windows available on the Microsoft Store:<br>"
+                        "<a href=\"https://apps.microsoft.com/detail/9pn9wgctmbf5?hl=en-US&gl=GR\">"
+                        "➡️ https://apps.microsoft.com/detail/9pn9wgctmbf5</a><br>"
+                        "Pre‑compiled binaries for <b>Windows & macOS</b> are also available here:</p>"
+                        "<p><a href=\"https://jnanadhakini.gumroad.com/l/kwcxvj\">"
+                        "➡️ https://jnanadhakini.gumroad.com/l/kwcxvj</a></p>"
+                        "<p>View all Windows/macOS apps:<br>"
+                        "<a href=\"https://jnanadhakini.gumroad.com\">"
+                        "https://jnanadhakini.gumroad.com</a></p>"
+                        "<p>Source code & Linux version:<br>"
+                        "<a href=\"https://github.com/alamahant/Asteria\">"
+                        "https://github.com/alamahant/Asteria</a></p>"
+                        "<p>© 2026 Alamahant</p>")
+                    .arg(version)
+                );
 }
 
 void MainWindow::handleError(const QString &errorMessage)
@@ -3909,6 +4023,15 @@ void MainWindow::showChangelog(){
 
 <h1>Changelog</h1>
 
+<h2>Version 2.5.1 (2026-10-05) <span style='color:#2980b9;'>— Tarot Overlay</span></h2>
+<ul>
+  <li><b>Dedicated Tarot Window:</b> Tarot cards now display in a dedicated, always-on-top window instead of being overlaid on the input dock</li>
+  <li><b> Button:</b> New button in the input dock to bring the tarot window forward manually</li>
+  <li><b>Window Persistence:</b> The tarot window hides on close rather than being destroyed, preserving its state</li>
+  <li><b>Tarot card meanings:</b> Each cards meaning is now displayed on the interpretation dock</li>
+
+</ul>
+
 <h2>Version 2.5.0 (2026-09-23) <span style='color:#2980b9;'>— Tarot Overlay</span></h2>
 <ul>
   <li><b>Tarot Overlay:</b> Golden Dawn tarot correspondences integrated throughout the chart — planets, signs, decans, court cards, Aces, and Pages</li>
@@ -5388,8 +5511,6 @@ QDate MainWindow::checkAndConvertJulian(const QDate& date, bool useJulian) const
     QDate gregorianStart(1582, 10, 15);
     if (useJulian && date.isValid() && date < gregorianStart) {
         QDate converted = julianToGregorian(date.year(), date.month(), date.day());
-        qDebug() << "Julian input:" << date.toString(Qt::ISODate)
-                 << "-> Gregorian:" << converted.toString(Qt::ISODate);
         return converted;
     }
     return date;
@@ -6137,7 +6258,8 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
             if (!numDegrees.isNull()) {
                 qreal currentScale = m_chartView->transform().m11();
-                qreal zoomFactor = numDegrees.y() > 0 ? 1.2 : 0.8;
+                qreal zoomFactor = numDegrees.y() > 0 ? 1.05 : 0.95;
+
                 qreal newScale = currentScale * zoomFactor;
 
                 if (newScale >= 0.1 && newScale <= 10.0) {
@@ -6399,6 +6521,8 @@ void MainWindow::configureAIModels()
 
     m_mistralApi.loadActiveModel();
 
+    QMessageBox::information(this, tr("AI Model Configuration"),
+                             tr("Any changes will take effect on the next restart of %1.").arg(QApplication::applicationName()));
 }
 
 /*
@@ -6512,34 +6636,10 @@ void MainWindow::setupCornerWidget()
 
     infoButton->setObjectName("infoButton");
 
-    m_tarotCardHeightSpin = new QSpinBox(this);
-    m_tarotCardHeightSpin->setVisible(false);
-    m_tarotCardHeightSpin->setRange(100, 400);
-    m_tarotCardHeightSpin->setSingleStep(10);
-
-    m_tarotCardHeightSpin->setValue(AsteriaFlags::tarotCardHeight);
-
-    m_tarotCardHeightSpin->setFixedWidth(80);
-    m_tarotCardHeightSpin->setSuffix(" px");
-    m_tarotCardHeightSpin->setToolTip("Tarot card height");
-
-
-    connect(m_tarotCardHeightSpin, &QSpinBox::valueChanged,
-            this, [this](int value) {
-        AsteriaFlags::tarotCardHeight = value;
-        QSettings settings;
-        settings.setValue("display/tarotCardHeight", value);
-
-        if (m_cardLoader) {
-            m_cardLoader->preScaleCards();
-        }
-    });
-
     QWidget *cornerContainer = new QWidget(this);
     QHBoxLayout *cornerLayout = new QHBoxLayout(cornerContainer);
     cornerLayout->setContentsMargins(0, 0, 6, 0);
     cornerLayout->setSpacing(6);
-    cornerLayout->addWidget(m_tarotCardHeightSpin);
     cornerLayout->addWidget(infoButton);
     cornerLayout->addWidget(shareButton);
 
@@ -6714,6 +6814,7 @@ void MainWindow::onResetSettings()
                 "Reset Failed",
                 "Settings remained unchanged.\n\n"
                 "Please check file permissions:\n" + settingsFile
+
             );
             return;
         }
@@ -6725,19 +6826,29 @@ void MainWindow::onResetSettings()
 
 void MainWindow::showAIConfigGuide()
 {
-    QDialog dialog(this);
-    dialog.setWindowTitle("AI Interpretation Guide");
-    dialog.resize(600, 500);
+    QDialog *dialog = new QDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setWindowTitle("AI Interpretation Guide");
+    dialog->resize(800, 600);
 
-    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+    QVBoxLayout *layout = new QVBoxLayout(dialog);
 
-    QTextEdit *textEdit = new QTextEdit(&dialog);
+    QTextEdit *textEdit = new QTextEdit(dialog);
     textEdit->setReadOnly(true);
     textEdit->setHtml(
-        "<h2>AI-Powered I-Ching Interpretations</h2>"
+                QString(
+        "<h2>AI-Powered %1 Interpretations</h2>"
 
         "<p>The app can use AI models to provide rich, contextual interpretations of your divinations. "
         "You can connect to various AI providers by configuring them in the Model Selector.</p>"
+
+        "<div style='border-left: 4px solid #d9534f; padding: 12px; margin: 16px 0; background-color: #fdf2f2;'>"
+        "<p style='margin: 0 0 8px 0;'><strong>⚠️ Important Disclaimer</strong></p>"
+        "<p style='margin: 0;'>The AI models listed here are provided for <strong>reference only</strong>. "
+        "Model names, availability, capabilities, and rate limits are set by each provider and may change at any time without notice. "
+        "Some models that were previously free may become paid, be deprecated, or be removed entirely. "
+        "Please verify the current details directly with each AI provider before configuring your model.</p>"
+        "</div>"
 
         "<h3>Getting Started:</h3>"
         "<ol>"
@@ -6759,7 +6870,7 @@ void MainWindow::showAIConfigGuide()
         "<tr><td><b>Mistral</b></td>"
         "<td><code>https://api.mistral.ai/v1/chat/completions</code></td>"
         "<td><code>mistral-medium</code></td>"
-        "<td>Free trial</td></tr>"
+        "<td>Free tier discontinued</td></tr>"
 
 
         "<tr><td><b>Gemini</b></td>"
@@ -6819,20 +6930,29 @@ void MainWindow::showAIConfigGuide()
         "<li><b>Ollama:</b> Install Ollama first, then pull <code>llama3</code> or <code>mistral</code></li>"
         "</ul>"
 
+        "<h3>Provider Sign-Up Links:</h3>"
+        "<ul>"
+        "<li><b>Groq:</b> <a href='https://groq.com/'>https://groq.com/</a> — free, recommended for testing</li>"
+        "<li><b>Mistral:</b> <a href='https://console.mistral.ai/'>https://console.mistral.ai/</a> — now a paid service</li>"
+        "<li><b>Gemini (Google):</b> <a href='https://aistudio.google.com/'>https://aistudio.google.com/</a> — free tier available, may be busy</li>"
+        "<li><b>OpenAI:</b> <a href='https://platform.openai.com/'>https://platform.openai.com/</a> — paid API</li>"
+        "<li><b>Ollama:</b> <a href='https://ollama.com/'>https://ollama.com/</a> — runs locally, no API key needed</li>"
+        "</ul>"
+
         "<h3 style='color: #ff6b6b;'>Important Notes:</h3>"
         "<ul>"
         "<li><b>API keys are stored locally</b> in your system's secure settings</li>"
         "<li><b>Not compatible:</b> Claude (Anthropic) - different API formats</li>"
         "<li><b>Restart app</b> after configuring your first model</li>"
         "<li><b>Hexagram data and question</b> are sent to the configured AI service</li>"
-        "</ul>"
+        "</ul>").arg(QApplication::applicationName())
     );
 
     layout->addWidget(textEdit);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
-    QPushButton *openConfigButton = new QPushButton("Open Model Selector", &dialog);
-    QPushButton *closeButton = new QPushButton("Close", &dialog);
+    QPushButton *openConfigButton = new QPushButton("Open Model Selector", dialog);
+    QPushButton *closeButton = new QPushButton("Close", dialog);
 
     buttonLayout->addStretch();
     buttonLayout->addWidget(openConfigButton);
@@ -6840,15 +6960,16 @@ void MainWindow::showAIConfigGuide()
 
     layout->addLayout(buttonLayout);
 
-    connect(openConfigButton, &QPushButton::clicked, &dialog, [this, &dialog]() {
-        dialog.accept();
+    connect(openConfigButton, &QPushButton::clicked, dialog, [this, dialog]() {
+        dialog->accept();
         ModelSelectorDialog dlg(this);
         dlg.exec();
     });
 
-    connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::reject);
+    connect(closeButton, &QPushButton::clicked, dialog, &QDialog::reject);
 
-    dialog.exec();
+    dialog->show();
+    dialog->raise();
 }
 
 void MainWindow::applyAspectFilter(const QString &planet1Pattern,
@@ -7528,4 +7649,112 @@ void MainWindow::showDisplaySettings()
 {
     DisplaySettingsDialog dlg(this);
     dlg.exec();
+}
+
+void MainWindow::setupTarotDialog()
+{
+    m_tarotDialog = new QDialog(this);
+    m_tarotDialog->setWindowTitle(tr("Tarot Card"));
+    m_tarotDialog->setWindowFlags(Qt::Tool | Qt::WindowTitleHint | Qt::WindowCloseButtonHint);
+    m_tarotDialog->setAttribute(Qt::WA_ShowWithoutActivating, true);
+    m_tarotDialog->setModal(false);
+    m_tarotDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+
+    auto *layout = new QVBoxLayout(m_tarotDialog);
+    layout->setContentsMargins(8, 8, 8, 8);
+    layout->setSpacing(6);
+
+    m_tarotImageLabel = new QLabel(m_tarotDialog);
+    m_tarotImageLabel->setAlignment(Qt::AlignCenter);
+    m_tarotImageLabel->setMinimumSize(200, 300);
+    m_tarotImageLabel->setText("Tarot card associations\n will appear here");
+    m_tarotImageLabel->setScaledContents(false);
+    m_tarotImageLabel->setStyleSheet(
+        "border: 1px solid #888; background: #fafafa;");
+
+    m_tarotNameLabel = new QLabel(m_tarotDialog);
+    m_tarotNameLabel->setAlignment(Qt::AlignCenter);
+    m_tarotNameLabel->setWordWrap(true);
+    m_tarotNameLabel->setStyleSheet("font-weight: bold; padding: 2px;");
+    m_tarotNameLabel->setVisible(true);
+    m_tarotNameLabel->setText("—");
+
+
+    layout->addWidget(m_tarotImageLabel);
+    layout->addWidget(m_tarotNameLabel);
+
+    m_tarotDialog->adjustSize();
+}
+
+void MainWindow::fitTarotDialog(int cardHeight)
+{
+    if (!m_tarotDialog || !m_tarotImageLabel || !m_tarotNameLabel)
+        return;
+
+    if (!m_tarotImageLabel->pixmap(Qt::ReturnByValue).isNull()) {
+        const QPixmap pm = m_tarotImageLabel->pixmap(Qt::ReturnByValue);
+        m_tarotImageLabel->setFixedSize(pm.size());
+    } else {
+        const int w = qRound(cardHeight * 0.66);
+        m_tarotImageLabel->setFixedSize(w, cardHeight);
+    }
+
+    m_tarotNameLabel->setFixedWidth(m_tarotImageLabel->width());
+    m_tarotNameLabel->adjustSize();
+
+    auto *lay = m_tarotDialog->layout();
+
+    const int totalH = m_tarotImageLabel->height()
+                     + m_tarotNameLabel->sizeHint().height()
+                     + lay->spacing()
+                     + lay->contentsMargins().top()
+                     + lay->contentsMargins().bottom()
+                    + AsteriaFlags::FONTSIZE * 2;
+
+    const int totalW = m_tarotImageLabel->width()
+                     + lay->contentsMargins().left()
+                     + lay->contentsMargins().right();
+
+    m_tarotDialog->setMinimumSize(0, 0);
+    m_tarotDialog->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+    lay->invalidate();
+    lay->activate();
+    m_tarotDialog->setFixedSize(totalW, totalH);
+}
+
+void MainWindow::showCardMeaning(int cardNumber) {
+
+    if (cardMeanings.contains(cardNumber)) {
+        if(!m_currentInterpretation.isEmpty()) {
+            return;
+        }
+
+        m_interpretationtextEdit->clear();
+        CardMeaning meaning = cardMeanings[cardNumber];
+
+        QString html = "<div style='color: black;'>";
+        html += "<h2 style='color: black;'>" + meaning.getName() + "</h2>";
+
+        html += "<h3 style='color: black;'>Keywords:</h3><ul>";
+        for(const QString& keyword : meaning.getKeywords()) {
+            html += "<li style='color: black;'>" + keyword + "</li>";
+        }
+        html += "</ul>";
+
+        html += "<h3 style='color: black;'>Light Meanings:</h3><ul>";
+        for(const QString& light : meaning.getLightMeanings()) {
+            html += "<li style='color: black;'>" + light + "</li>";
+        }
+        html += "</ul>";
+
+        html += "<h3 style='color: black;'>Shadow Meanings:</h3><ul>";
+        for(const QString& shadow : meaning.getShadowMeanings()) {
+            html += "<li style='color: black;'>" + shadow + "</li>";
+        }
+        html += "</ul>";
+        html += "</div>";
+
+        m_interpretationtextEdit->setText(html);
+        isshowingcardmeaning = true;
+    }
 }

@@ -111,6 +111,18 @@
 
   <releases>
 
+<release version="2.5.1" date="2026-10-07">
+  <description>
+    <p>Tarot Overlay:</p>
+    <ul>
+      <li>Tarot cards now display in a dedicated, always-on-top window instead of being overlaid on the input dock</li>
+      <li>Added an Open Tarot button in the input dock to bring the tarot window forward manually</li>
+      <li>The tarot window now hides on close rather than being destroyed, preserving its state</li>
+      <li>Tarot card meanings added.They are displayed in the interpretation dock</li>
+    </ul>
+  </description>
+</release>
+
 <release version="2.5.0" date="2026-09-20">
   <description>
     <p>Tarot Overlay:</p>
